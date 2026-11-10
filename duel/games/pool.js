@@ -1,7 +1,7 @@
 /* Simplified turn-based billiards. Red pockets the red balls, blue pockets the blue balls. Drag back like a slingshot to shoot the white ball. */
 Duel.register({
   id: 'pool', title: L('البلياردو', 'Pool', 'Bilardo'), emoji: '🎱', bg: '#3fa9ff',
-  help: L('بدورك، اسحب لورا بإصبعك متل النقّيفة وفلّت لتضرب الطابة البيضا. دخّل طابات لونك الثلاثة', 'On your turn, pull back like a slingshot and let go to hit the white ball. Get your 3 balls in the holes!', 'Sıran gelince sapan gibi geri çek ve bırak, beyaz topa vur. Kendi rengindeki 3 topu deliklere sok!'),
+  help: L('بدورك، اسحب لورا بإصبعك متل النقّيفة وفلّت لتضرب الطابة البيضا. دخّل طابات لونك الثلاثة', 'Pull back like a slingshot and let go to hit the white ball. Get your 3 balls in!', 'Sapan gibi geri çek ve bırak, beyaz topa vur. Kendi renginden 3 topu sok!'),
   create(api){
     const OUT = '#1c1838', LIMIT = 90, NEED = 3;
     let turn = Math.random() < 0.5 ? 0 : 1;

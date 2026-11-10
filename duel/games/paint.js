@@ -3,7 +3,7 @@
    Let go and it keeps rolling straight. Cells under a roller take its colour. After 30 s the most painted floor wins. */
 Duel.register({
   id: 'paint', title: L('حرب الألوان', 'Paint War', 'Boya Savaşı'), emoji: '🎨', bg: '#ff7aa8',
-  help: L('حطّ إصبعك بنصّك وحرّكه لتوجّه الرولّو، لوّن أكتر شي من الأرض بلونك', 'Put your finger on your half and move it to steer the roller. Paint the most floor in your color!', 'Parmağını kendi yarına koy ve rulonu yönlendir. Yerin en çok kısmını kendi renginle boya!'),
+  help: L('حطّ إصبعك بنصّك وحرّكه لتوجّه الرولّو، لوّن أكتر شي من الأرض بلونك', 'Move your finger on your half to steer the roller. Paint the most floor!', 'Kendi yarında parmağını kaydır, rulonu yönlendir. En çok yeri boya!'),
   create(api){
     const OUT = '#1c1838', COLS = 14, ROWS = 22, LIMIT = 30, SPEED = 3.6, TURN = 6, BRUSH = 0.95;
     const grid = new Int8Array(COLS * ROWS).fill(-1);

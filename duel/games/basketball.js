@@ -163,7 +163,7 @@ Duel.register({
       c.globalAlpha = 1;
       // HUD
       const fs = Math.min(22, W * 0.056), ey = H - (H - g.spawnY) * 0.35;
-      api.text(c, api.L('سلّات: ' + api.AR(pl.score), 'Baskets: ' + pl.score, 'Basket: ' + pl.score), W * 0.8, ey, fs, '#fff7e8', 0);
+      api.text(c, api.L('سلّات: ' + api.AR(pl.score), 'Baskets: ' + pl.score, 'Basket: ' + pl.score), W * 0.8, ey, api.lang === 'ar' ? fs : fs * 0.85, '#fff7e8', 0);
       const left = Math.max(0, Math.ceil(LIMIT - api.time));
       api.text(c, '⏱ ' + api.AR(left), W * 0.2, ey, fs, left <= 10 ? '#ffe14d' : '#fff7e8', 0);
     }

@@ -2,7 +2,7 @@
    Red starts at the bottom heading up, blue at the top heading down. Crash = lose; after 45 s the longer snake wins. */
 Duel.register({
   id: 'snake', title: L('الأفعى', 'Snake', 'Yılan'), emoji: '🐍', bg: '#7c5cff',
-  help: L('كبس عالأسهم لتلفّ الأفعى، كول التفاح وما تخبط بالحيط ولا بالأفعى التانية', 'Tap the arrows to turn your snake. Eat the apples, and don\'t hit the wall or the other snake!', 'Yılanını döndürmek için oklara dokun. Elmaları ye, duvara ve öbür yılana çarpma!'),
+  help: L('كبس عالأسهم لتلفّ الأفعى، كول التفاح وما تخبط بالحيط ولا بالأفعى التانية', 'Tap the arrows to turn. Eat apples, don\'t hit the wall or the other snake!', 'Oklara dokunup dön. Elmaları ye, duvara ve öbür yılana çarpma!'),
   create(api){
     const OUT = '#1c1838', COLS = 13, STEP = 0.16, LIMIT = 45;
     let ROWS = 21, t = 0, acc = 0, over = false, overT = 0, winner = null, flash = 0;

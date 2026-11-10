@@ -3,7 +3,7 @@
    Both roads use the SAME track layout so it's fair. First to 100% wins; after 50 s the further car wins. */
 Duel.register({
   id: 'cars', title: L('سباق السيارات', 'Car Race', 'Araba Yarışı'), emoji: '🏎️', bg: '#5b6475',
-  help: L('كبس يمين ويسار لتغيّر الطريق، اهرب من الحواجز ولمّ المصاري، أوّل واحد بيوصل بيربح', 'Tap left or right to change lanes. Dodge the blocks and grab the coins. First to the finish wins!', 'Şerit değiştirmek için sağa ya da sola dokun. Engellerden kaç, paraları topla. İlk varan kazanır!'),
+  help: L('كبس يمين ويسار لتغيّر الطريق، اهرب من الحواجز ولمّ المصاري، أوّل واحد بيوصل بيربح', 'Tap left or right to dodge blocks and grab coins. First to the finish wins!', 'Sağa sola dokun, engellerden kaç, paraları topla. İlk varan kazanır!'),
   create(api){
     const OUT = '#1c1838', TRACK = 25, LIMIT = 50, SPIN = 1.0;
     let t = 0, over = false, overT = 0, winner = null;

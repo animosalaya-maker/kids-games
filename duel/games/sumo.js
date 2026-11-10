@@ -3,7 +3,7 @@
    After 30 s the one closer to the centre wins. */
 Duel.register({
   id: 'sumo', title: L('دفّش برّا', 'Push Out', 'Dışarı İt'), emoji: '🥊', bg: '#ffb347',
-  help: L('كبس بنصّك لتنطّ لقدّام عاتجاه السهم، ودفّش رفيقك برّا الحلبة', 'Tap your half to jump the way the arrow points. Push your friend out of the ring!', 'Okun gösterdiği yöne zıplamak için kendi yarına dokun. Arkadaşını halkanın dışına it!'),
+  help: L('كبس بنصّك لتنطّ لقدّام عاتجاه السهم، ودفّش رفيقك برّا الحلبة', 'Tap your half to jump where the arrow points. Push your friend out!', 'Kendi yarına dokun, okun yönüne zıpla. Arkadaşını halkanın dışına it!'),
   create(api){
     const OUT = '#1c1838', LIMIT = 30, COOL = 0.45, SPINW = 2.4, FRICTION = 2.2;
     let t = 0, over = false, overT = 0, winner = null, shake = 0;

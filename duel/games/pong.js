@@ -1,7 +1,7 @@
 /* Pong / table tennis seen from above. Red paddle at the bottom, blue at the top. First to 3 points wins the round. */
 Duel.register({
   id: 'pong', title: L('تنس الطاولة', 'Ping Pong', 'Masa Tenisi'), emoji: '🏓', bg: '#2fb36d',
-  help: L('حرّك المضرب يمين وشمال بإصبعك ورجّع الطابة. أول واحد بيجيب ٣ نقاط بيربح', 'Move your paddle left and right and hit the ball back. First to 3 points wins!', 'Raketini parmağınla sağa sola kaydır, topu geri gönder. İlk 3 sayıyı yapan kazanır!'),
+  help: L('حرّك المضرب يمين وشمال بإصبعك ورجّع الطابة. أول واحد بيجيب ٣ نقاط بيربح', 'Move your paddle and hit the ball back. First to 3 points wins!', 'Raketini kaydır, topu geri gönder. İlk 3 sayıyı yapan kazanır!'),
   create(api){
     const OUT = '#1c1838', TARGET = 3, LIMIT = 75;
     const pts = [0, 0];

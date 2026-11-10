@@ -2,7 +2,7 @@
    Yellow = careful! Red = it is watching: tapping sends you back 3 steps. First to the middle line wins. */
 Duel.register({
   id: 'statue', title: L('ضو أحمر ضو أخضر', 'Red Light Green Light', 'Kırmızı Işık Yeşil Işık'), emoji: '🚦', bg: '#3fd47a',
-  help: L('لما الضو أخضر اكبس لتركض، ولما يصير أحمر وقّف ولا تتحرك!', 'When the light is green, tap to run. When it turns red, stop and don\'t move!', 'Işık yeşilken koşmak için dokun. Kırmızı olunca dur ve kıpırdama!'),
+  help: L('لما الضو أخضر اكبس لتركض، ولما يصير أحمر وقّف ولا تتحرك!', 'When the light is green, tap to run. When it\'s red, stop and don\'t move!', 'Işık yeşilken koşmak için dokun. Kırmızı olunca dur ve kıpırdama!'),
   create(api){
     const OUT = '#1c1838', STEPS = 24, LIMIT = 40, BACK = 3;
     const LIGHT = { green: '#3fd47a', yellow: '#ffcd4d', red: '#ff4d4d' };

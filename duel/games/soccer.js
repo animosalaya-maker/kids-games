@@ -1,7 +1,7 @@
 /* Top-down soccer / air hockey. Each player drags a round striker in their own half. First to 2 goals wins the round. */
 Duel.register({
   id: 'soccer', title: L('كرة القدم', 'Soccer', 'Futbol'), emoji: '⚽', bg: '#4cc35a',
-  help: L('حرّك اللاعب تبعك بإصبعك واضرب الطابة على جول صاحبك. أول واحد بيجيب جولين بيربح', 'Move your player with your finger and kick the ball into the other goal. First to 2 goals wins!', 'Oyuncunu parmağınla kaydır, topu arkadaşının kalesine at. İlk 2 golü atan kazanır!'),
+  help: L('حرّك اللاعب تبعك بإصبعك واضرب الطابة على جول صاحبك. أول واحد بيجيب جولين بيربح', 'Move your player and kick the ball into the other goal. First to 2 goals wins!', 'Oyuncunu kaydır, topu öbür kaleye at. İlk 2 golü atan kazanır!'),
   create(api){
     const OUT = '#1c1838', TARGET = 2, LIMIT = 60;
     const goals = [0, 0];
