@@ -1,8 +1,8 @@
 /* Where's Bobo? A 3×3 garden of holes. Bobo pops up: tap him (+1). Golden Bobo = +3.
    His grumpy grey cousin (a little rain cloud) = −1, don't tap him! Pop-ups get a bit faster. 40 seconds. */
 Solo.register({
-  id: 'peek', title: 'وين بوبو؟', emoji: '🕳️', bg: '#5fbf4a',
-  help: 'اكبس على بوبو لما يطلع من الجورة، بس لا تكبس على الغيمة الزعلانة!',
+  id: 'peek', title: L('وين بوبو؟','Where\'s Bobo?','Bobo Nerede?'), emoji: '🕳️', bg: '#5fbf4a',
+  help: L('اكبس على بوبو لما يطلع من الجورة، بس لا تكبس على الغيمة الزعلانة!','Tap Bobo when he pops out of the hole, but don\'t tap the grumpy cloud!','Bobo delikten çıkınca ona dokun, ama kızgın buluta dokunma!'),
   create(api){
     const OUT = '#1c1838', LIMIT = 40;
     const holes = [];
@@ -82,7 +82,7 @@ Solo.register({
       _dbg: { holes },
       update(dt){
         t += dt; if(shakeT > 0) shakeT -= dt;
-        if(done){ endT += dt; if(endT > 1.2){ endT = -1e9; api.end({ score, msg: score > 0 ? 'لقيت بوبو ' + api.AR(goodN) + ' مرة!' : 'حلو! جرّب كمان' }); } }
+        if(done){ endT += dt; if(endT > 1.2){ endT = -1e9; api.end({ score, msg: score > 0 ? api.L('لقيت بوبو ' + api.AR(goodN) + ' مرة!', 'You found Bobo ' + api.AR(goodN) + (goodN === 1 ? ' time!' : ' times!'), 'Bobo\'yu ' + api.AR(goodN) + ' kez buldun!') : api.L('حلو! جرّب كمان','Nice! Try again','Güzel! Bir daha dene') }); } }
         else {
           spawnT -= dt; if(spawnT <= 0){ spawnT = api.rand(0.75, 1.05) - prog() * 0.4; spawn(); }
           const left = Math.ceil(LIMIT - t);
@@ -117,13 +117,13 @@ Solo.register({
         h.st = 'hit'; h.hitT = 0;
         if(h.kind === 'grump'){
           score = Math.max(0, score - 1); api.sfx.bad(); h.shake = 0.4; shakeT = 0.25;
-          floats.push({ x: P.x, y: y - P.r, str: 'لا! −١', col: '#ffd6d6', age: 0 }); api.say('لا');
+          floats.push({ x: P.x, y: y - P.r, str: api.L('لا! ','No! ','Hayır! ') + '−' + api.AR(1), col: '#ffd6d6', age: 0 }); api.say(api.L('لا','No','Hayır'));
         } else {
           const gold = h.kind === 'gold', v = gold ? 3 : 1; score += v; goodN++;
           giggle(); if(gold){ api.sfx.coin(); api.sfx.good(); } else api.sfx.pop();
           burst(P.x, y, gold);
-          floats.push({ x: P.x, y: y - P.r, str: gold ? '+٣ ✨' : '+١', col: gold ? '#ffe066' : '#fff7e8', age: 0 });
-          if(goodN % 8 === 0) api.toast(api.pick(['شاطر!', 'برافو!', 'سريع كتير!']));
+          floats.push({ x: P.x, y: y - P.r, str: gold ? '+' + api.AR(3) + ' ✨' : '+' + api.AR(1), col: gold ? '#ffe066' : '#fff7e8', age: 0 });
+          if(goodN % 8 === 0) api.toast(api.pick(api.lang === 'ar' ? ['شاطر!', 'برافو!', 'سريع كتير!'] : api.lang === 'tr' ? ['Süper!', 'Aferin!', 'Çok hızlısın!'] : ['Super!', 'Well done!', 'So fast!']));
         }
       },
       draw(c){
@@ -174,7 +174,7 @@ Solo.register({
         api.text(c, '⏰ ' + api.AR(left), W / 2, 12 + ph / 2 + 1, 24 * (hurry ? 1 + Math.abs(Math.sin(t * 6)) * 0.12 : 1), hurry ? '#fff7e8' : OUT);
         pill(c, W - 12 - 96, 12, 96, ph, '#ffcd4d');
         api.text(c, '⭐ ' + api.AR(score), W - 12 - 48, 12 + ph / 2 + 1, 24, OUT);
-        if(done) api.text(c, 'خلص الوقت! 🎉', W / 2, H * 0.45, s * 0.1, '#fff7e8');
+        if(done) api.text(c, api.L('خلص الوقت! 🎉',"Time's up! 🎉",'Süre bitti! 🎉'), W / 2, H * 0.45, s * 0.1, '#fff7e8');
       },
       resize(){}
     };

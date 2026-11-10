@@ -1,8 +1,8 @@
 /* Bowling. One lane from top to bottom with 6 pins in the middle. Take turns: swipe from your edge to roll the ball.
    3 rolls each (pins reset every roll). Most pins in total wins. */
 Duel.register({
-  id: 'bowling', title: 'البولينغ', emoji: '🎳', bg: '#5b6cff',
-  help: 'لما يجي دورك اسحب الطابة لقدّام بسرعة لتوقّع القناني',
+  id: 'bowling', title: L('البولينغ', 'Bowling', 'Bovling'), emoji: '🎳', bg: '#5b6cff',
+  help: L('لما يجي دورك اسحب الطابة لقدّام بسرعة لتوقّع القناني', 'On your turn, swipe the ball forward fast to knock down the pins', 'Sıra sende olunca topu hızlıca ileri kaydır ve lobutları devir'),
   create(api){
     const OUT = '#1c1838', ROLLS = 3, AUTO = 12;
     const S = () => Math.min(api.W, api.H);
@@ -38,7 +38,7 @@ Duel.register({
       const midI = Math.floor(h.length / 2), a = h[0], m = h[midI];
       const early = (m.x - a.x) / Math.max(0.016, m.t - a.t), late = (now.x - m.x) / Math.max(0.016, now.t - m.t);
       grab = null;
-      if(vy > -S() * 0.6){ setBall(); api.say('اسحب لقدّام أسرع! ☝️', turn, 1000); return; }
+      if(vy > -S() * 0.6){ setBall(); api.say(L('اسحب لقدّام أسرع! ☝️', 'Swipe forward faster! ☝️', 'Daha hızlı ileri kaydır! ☝️'), turn, 1000); return; }
       const sp = api.clamp(Math.hypot(vx, vy), S() * 1.1, S() * 3.2);
       vx = api.clamp(vx, vy * 0.45, -vy * 0.45);
       const k = sp / Math.hypot(vx, vy); vx *= k; vy *= k;
@@ -82,7 +82,7 @@ Duel.register({
         ball.vx *= 1 - 0.12 * dt; ball.vy *= 1 - 0.12 * dt;
         if(!ball.gutter && (ball.x < x0 + br * 0.2 || ball.x > x1 - br * 0.2)){
           ball.gutter = true; ball.x = ball.x < api.W / 2 ? x0 - gw / 2 : x1 + gw / 2; ball.vx = 0; api.sfx.bounce();
-          api.say('عالقناة! 😅', turn, 900);
+          api.say(L('عالقناة! 😅', 'In the gutter! 😅', 'Kanala kaçtı! 😅'), turn, 900);
         }
         if(!ball.gutter) for(const pn of pins) if(!pn.gone) collide(ball, br, 5, pn, pr, 1, () => knock(pn, pn.vx, pn.vy));
       }
@@ -169,7 +169,7 @@ Duel.register({
       update(dt){
         time += dt; stT += dt;
         if(ended){ if(time >= endAt) api.win(endW); return; }
-        if(stage === 'aim' && stT > AUTO && !grab){ autoRoll(); api.say('رمية تلقائية 🎳', turn, 900); }
+        if(stage === 'aim' && stT > AUTO && !grab){ autoRoll(); api.say(L('رمية تلقائية 🎳', 'Auto roll 🎳', 'Otomatik atış 🎳'), turn, 900); }
         if(stage === 'roll'){
           const n = 4; for(let i = 0; i < n; i++) step(dt / n);
           const off = ball.y < -BR() * 2 || ball.y > api.H + BR() * 2;
@@ -246,8 +246,8 @@ Duel.register({
           const ty = mid + hf * 0.66;
           let msg, colr;
           if(ended) msg = '';
-          else if(turn === pl){ msg = stage === 'aim' ? 'دورك! اسحب الطابة ☝️' : ''; colr = '#fff7e8'; }
-          else { msg = 'دور رفيقك… 👀'; colr = 'rgba(255,247,232,.8)'; }
+          else if(turn === pl){ msg = stage === 'aim' ? L('دورك! اسحب الطابة ☝️', 'Your turn! Swipe the ball ☝️', 'Sıra sende! Topu kaydır ☝️') : ''; colr = '#fff7e8'; }
+          else { msg = L('دور رفيقك… 👀', 'Friend\'s turn… 👀', 'Arkadaşının sırası… 👀'); colr = 'rgba(255,247,232,.8)'; }
           if(msg){
             c.fillStyle = 'rgba(28,24,56,.6)'; c.beginPath(); c.roundRect(W / 2 - s * 0.36, ty - s * 0.045, s * 0.72, s * 0.09, s * 0.045); c.fill();
             api.text(c, msg, W / 2, ty, Math.min(s * 0.055, 24), colr, 0);
@@ -258,7 +258,7 @@ Duel.register({
             api.emoji(c, '👆', W / 2 + lw * 0.32, H - hf * 0.12 - k * hf * 0.2, s * 0.08);
           }
           if(pop){
-            const big = pop.n === 6 ? 'سترايك! 🎉' : pop.n === 0 ? 'ولا وحدة! 😅' : '+' + api.AR(pop.n) + ' 🎳';
+            const big = pop.n === 6 ? L('سترايك! 🎉', 'Strike! 🎉', 'Strike! 🎉') : pop.n === 0 ? L('ولا وحدة! 😅', 'None! 😅', 'Hiçbiri! 😅') : '+' + api.AR(pop.n) + ' 🎳';
             const sc = 1 + 0.3 * Math.max(0, 1 - pop.t * 4);
             api.text(c, big, W / 2, mid + hf * 0.3, Math.min(s * 0.1, 40) * sc, pop.pl === pl ? '#ffcd4d' : '#fff7e8', 0);
           }

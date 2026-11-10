@@ -1,8 +1,8 @@
 /* Darts & log: a wooden log slice spins in the middle. Tap your half to throw a suction-cup arrow at it.
    Hit an arrow that is already stuck → it bounces off and you lose. First to stick all 6 wins. */
 Duel.register({
-  id: 'darts', title: 'الأسهم والجذع', emoji: '🎯', bg: '#b07cff',
-  help: 'اكبس لترمي سهمك على الجذع، بس دير بالك لا تضرب سهم تاني!',
+  id: 'darts', title: L('الأسهم والجذع', 'Arrows & Log', 'Ok ve Kütük'), emoji: '🎯', bg: '#b07cff',
+  help: L('اكبس لترمي سهمك على الجذع، بس دير بالك لا تضرب سهم تاني!', 'Tap to throw your arrow at the log, but don\'t hit another arrow!', 'Okunu kütüğe atmak için dokun, ama başka bir oka çarpma!'),
   create(api){
     const OUT = '#1c1838', N = 6, COOL = 0.35, LIMIT = 40;
     let rot = 0, omega = 1.8, target = 1.8, nextChange = api.rand(1.2, 2.4), t = 0;
@@ -86,7 +86,7 @@ Duel.register({
         bouncers.push({ x: sx, y: sy, vx: api.rand(-1, 1) * S() * 1.2, vy: dir * S() * 1.6, a: f.pl === 0 ? 0 : Math.PI, va: api.rand(8, 14) * (Math.random() < 0.5 ? -1 : 1), pl: f.pl, life: 1 });
         for(let i = 0; i < 12; i++) sparks.push({ x: sx, y: sy, vx: api.rand(-1, 1) * S() * 0.9, vy: api.rand(-1, 1) * S() * 0.9, life: api.rand(0.3, 0.6), col: '#ffcd4d' });
         api.sfx.bounce(); api.sfx.buzz(); hitFlash = 0.35;
-        api.say('طار السهم! 💥', f.pl, 1100);
+        api.say(api.L('طار السهم! 💥', 'Arrow flew off! 💥', 'Ok uçup gitti! 💥'), f.pl, 1100);
         finish(1 - f.pl, 0.9);
       } else {
         stuck.push({ a: ia - rot, pl: f.pl });
@@ -166,7 +166,7 @@ Duel.register({
             const ready = cool[pl] <= 0, wy = Math.sin(t * 6) * s * 0.006 + wob[pl] * s * 0.03;
             c.save(); c.translate(0, startY() + wy); arrow(c, pl, len, ready ? 1 : 0.35); c.restore();
           }
-          api.text(c, left > 0 ? 'اكبس لترمي 👆' : 'خلصت أسهمك!', W * 0.27, startY() + len * 0.55, Math.min(20, W * 0.05), api.players[pl].dark, 0);
+          api.text(c, left > 0 ? api.L('اكبس لترمي 👆', 'Tap to throw 👆', 'Dokun ve at 👆') : api.L('خلصت أسهمك!', 'No more arrows!', 'Okların bitti!'), W * 0.27, startY() + len * 0.55, Math.min(20, W * 0.05), api.players[pl].dark, 0);
           api.text(c, api.AR(left), -W * 0.3, startY() + len * 0.55, Math.min(30, W * 0.075), api.players[pl].dark, 0);
         });
       }

@@ -1,8 +1,8 @@
 /* Quick sums. The same easy sum shows in both halves; each kid has 3 answer buttons (same numbers, different order).
    First correct answer takes the point, a wrong answer locks you out of that question. First to 5 wins. */
 Duel.register({
-  id: 'mathduel', title: 'مين أسرع بالحساب', emoji: '🧮', bg: '#ffb020',
-  help: 'حل الجمعة واكبس عالجواب الصح قبل رفيقك. إذا غلطت بتستنى السؤال الجاي',
+  id: 'mathduel', title: L('مين أسرع بالحساب', 'Math Race', 'Hızlı Hesap'), emoji: '🧮', bg: '#ffb020',
+  help: L('حل الجمعة واكبس عالجواب الصح قبل رفيقك. إذا غلطت بتستنى السؤال الجاي', 'Solve the sum and tap the right answer before your friend. If you miss, wait for the next one', 'İşlemi çöz, doğru cevaba arkadaşından önce dokun. Yanlış yaparsan sonraki soruyu beklersin'),
   create(api){
     const OUT = '#1c1838', GOAL = 5, QT = 9, LIMIT = 80;
     const S = () => Math.min(api.W, api.H);
@@ -47,17 +47,18 @@ Duel.register({
     }
     function drawSum(c, cx, cy, size){
       const showAns = stage === 'show';
-      const toks = [api.AR(q.a), q.op, api.AR(q.b), '=', showAns ? api.AR(q.ans) : '؟'];
+      const toks = [api.AR(q.a), q.op, api.AR(q.b), '=', showAns ? api.AR(q.ans) : L('؟', '?', '?')];
       c.save(); c.font = '800 ' + Math.round(size) + 'px ' + api.FONT;
       const gap = size * 0.28, ws = toks.map(t => Math.max(c.measureText(t).width, size * 0.45));
       const total = ws.reduce((a, b) => a + b, 0) + gap * (toks.length - 1);
       c.restore();
-      let x = cx + total / 2;                       // right-to-left
+      const rtl = api.dir === 'rtl';                // Arabic reads right-to-left, others left-to-right
+      let x = rtl ? cx + total / 2 : cx - total / 2;
       toks.forEach((t, i) => {
         const w = ws[i];
         const col = i === 4 ? (showAns ? '#3fd47a' : '#ffcd4d') : (i === 1 || i === 3 ? '#ff9f1c' : '#fff7e8');
-        api.text(c, t, x - w / 2, cy, size, col, 0);
-        x -= w + gap;
+        api.text(c, t, rtl ? x - w / 2 : x + w / 2, cy, size, col, 0);
+        x += rtl ? -(w + gap) : w + gap;
       });
     }
 
@@ -86,7 +87,7 @@ Duel.register({
         c.fillStyle = '#ffe9b8'; c.fillRect(0, 0, W, H);
         c.fillStyle = 'rgba(255,90,95,.16)'; c.fillRect(0, mid, W, mid);
         c.fillStyle = 'rgba(63,169,255,.16)'; c.fillRect(0, 0, W, mid);
-        const sym = ['+', '−', '٣', '٧', '٥', '='];
+        const sym = ['+', '−', api.AR(3), api.AR(7), api.AR(5), '='];
         for(let i = 0; i < 18; i++){ const x = ((i * 71) % 100) / 100 * W, y = ((i * 43 + 9) % 100) / 100 * H; c.globalAlpha = 0.12; api.text(c, sym[i % 6], x, y, s * 0.07, '#1c1838', i % 2, 800); }
         c.globalAlpha = 1;
         c.fillStyle = OUT; c.fillRect(0, mid - 3, W, 6);
@@ -117,11 +118,11 @@ Duel.register({
           // status line
           let msg = '', mc = col.dark;
           if(stage === 'show'){
-            if(winner === pl){ msg = 'صح! +١ 🎉'; mc = '#2a9d5c'; }
-            else if(winner === other) msg = 'سبقك رفيقك!';
-            else msg = 'ولا حدا جاوب 🤷';
-          } else if(lock[pl]) msg = 'غلط! استنى السؤال الجاي ✋';
-          else if(n === 1 && st < 2.5) msg = 'اكبس عالجواب الصح 👇';
+            if(winner === pl){ msg = L('صح! +١ 🎉', 'Right! +1 🎉', 'Doğru! +1 🎉'); mc = '#2a9d5c'; }
+            else if(winner === other) msg = L('سبقك رفيقك!', 'Your friend was faster!', 'Arkadaşın daha hızlıydı!');
+            else msg = L('ولا حدا جاوب 🤷', 'Nobody got it 🤷', 'Kimse bilemedi 🤷');
+          } else if(lock[pl]) msg = L('غلط! استنى السؤال الجاي ✋', 'Oops! Wait for the next one ✋', 'Yanlış! Sonrakini bekle ✋');
+          else if(n === 1 && st < 2.5) msg = L('اكبس عالجواب الصح 👇', 'Tap the right answer 👇', 'Doğru cevaba dokun 👇');
           if(msg) api.text(c, msg, W / 2, mid + hf * 0.58, Math.min(s * 0.06, 25), mc, 0);
           // answer buttons
           for(let i = 0; i < 3; i++){

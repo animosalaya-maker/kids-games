@@ -2,8 +2,9 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
+<script src="../i18n.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>ألعاب بوبو</title>
+<title data-en="Bobo Games" data-tr="Bobo Oyunları">ألعاب بوبو</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="ألعاب لاعب واحد مع بوبو.">
 <meta name="theme-color" content="#1c1838">
@@ -51,21 +52,21 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 </head>
 <body>
 <section id="menu">
-  <div class="head"><h1>ألعاب بوبو</h1><a class="back" href="../">⬅ كل الألعاب</a></div>
+  <div class="head"><h1 data-en="Bobo Games" data-tr="Bobo Oyunları">ألعاب بوبو</h1><a class="back" href="../"data-en="⬅ All games" data-tr="⬅ Tüm oyunlar">⬅ كل الألعاب</a></div>
   <div id="grid"></div>
 </section>
 <section id="play" hidden>
-  <canvas id="cv" aria-label="ساحة اللعب"></canvas>
-  <button id="quit" aria-label="رجوع">✕</button>
+  <canvas id="cv" aria-label="ساحة اللعب" data-en-aria="Play area" data-tr-aria="Oyun alanı"></canvas>
+  <button id="quit" aria-label="رجوع" data-en-aria="Back" data-tr-aria="Geri">✕</button>
 </section>
 <div class="over" id="intro" hidden><div class="card">
   <div class="i-emo"></div><h2></h2><p></p><div class="i-best"></div>
-  <button class="big-btn" id="goBtn">العب</button><a class="ghost-btn" href="../" style="text-decoration:none;color:#fff">⬅ كل الألعاب</a>
+  <button class="big-btn" id="goBtn" data-en="Play" data-tr="Oyna">العب</button><a class="ghost-btn" href="../" style="text-decoration:none;color:#fff"data-en="⬅ All games" data-tr="⬅ Tüm oyunlar">⬅ كل الألعاب</a>
 </div></div>
 <div class="over" id="result" hidden><div class="card">
   <div class="r-emo"></div><h2></h2><div class="r-score"></div><div class="r-best"></div><div class="r-coins"></div>
-  <button class="big-btn" id="again">مرة كمان</button><a class="ghost-btn" href="../" style="text-decoration:none;color:#fff">⬅ كل الألعاب</a>
-  <button class="ghost-btn" id="toMenu" hidden>القائمة</button>
+  <button class="big-btn" id="again" data-en="Play again" data-tr="Tekrar oyna">مرة كمان</button><a class="ghost-btn" href="../" style="text-decoration:none;color:#fff"data-en="⬅ All games" data-tr="⬅ Tüm oyunlar">⬅ كل الألعاب</a>
+  <button class="ghost-btn" id="toMenu" hidden data-en="Menu" data-tr="Menü">القائمة</button>
 </div></div>
 <script src="../world.js"></script>
 <script src="engine.js"></script>

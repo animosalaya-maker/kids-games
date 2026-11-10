@@ -1,7 +1,7 @@
 /* Top-down soccer / air hockey. Each player drags a round striker in their own half. First to 2 goals wins the round. */
 Duel.register({
-  id: 'soccer', title: 'كرة القدم', emoji: '⚽', bg: '#4cc35a',
-  help: 'حرّك اللاعب تبعك بإصبعك واضرب الطابة على جول صاحبك. أول واحد بيجيب جولين بيربح',
+  id: 'soccer', title: L('كرة القدم', 'Soccer', 'Futbol'), emoji: '⚽', bg: '#4cc35a',
+  help: L('حرّك اللاعب تبعك بإصبعك واضرب الطابة على جول صاحبك. أول واحد بيجيب جولين بيربح', 'Move your player with your finger and kick the ball into the other goal. First to 2 goals wins!', 'Oyuncunu parmağınla kaydır, topu arkadaşının kalesine at. İlk 2 golü atan kazanır!'),
   create(api){
     const OUT = '#1c1838', TARGET = 2, LIMIT = 60;
     const goals = [0, 0];
@@ -38,7 +38,7 @@ Duel.register({
 
     function goal(scorer){
       goals[scorer]++; lastScorer = scorer; api.sfx.point();
-      api.say('جوووول! ⚽', scorer, 1100);
+      api.say(api.L('جوووول! ⚽', 'Goooal! ⚽', 'Gooool! ⚽'), scorer, 1100);
       const g = geo();
       for(let k = 0; k < 40; k++) confetti.push({ x: ball.x, y: ball.y, vx: api.rand(-1, 1) * g.S * 0.9, vy: api.rand(-1, 1) * g.S * 0.9, life: api.rand(0.6, 1.2), col: ['#ffcd4d', '#fff', api.players[scorer].color][k % 3] });
       if(goals[scorer] >= TARGET){ over = true; setTimeout(() => api.win(scorer), 900); }
@@ -177,7 +177,7 @@ Duel.register({
           const ey = i === 0 ? H - g.gd / 2 : g.gd / 2;
           const lx = W / 2 - sx * (W / 2 - g.gx0 / 2 + 0), rx = W / 2 + sx * (W / 2 - g.gx0 / 2);
           const fs = Math.min(22, g.gd * 0.62);
-          api.text(c, 'أهداف: ' + api.AR(goals[i]), lx, ey, fs, '#fff7e8', i);
+          api.text(c, api.L('أهداف: ' + api.AR(goals[i]), 'Goals: ' + goals[i], 'Gol: ' + goals[i]), lx, ey, fs, '#fff7e8', i);
           api.text(c, '⏱ ' + api.AR(Math.max(0, Math.ceil(LIMIT - api.time))), rx, ey, fs, LIMIT - api.time < 10 ? '#ffcd4d' : '#fff7e8', i);
         }
         // ball
@@ -197,7 +197,7 @@ Duel.register({
         });
         for(const q of confetti){ c.fillStyle = q.col; c.globalAlpha = Math.min(1, q.life * 2); c.fillRect(q.x - 4, q.y - 4, 8, 8); }
         c.globalAlpha = 1;
-        if(api.time < 2.5) for(const i of [0, 1]) api.text(c, 'حرّك اللاعب 👆', W / 2, i === 0 ? H * 0.62 : H * 0.38, 22, '#fff7e8', i);
+        if(api.time < 2.5) for(const i of [0, 1]) api.text(c, api.L('حرّك اللاعب 👆', 'Move your player 👆', 'Oyuncunu kaydır 👆'), W / 2, i === 0 ? H * 0.62 : H * 0.38, 22, '#fff7e8', i);
       }
     };
   }

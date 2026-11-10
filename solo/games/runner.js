@@ -1,7 +1,7 @@
 /* Bobo runner: side-scrolling endless run through a park. Tap to jump (double jump in the air). 3 hearts. */
 Solo.register({
-  id: 'runner', title: 'بوبو الراكض', emoji: '🏃', bg: '#2fb36d',
-  help: 'اكبس لينطّ بوبو، واكبس مرة تانية بالهوا لنطّة أعلى. لم المصاري!',
+  id: 'runner', title: L('بوبو الراكض','Bobo Run','Koş Bobo'), emoji: '🏃', bg: '#2fb36d',
+  help: L('اكبس لينطّ بوبو، واكبس مرة تانية بالهوا لنطّة أعلى. لم المصاري!','Tap to make Bobo jump. Tap again in the air to jump higher. Grab the coins!','Bobo\'yu zıplatmak için dokun. Havada bir daha dokun, daha yükseğe zıplasın. Paraları topla!'),
   create(api){
     const emoji = (c, e, x, y, sz, r) => { c.fillStyle = '#000'; api.emoji(c, e, x, y, sz, r); };
     const OUT = '#1c1838';
@@ -124,8 +124,8 @@ Solo.register({
           if(hitTest(o)){
             o.hit = true; hearts--; inv = 1.6; api.sfx.hit(); B.mood = 'sad'; B.moodT = 1;
             burst(BX(), B.y, o.type === 'puddle' ? '#4fb6ff' : '#ff6b6b', 12, 0.6);
-            if(hearts <= 0){ over = true; overT = 0; api.sfx.bad(); api.toast('خلصوا القلوب!', 1300); }
-            else api.toast(o.type === 'puddle' ? 'تبلّل بوبو! 💦' : 'آخ! 💥', 800);
+            if(hearts <= 0){ over = true; overT = 0; api.sfx.bad(); api.toast(api.L('خلصوا القلوب!','No more hearts!','Kalpler bitti!'), 1300); }
+            else api.toast(o.type === 'puddle' ? api.L('تبلّل بوبو! 💦','Bobo got wet! 💦','Bobo ıslandı! 💦') : api.L('آخ! 💥','Ouch! 💥','Ay! 💥'), 800);
           }
         }
         for(const k of items){
@@ -194,14 +194,14 @@ Solo.register({
         }
         for(const q of parts){ c.globalAlpha = 1 - q.t / q.life; c.fillStyle = q.col; c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.283); c.fill(); }
         c.globalAlpha = 1;
-        for(const q of pops){ c.globalAlpha = 1 - q.t / 0.8; api.text(c, '+١', q.x, q.y - q.t * s * 0.15, s * 0.06, '#ffd34d'); }
+        for(const q of pops){ c.globalAlpha = 1 - q.t / 0.8; api.text(c, '+' + api.AR(1), q.x, q.y - q.t * s * 0.15, s * 0.06, '#ffd34d'); }
         c.globalAlpha = 1;
-        if(introT > 0) api.text(c, 'اكبس لتنطّ! 👆', W / 2, H * 0.45, s * 0.075, '#fff7e8');
+        if(introT > 0) api.text(c, api.L('اكبس لتنطّ! 👆','Tap to jump! 👆','Zıplamak için dokun! 👆'), W / 2, H * 0.45, s * 0.075, '#fff7e8');
         // HUD (capped size on tablets)
         { const s = Math.min(S(), 440);
         const ph = Math.max(40, s * 0.1);
         c.fillStyle = 'rgba(28,24,56,.72)'; c.beginPath(); c.roundRect(W / 2 - s * 0.2, 34 - ph / 2, s * 0.4, ph, ph / 2); c.fill();
-        api.text(c, '🏃 ' + api.AR(Math.floor(dist / MPX())) + ' م', W / 2, 35, ph * 0.5, '#fff7e8');
+        api.text(c, '🏃 ' + api.AR(Math.floor(dist / MPX())) + api.L(' م', ' m', ' m'), W / 2, 35, ph * 0.5, '#fff7e8');
         c.fillStyle = 'rgba(28,24,56,.72)'; c.beginPath(); c.roundRect(W - s * 0.26 - 8, 34 - ph / 2, s * 0.26, ph, ph / 2); c.fill();
         api.text(c, '🪙 ' + api.AR(coins), W - s * 0.13 - 8, 35, ph * 0.5, '#fff7e8');
         for(let i = 0; i < 3; i++) emoji(c, i < hearts ? '❤️' : '🤍', W / 2 + (i - 1) * s * 0.1, 34 + ph * 0.95, s * 0.07); }

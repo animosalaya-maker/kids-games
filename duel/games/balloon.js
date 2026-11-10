@@ -1,8 +1,8 @@
 /* Balloon pump. Both kids pump their balloon at the same time for 15 s. Both balloons burst at the same hidden size.
    Burst = you lose. When time is up (or both pressed "خلص!") the bigger balloon wins. */
 Duel.register({
-  id: 'balloon', title: 'نفخ البالون', emoji: '🎈', bg: '#ff5a5f',
-  help: 'اكبس لتنفخ البالون. الأكبر بيربح، بس إذا فقع بتخسر! اكبس خلص لتوقف',
+  id: 'balloon', title: L('نفخ البالون', 'Balloon Pump', 'Balon Şişirme'), emoji: '🎈', bg: '#ff5a5f',
+  help: L('اكبس لتنفخ البالون. الأكبر بيربح، بس إذا فقع بتخسر! اكبس خلص لتوقف', 'Tap to blow up the balloon. Biggest wins, but if it pops you lose! Tap Stop to stop', 'Balonu şişirmek için dokun. Büyük olan kazanır, ama patlarsa kaybedersin! Durmak için Dur\'a dokun'),
   create(api){
     const OUT = '#1c1838', DUR = 15, STEP = 0.034;
     const BURST = api.rand(0.6, 0.97);                 // same hidden limit for both kids
@@ -34,7 +34,7 @@ Duel.register({
         shards.push({ pl, x: cx + Math.cos(a) * r * 0.6, y: cy + Math.sin(a) * r * 0.6, vx: Math.cos(a) * v, vy: Math.sin(a) * v, rot: Math.random() * 6, va: api.rand(-12, 12), life: 1, sz: S() * api.rand(0.02, 0.05) });
       }
       api.tone(1400, 0.06, 'square', 0.18); api.tone(220, 0.35, 'sawtooth', 0.16, 0.01, 50); api.sfx.splash();
-      api.say('بووم! 💥', pl, 1300);
+      api.say(L('بووم! 💥', 'Boom! 💥', 'Bum! 💥'), pl, 1300);
       if(!ended){ ended = true; endW = 1 - pl; endAt = time + 1.4; verdict = { burst: pl }; }
     }
     function pump(pl){
@@ -170,16 +170,16 @@ Duel.register({
           c.fillStyle = 'rgba(28,24,56,.3)'; c.beginPath(); c.roundRect(b.x - b.w / 2, b.y - b.h / 2 + 5, b.w, b.h, b.h / 2); c.fill();
           c.fillStyle = st.stopped ? '#3fd47a' : '#ffcd4d'; c.strokeStyle = OUT; c.lineWidth = 4;
           c.beginPath(); c.roundRect(b.x - b.w / 2, b.y - b.h / 2, b.w, b.h, b.h / 2); c.fill(); c.stroke();
-          api.text(c, st.stopped ? 'خلّصت ✔' : 'خلص! ✋', b.x, b.y, b.h * 0.42, '#fff7e8', 0);
+          api.text(c, st.stopped ? L('خلّصت ✔', 'Done ✔', 'Bitti ✔') : L('خلص! ✋', 'Stop! ✋', 'Dur! ✋'), b.x, b.y, b.h * 0.42, '#fff7e8', 0);
           c.globalAlpha = 1;
           // timer + hint
           api.text(c, '⏱ ' + api.AR(left), W - s * 0.14, mid + hf * 0.16, s * 0.06, left <= 3 ? '#ff5a5f' : col.dark, 0);
-          if(st.taps === 0 && !ended) api.text(c, 'اكبس لتنفخ! 👆', W / 2, mid + hf * 0.5, s * 0.065, col.dark, 0);
+          if(st.taps === 0 && !ended) api.text(c, L('اكبس لتنفخ! 👆', 'Tap to blow! 👆', 'Şişirmek için dokun! 👆'), W / 2, mid + hf * 0.5, s * 0.065, col.dark, 0);
           if(verdict && !called){
             let m = '';
-            if(verdict.burst === pl) m = 'فقع بالونك! 😱';
-            else if(verdict.burst === 1 - pl) m = 'بالون رفيقك فقع! 🎉';
-            else if('big' in verdict) m = verdict.big === null ? 'نفس الحجم! 🤝' : verdict.big === pl ? 'بالونك أكبر! 🎉' : 'بالون رفيقك أكبر';
+            if(verdict.burst === pl) m = L('فقع بالونك! 😱', 'Your balloon popped! 😱', 'Balonun patladı! 😱');
+            else if(verdict.burst === 1 - pl) m = L('بالون رفيقك فقع! 🎉', 'Friend\'s balloon popped! 🎉', 'Arkadaşının balonu patladı! 🎉');
+            else if('big' in verdict) m = verdict.big === null ? L('نفس الحجم! 🤝', 'Same size! 🤝', 'Aynı boy! 🤝') : verdict.big === pl ? L('بالونك أكبر! 🎉', 'Yours is bigger! 🎉', 'Seninki daha büyük! 🎉') : L('بالون رفيقك أكبر', 'Friend\'s is bigger', 'Arkadaşınınki büyük');
             if(m){
               c.fillStyle = 'rgba(28,24,56,.7)'; c.beginPath(); c.roundRect(W / 2 - s * 0.4, mid + hf * 0.3 - s * 0.05, s * 0.8, s * 0.1, s * 0.05); c.fill();
               api.text(c, m, W / 2, mid + hf * 0.3, Math.min(s * 0.065, 28), '#ffcd4d', 0);
@@ -204,7 +204,7 @@ Duel.register({
           c.save(); c.translate(x, y); c.scale(0.6 + k * 2, 0.6 + k * 2); c.globalAlpha = 1 - k / 0.7;
           c.fillStyle = '#fff3a8'; c.strokeStyle = OUT; c.lineWidth = 3;
           c.beginPath(); for(let i = 0; i < 16; i++){ const a = i / 16 * Math.PI * 2, rr = i % 2 ? r * 0.45 : r * 0.9; c.lineTo(Math.cos(a) * rr, Math.sin(a) * rr); } c.closePath(); c.fill(); c.stroke();
-          api.text(c, 'بوب!', 0, 0, r * 0.4, '#ff5a5f', pl);
+          api.text(c, L('بوب!', 'Pop!', 'Pat!'), 0, 0, r * 0.4, '#ff5a5f', pl);
           c.restore();
         }
         c.globalAlpha = 1;

@@ -1,11 +1,11 @@
 /* Rock paper scissors. Each kid picks secretly with 3 big buttons, then 3-2-1 and the hands meet in the middle. First to 3 points wins. */
 Duel.register({
-  id: 'rps', title: 'حجرة ورقة مقص', emoji: '✊', bg: '#ff7aa8',
-  help: 'اختار حجرة أو ورقة أو مقص، والحجرة بتكسر المقص والمقص بيقص الورقة والورقة بتلف الحجرة',
+  id: 'rps', title: L('حجرة ورقة مقص', 'Rock Paper Scissors', 'Taş Kağıt Makas'), emoji: '✊', bg: '#ff7aa8',
+  help: L('اختار حجرة أو ورقة أو مقص، والحجرة بتكسر المقص والمقص بيقص الورقة والورقة بتلف الحجرة', 'Pick rock, paper or scissors. Rock breaks scissors, scissors cut paper, paper wraps rock', 'Taş, kağıt ya da makas seç. Taş makası kırar, makas kağıdı keser, kağıt taşı sarar'),
   create(api){
     const OUT = '#1c1838', GOAL = 3, LIMIT = 75, BEAT = 0.42;
-    const OPTS = [{ e: '✊', n: 'حجرة' }, { e: '✋', n: 'ورقة' }, { e: '✌️', n: 'مقص' }];
-    const BEATS = ['حجرة…', 'ورقة…', 'مقص!'];
+    const OPTS = [{ e: '✊', n: L('حجرة', 'Rock', 'Taş') }, { e: '✋', n: L('ورقة', 'Paper', 'Kağıt') }, { e: '✌️', n: L('مقص', 'Scissors', 'Makas') }];
+    const BEATS = [L('حجرة…', 'Rock…', 'Taş…'), L('ورقة…', 'Paper…', 'Kağıt…'), L('مقص!', 'Scissors!', 'Makas!')];
     const pts = [0, 0], pick = [null, null], press = [-1, -1], pressT = [0, 0];
     let stage = 'pick', st = 0, res = null, time = 0, ended = false, endAt = 0, endWinner = null, shake = 0;
     const S = () => Math.min(api.W, api.H);
@@ -119,10 +119,10 @@ Duel.register({
           drawHand(c, pl, ch, hx, hy, hs * scale, rot, alpha);
           // status text
           let msg, mc = col.dark;
-          if(ended && res) msg = res.w === pl || endWinner === pl ? 'ربحت! 🎉' : 'خسرت 😅';
-          else if(stage === 'pick') msg = pick[pl] === null ? 'اختار وحدة 👇' : (pick[other] === null ? 'استنى رفيقك… ⏳' : 'يلا!');
+          if(ended && res) msg = res.w === pl || endWinner === pl ? L('ربحت! 🎉', 'You win! 🎉', 'Kazandın! 🎉') : L('خسرت 😅', 'You lose 😅', 'Kaybettin 😅');
+          else if(stage === 'pick') msg = pick[pl] === null ? L('اختار وحدة 👇', 'Pick one 👇', 'Birini seç 👇') : (pick[other] === null ? L('استنى رفيقك… ⏳', 'Wait for your friend… ⏳', 'Arkadaşını bekle… ⏳') : L('يلا!', 'Go!', 'Haydi!'));
           else if(stage === 'reveal') msg = BEATS[Math.min(2, Math.floor(st / BEAT))];
-          else { msg = res.w === null ? 'تعادل! 🤝' : res.w === pl ? 'نقطة إلك! 🎉' : 'نقطة إلو'; mc = res.w === pl ? '#ffcd4d' : res.w === null ? '#fff7e8' : col.dark; }
+          else { msg = res.w === null ? L('تعادل! 🤝', 'Tie! 🤝', 'Berabere! 🤝') : res.w === pl ? L('نقطة إلك! 🎉', 'Your point! 🎉', 'Puan senin! 🎉') : L('نقطة إلو', 'Their point', 'Puan onun'); mc = res.w === pl ? '#ffcd4d' : res.w === null ? '#fff7e8' : col.dark; }
           api.text(c, msg, W / 2, mid + hf * 0.6, Math.min(s * 0.075, 30), mc, 0);
           // buttons
           const locked = pick[pl] !== null || stage !== 'pick' || ended;
@@ -141,7 +141,7 @@ Duel.register({
           if(pick[pl] !== null && stage === 'pick'){
             const g = btnGeo(1);
             c.fillStyle = 'rgba(28,24,56,.78)'; c.beginPath(); c.roundRect(W / 2 - g.s * 1.3, g.y - g.s * 0.2, g.s * 2.6, g.s * 0.4, g.s * 0.2); c.fill();
-            api.text(c, 'اخترت ✔', W / 2, g.y, g.s * 0.22, '#3fd47a', 0);
+            api.text(c, L('اخترت ✔', 'Picked ✔', 'Seçtin ✔'), W / 2, g.y, g.s * 0.22, '#3fd47a', 0);
           }
         });
       }

@@ -1,7 +1,7 @@
 /* Example game: tic-tac-toe. Turn based. Red (bottom) plays X, blue (top) plays O. */
 Duel.register({
-  id: 'tictactoe', title: 'إكس أو', emoji: '❌', bg: '#ff8fa3',
-  help: 'كل واحد بدوره بيكبس على مربع. اللي بيعمل ٣ ورا بعض بيربح',
+  id: 'tictactoe', title: L('إكس أو', 'Tic-Tac-Toe', 'XOX'), emoji: '❌', bg: '#ff8fa3',
+  help: L('كل واحد بدوره بيكبس على مربع. اللي بيعمل ٣ ورا بعض بيربح', 'Take turns tapping a square. Get 3 in a row to win!', 'Sırayla bir kareye dokun. Yan yana 3 tane yapan kazanır!'),
   create(api){
     const cells = Array(9).fill(-1);
     let turn = Math.random() < 0.5 ? 0 : 1, line = null, t = 0;
@@ -50,7 +50,7 @@ Duel.register({
         }
         for(const pl of [0, 1]){
           const y = pl === 0 ? H - 70 : 70;
-          api.text(c, turn === pl ? 'دورك! 👆' : 'استنى دورك', W / 2, y, 26, turn === pl ? api.players[pl].dark : 'rgba(28,24,56,.5)', pl);
+          api.text(c, turn === pl ? api.L('دورك! 👆', 'Your turn! 👆', 'Sıra sende! 👆') : api.L('استنى دورك', 'Wait your turn', 'Sıranı bekle'), W / 2, y, 26, turn === pl ? api.players[pl].dark : 'rgba(28,24,56,.5)', pl);
         }
       }
     };

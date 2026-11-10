@@ -1,7 +1,7 @@
 /* Bobo jumper: endless vertical bouncer. Bobo auto-bounces on clouds; hold the left/right half to steer (wraps around). */
 Solo.register({
-  id: 'jumper', title: 'قفز بوبو', emoji: '🦘', bg: '#7c5cff',
-  help: 'اكبس يمين أو شمال ليمشي بوبو، ونطّ على الغيمات لفوق',
+  id: 'jumper', title: L('قفز بوبو','Bobo Jump','Zıpla Bobo'), emoji: '🦘', bg: '#7c5cff',
+  help: L('اكبس يمين أو شمال ليمشي بوبو، ونطّ على الغيمات لفوق','Tap right or left to move Bobo. Jump up on the clouds!','Bobo\'yu yürütmek için sağa ya da sola dokun. Bulutlara zıpla!'),
   create(api){
     const emoji = (c, e, x, y, sz, r) => { c.fillStyle = '#000'; api.emoji(c, e, x, y, sz, r); };
     const OUT = '#1c1838';
@@ -103,7 +103,7 @@ Solo.register({
         for(const q of pops) q.t += dt; pops = pops.filter(q => q.t < 0.9);
         squash = Math.max(0, squash - dt * 4);
         if(moodT > 0){ moodT -= dt; if(moodT <= 0) mood = 'happy'; }
-        if(over){ overT += dt; B.vy += G() * dt; B.y += B.vy * dt; if(overT > 1.1) api.end({ score: heightM() + stars * 5, msg: heightM() > 80 ? 'وصلت لفوق كتير!' : undefined }); return; }
+        if(over){ overT += dt; B.vy += G() * dt; B.y += B.vy * dt; if(overT > 1.1) api.end({ score: heightM() + stars * 5, msg: heightM() > 80 ? api.L('وصلت لفوق كتير!','You went so high!','Çok yükseğe çıktın!') : undefined }); return; }
         const W = api.W, s = S(), r = R();
         // steering
         let dir = 0; for(const v of holds.values()) dir += v; dir = Math.sign(dir);
@@ -145,7 +145,7 @@ Solo.register({
         plats = plats.filter(p => p.y < camTop + api.H + s * 0.5);
         pickups = pickups.filter(k => !k.got && k.y < camTop + api.H + s * 0.2);
         // fell off
-        if(B.y - r > camTop + api.H){ over = true; overT = 0; B.vy = -JUMP() * 0.5; mood = 'sad'; api.sfx.bad(); api.toast('أوووه! وقع بوبو', 1300); }
+        if(B.y - r > camTop + api.H){ over = true; overT = 0; B.vy = -JUMP() * 0.5; mood = 'sad'; api.sfx.bad(); api.toast(api.L('أوووه! وقع بوبو','Oh no! Bobo fell','Eyvah! Bobo düştü'), 1300); }
       },
       draw(c){
         const W = api.W, H = api.H, s = S(), r = R(), hm = maxH;
@@ -177,7 +177,7 @@ Solo.register({
         drawB(B.x); if(B.x < r) drawB(B.x + W + 2 * r); if(B.x > W - r) drawB(B.x - W - 2 * r);
         for(const q of parts){ const sy = q.y - camTop; c.globalAlpha = 1 - q.t / q.life; c.fillStyle = q.col; c.strokeStyle = OUT; c.lineWidth = 1.5; c.beginPath(); c.arc(q.x, sy, q.r, 0, 6.283); c.fill(); c.stroke(); }
         c.globalAlpha = 1;
-        for(const q of pops){ c.globalAlpha = 1 - q.t / 0.9; api.text(c, '+٥', q.x, q.y - camTop - q.t * s * 0.15, s * 0.07, '#ffd34d'); }
+        for(const q of pops){ c.globalAlpha = 1 - q.t / 0.9; api.text(c, '+' + api.AR(5), q.x, q.y - camTop - q.t * s * 0.15, s * 0.07, '#ffd34d'); }
         c.globalAlpha = 1;
         // steering hints
         const held = new Set(holds.values());
@@ -190,10 +190,10 @@ Solo.register({
           c.fillStyle = OUT; c.beginPath(); c.moveTo(hx + sd * hs * 0.3, hy); c.lineTo(hx - sd * hs * 0.15, hy - hs * 0.28); c.lineTo(hx - sd * hs * 0.15, hy + hs * 0.28); c.closePath(); c.fill();
         }
         c.globalAlpha = 1;
-        if(introT > 0) api.text(c, 'اكبس يمين أو شمال 👆', W / 2, H * 0.62, s * 0.065, '#fff7e8');
+        if(introT > 0) api.text(c, api.L('اكبس يمين أو شمال 👆','Tap right or left 👆','Sağa ya da sola dokun 👆'), W / 2, H * 0.62, s * 0.065, '#fff7e8');
         // HUD
         const hud = Math.min(s, 440);
-        pill(c, W / 2, 34, hud * 0.42, '📏 ' + api.AR(heightM()) + ' م');
+        pill(c, W / 2, 34, hud * 0.42, '📏 ' + api.AR(heightM()) + api.L(' م', ' m', ' m'));
         pill(c, W - hud * 0.15, 34, hud * 0.22, '⭐ ' + api.AR(stars));
       }
     };

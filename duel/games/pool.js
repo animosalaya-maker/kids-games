@@ -1,7 +1,7 @@
 /* Simplified turn-based billiards. Red pockets the red balls, blue pockets the blue balls. Drag back like a slingshot to shoot the white ball. */
 Duel.register({
-  id: 'pool', title: 'البلياردو', emoji: '🎱', bg: '#3fa9ff',
-  help: 'بدورك، اسحب لورا بإصبعك متل النقّيفة وفلّت لتضرب الطابة البيضا. دخّل طابات لونك الثلاثة',
+  id: 'pool', title: L('البلياردو', 'Pool', 'Bilardo'), emoji: '🎱', bg: '#3fa9ff',
+  help: L('بدورك، اسحب لورا بإصبعك متل النقّيفة وفلّت لتضرب الطابة البيضا. دخّل طابات لونك الثلاثة', 'On your turn, pull back like a slingshot and let go to hit the white ball. Get your 3 balls in the holes!', 'Sıran gelince sapan gibi geri çek ve bırak, beyaz topa vur. Kendi rengindeki 3 topu deliklere sok!'),
   create(api){
     const OUT = '#1c1838', LIMIT = 90, NEED = 3;
     let turn = Math.random() < 0.5 ? 0 : 1;
@@ -58,8 +58,8 @@ Duel.register({
       const g = geo(); moving = false;
       if(sunk[shooter] >= NEED){ over = true; setTimeout(() => api.win(shooter), 700); return; }
       if(sunk[1 - shooter] >= NEED){ over = true; setTimeout(() => api.win(1 - shooter), 700); return; }
-      if(shotSunk.cue){ turn = 1 - shooter; placeCue(turn); api.say('الطابة البيضا فاتت! 😅', shooter, 1200); }
-      else if(shotSunk.own > 0){ turn = shooter; api.say('برافو! العب كمان 🎉', shooter, 1200); }
+      if(shotSunk.cue){ turn = 1 - shooter; placeCue(turn); api.say(api.L('الطابة البيضا فاتت! 😅', 'White ball fell in! 😅', 'Beyaz top düştü! 😅'), shooter, 1200); }
+      else if(shotSunk.own > 0){ turn = shooter; api.say(api.L('برافو! العب كمان 🎉', 'Yay! Go again 🎉', 'Bravo! Yine sen oyna 🎉'), shooter, 1200); }
       else turn = 1 - shooter;
       msgT = 1.2;
       void g;
@@ -215,8 +215,8 @@ Duel.register({
           if(!over){
             const my = turn === i && !moving;
             const ty = i === 0 ? mid + (g.y1 - mid) * 0.84 : mid - (mid - g.y0) * 0.84;
-            if(my) api.text(c, aim ? 'فلّت لتضرب!' : 'دورك! اسحب لورا 👆', W / 2, ty, Math.min(26, W * 0.065), '#fff7e8', i);
-            else if(!moving && turn !== i) api.text(c, 'استنى دورك', W / 2, ty, Math.min(20, W * 0.05), 'rgba(255,255,255,.55)', i);
+            if(my) api.text(c, aim ? api.L('فلّت لتضرب!', 'Let go to hit!', 'Vurmak için bırak!') : api.L('دورك! اسحب لورا 👆', 'Your turn! Pull back 👆', 'Sıra sende! Geri çek 👆'), W / 2, ty, Math.min(26, W * 0.065), '#fff7e8', i);
+            else if(!moving && turn !== i) api.text(c, api.L('استنى دورك', 'Wait your turn', 'Sıranı bekle'), W / 2, ty, Math.min(20, W * 0.05), 'rgba(255,255,255,.55)', i);
           }
         }
       }

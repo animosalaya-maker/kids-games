@@ -1,7 +1,7 @@
 /* Tug of war. One rope across the middle; tap your half fast to pull the knot to your line. */
 Duel.register({
-  id: 'tug', title: 'شد الحبل', emoji: '🪢', bg: '#ffa94d',
-  help: 'اكبس بسرعة على نصّك لتشد الحبل لعندك',
+  id: 'tug', title: L('شد الحبل', 'Tug of War', 'Halat Çekme'), emoji: '🪢', bg: '#ffa94d',
+  help: L('اكبس بسرعة على نصّك لتشد الحبل لعندك', 'Tap fast on your side to pull the rope to you', 'İpi kendine çekmek için kendi tarafına hızlı hızlı dokun'),
   create(api){
     const OUT = '#1c1838', DUR = 30, STEP = 0.042;
     let winner = -1, winAt = 0, time = 0, pos = 0, shown = 0, ended = false, ropeOff = 0;  // pos: +1 = knot on red (bottom) line, -1 = blue (top) line
@@ -128,7 +128,7 @@ Duel.register({
           c.save(); if(pl === 1){ c.translate(W, H); c.rotate(Math.PI); }
           const hy = H / 2 + lineD() * 0.5;
           api.text(c, '⏱ ' + api.AR(left), W * 0.8, hy, s * 0.06, left <= 5 ? '#ff5a5f' : '#fff7e8', 0);
-          if(time < 3) api.text(c, 'اكبس بسرعة! 👆', W * 0.27, hy, s * 0.055, api.players[pl].dark, 0);
+          if(time < 3) api.text(c, L('اكبس بسرعة! 👆', 'Tap fast! 👆', 'Hızlı dokun! 👆'), W * 0.27, hy, s * 0.055, api.players[pl].dark, 0);
           c.restore();
         }
       }

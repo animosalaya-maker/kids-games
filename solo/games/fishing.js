@@ -1,7 +1,7 @@
 /* Fishing: Bobo in a boat. Tap where to fish: the boat rows there and drops the hook straight down. 45-second round. */
 Solo.register({
-  id: 'fishing', title: 'صيد السمك', emoji: '🎣', bg: '#1fa2d6',
-  help: 'اكبس فوق السمكة، بوبو بيروح بالقارب وبنزّل الصنارة',
+  id: 'fishing', title: L('صيد السمك','Fishing','Balık Tutma'), emoji: '🎣', bg: '#1fa2d6',
+  help: L('اكبس فوق السمكة، بوبو بيروح بالقارب وبنزّل الصنارة','Tap a fish. Bobo goes there in his boat and drops the fishing line','Bir balığa dokun. Bobo kayıkla gidip oltayı atar'),
   create(api){
     const emoji = (c, e, x, y, sz, r) => { c.fillStyle = '#000'; api.emoji(c, e, x, y, sz, r); };
     const OUT = '#1c1838', ROUND = 45;
@@ -116,9 +116,9 @@ Solo.register({
         const left = ROUND - t;
         if(!ended && left <= 5 && Math.ceil(left) < lastWarn){ lastWarn = Math.ceil(left); api.tone(880, 0.08, 'square', 0.06); }
         if(!ended && left <= 0){
-          ended = true; endT = 0; api.toast('خلص الوقت! ⏰', 1300);
+          ended = true; endT = 0; api.toast(api.L('خلص الوقت! ⏰',"Time's up! ⏰",'Süre bitti! ⏰'), 1300);
         }
-        if(ended){ endT += dt; if(endT > 1.4) api.end({ score, win: true, msg: score >= 30 ? 'صيّاد شاطر كتير!' : score > 0 ? 'صيد حلو!' : 'جرّب مرة كمان!' }); }
+        if(ended){ endT += dt; if(endT > 1.4) api.end({ score, win: true, msg: score >= 30 ? api.L('صيّاد شاطر كتير!','Super fisher!','Süper balıkçı!') : score > 0 ? api.L('صيد حلو!','Nice catch!','Güzel av!') : api.L('جرّب مرة كمان!','Try one more time!','Bir daha dene!') }); }
         // boat
         if(hook.state === 'idle' && !ended){ boat.drift += dt; boat.target = api.clamp(boat.target + Math.sin(boat.drift * 0.6) * s * 0.05 * dt, bmin(), bmax()); }
         const dx = boat.target - boat.x, bs = s * 1.6 * dt;
@@ -147,8 +147,8 @@ Solo.register({
               caught++;
               if(f.k.junk){
                 funny = 1.2; mood = 'sad'; moodT = 1.2; api.sfx.bad();
-                api.toast(f.k.crab ? 'قرصني السلطعون! 🦀😂' : 'جزمة؟! 😂', 1100);
-                pops.push({ str: '٠', x: tip.x, y: tip.y, t: 0 });
+                api.toast(f.k.crab ? api.L('قرصني السلطعون! 🦀😂','The crab pinched me! 🦀😂','Yengeç beni çimdikledi! 🦀😂') : api.L('جزمة؟! 😂','A boot?! 😂','Çizme mi?! 😂'), 1100);
+                pops.push({ str: api.AR(0), x: tip.x, y: tip.y, t: 0 });
               } else {
                 score += f.k.pts; mood = 'happy'; moodT = 1; api.sfx.coin(); if(f.k.pts >= 3) api.sfx.good();
                 pops.push({ str: '+' + api.AR(f.k.pts), x: tip.x, y: tip.y, t: 0 });
@@ -226,9 +226,9 @@ Solo.register({
         for(const f of flyers){ const k = f.t / 0.7, x = f.x0 + (f.x1 - f.x0) * k, y = f.y0 + (f.y1 - f.y0) * k - Math.sin(k * Math.PI) * s * 0.15; c.save(); c.translate(x, y); drawCreature(c, f.k, s * 0.1 * (1 - k * 0.4), t, k * 6); c.restore(); }
         for(const q of parts){ c.globalAlpha = 1 - q.t / q.life; c.fillStyle = q.col; c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.283); c.fill(); }
         c.globalAlpha = 1;
-        for(const q of pops){ c.globalAlpha = 1 - Math.max(0, q.t - 0.5) * 2; api.text(c, q.str, q.x, q.y - s * 0.05 - q.t * s * 0.12, s * 0.085, q.str === '٠' ? '#ffb3b3' : '#ffd34d'); }
+        for(const q of pops){ c.globalAlpha = 1 - Math.max(0, q.t - 0.5) * 2; api.text(c, q.str, q.x, q.y - s * 0.05 - q.t * s * 0.12, s * 0.085, q.str === api.AR(0) ? '#ffb3b3' : '#ffd34d'); }
         c.globalAlpha = 1;
-        if(introT > 0) api.text(c, 'اكبس على سمكة 👆', W / 2, wy + (fl - wy) * 0.45, s * 0.07, '#fff7e8');
+        if(introT > 0) api.text(c, api.L('اكبس على سمكة 👆','Tap a fish 👆','Bir balığa dokun 👆'), W / 2, wy + (fl - wy) * 0.45, s * 0.07, '#fff7e8');
         // HUD (capped size on tablets)
         { const s = Math.min(S(), 440);
         const ph = Math.max(40, s * 0.1), left = Math.max(0, Math.ceil(ROUND - t));

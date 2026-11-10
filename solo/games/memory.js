@@ -1,7 +1,7 @@
 /* Memory: flip two cards, find matching pictures. 3 rounds: 3, 6, then 8 pairs. Bobo cheers from the top. */
 Solo.register({
-  id: 'memory', title: 'الذاكرة', emoji: '🃏', bg: '#ff8fa3',
-  help: 'اقلب البطاقات ولاقي كل صورتين متل بعض',
+  id: 'memory', title: L('الذاكرة','Memory','Hafıza'), emoji: '🃏', bg: '#ff8fa3',
+  help: L('اقلب البطاقات ولاقي كل صورتين متل بعض','Flip the cards and find two pictures that match','Kartları çevir, aynı iki resmi bul'),
   create(api){
     const OUT = '#1c1838';
     const PICS = ['🐶','🐱','🐰','🦊','🐻','🐼','🐸','🐵','🦁','🐷','🐮','🐥','🐙','🦄','🐢','🍎','🍌','🍓','🍉','🍇','🍒','🍍','🥕'];
@@ -66,7 +66,7 @@ Solo.register({
         if(found === ROUNDS[round].pairs){
           const P = ROUNDS[round].pairs, bonus = Math.max(0, 2 * P - moves) * 5;
           score += bonus; doneT = 0; setMood('wow', 2.2); api.sfx.coin();
-          api.toast(round < 2 ? 'برافو! 🎉' : 'ذاكرة قوية! 🧠', 1500);
+          api.toast(round < 2 ? api.L('برافو! 🎉','Well done! 🎉','Aferin! 🎉') : api.L('ذاكرة قوية! 🧠','Super memory! 🧠','Süper hafıza! 🧠'), 1500);
           if(bonus > 0) bonusTxt = { s: '+' + api.AR(bonus) + ' ⭐', t: 0 };
           for(const cd of cards) burst(cd.x, cd.y, 4, true);
         }
@@ -118,7 +118,7 @@ Solo.register({
         c.restore();
         c.beginPath(); c.roundRect(-w / 2, -h / 2, w, h, w * 0.16); c.stroke();
         c.fillStyle = '#fff7e8'; c.beginPath(); c.arc(0, 0, w * 0.26, 0, Math.PI * 2); c.fill(); c.lineWidth = Math.max(2, lw() * 0.8); c.stroke();
-        api.text(c, '؟', 0, w * 0.02, w * 0.36, col[0]);
+        api.text(c, api.L('؟','?','?'), 0, w * 0.02, w * 0.36, col[0]);
       }
       c.restore();
       if(cd.matched && face){
@@ -150,7 +150,7 @@ Solo.register({
           doneT += dt;
           if(doneT > 1.9){
             round++;
-            if(round >= ROUNDS.length){ doneT = -99; api.end({ score, win: true, msg: 'ذاكرة قوية! 🧠' }); }
+            if(round >= ROUNDS.length){ doneT = -99; api.end({ score, win: true, msg: api.L('ذاكرة قوية! 🧠','Super memory! 🧠','Süper hafıza! 🧠') }); }
             else deal();
           }
         }
@@ -166,7 +166,7 @@ Solo.register({
         api.bobo(c, L.boboX, L.boboY - jump, L.boboR, mood, look, t);
         const ph = Math.max(40, s * 0.1), py = 10 + ph / 2;
         const pw = Math.min((W / 2 - L.boboR * 1.3) - 70, s * 0.36);
-        pill(c, W - 8 - pw / 2, py, 'جولة ' + api.AR(round + 1) + '/' + api.AR(ROUNDS.length), pw);
+        pill(c, W - 8 - pw / 2, py, api.L('جولة ','Round ','Tur ') + api.AR(round + 1) + '/' + api.AR(ROUNDS.length), pw);
         c.save(); const hs = 1 + hudPop * 0.15, hx = 64 + pw / 2; c.translate(hx, py); c.scale(hs, hs);
         pill(c, 0, 0, '👆 ' + api.AR(moves), pw); c.restore();
         if(bonusTxt) api.text(c, bonusTxt.s, W / 2, L.boboY + L.boboR * 1.6 - bonusTxt.t * s * 0.05, s * 0.08, '#ffd23f');

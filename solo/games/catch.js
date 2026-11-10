@@ -1,7 +1,7 @@
 /* Fruit catch: fruits fall from the trees, drag Bobo and his basket to catch them. Rocks and dry leaves cost a heart. */
 Solo.register({
-  id: 'catch', title: 'لقط الفواكه', emoji: '🧺', bg: '#ff9f1c',
-  help: 'حرّك بوبو يمين وشمال ليلقط الفواكه بالسلة، وانتبه من الحجار والورق اليابس',
+  id: 'catch', title: L('لقط الفواكه','Fruit Catch','Meyve Yakala'), emoji: '🧺', bg: '#ff9f1c',
+  help: L('حرّك بوبو يمين وشمال ليلقط الفواكه بالسلة، وانتبه من الحجار والورق اليابس','Move Bobo left and right to catch fruit in the basket. Watch out for rocks and dry leaves!','Bobo\'yu sağa sola götür, meyveleri sepete topla. Taşlara ve kuru yapraklara dikkat et!'),
   create(api){
     const emoji = (c, e, x, y, sz, r) => { c.fillStyle = '#000'; api.emoji(c, e, x, y, sz, r); };
     const OUT = '#1c1838';
@@ -74,7 +74,7 @@ Solo.register({
         const prev = B.x;
         B.x += (B.target - B.x) * Math.min(1, dt * 14);
         B.vx = (B.x - prev) / Math.max(dt, 0.001);
-        if(over){ overT += dt; if(overT > 1.3) api.end({ score, msg: score >= 40 ? 'سلة مليانة!' : undefined }); }
+        if(over){ overT += dt; if(overT > 1.3) api.end({ score, msg: score >= 40 ? api.L('سلة مليانة!','A full basket!','Sepet doldu!') : undefined }); }
         // spawning
         if(!over){ nextSpawn -= dt; if(nextSpawn <= 0){ spawn(); nextSpawn = spawnGap() * api.rand(0.8, 1.2); } }
         const rim = RIM(), gy = GROUNDY();
@@ -90,8 +90,8 @@ Solo.register({
                 if(inv <= 0){
                   hearts--; inv = 1.2; shake = 1; mood = 'sad'; moodT = 1; streak = 0; api.sfx.hit();
                   burst(it.x, rim, it.e === '🍂' ? '#c98a4b' : '#a3a8b8', 10, 0.5);
-                  if(hearts <= 0){ over = true; overT = 0; api.sfx.bad(); api.toast('خلصوا القلوب!', 1300); }
-                  else api.toast(it.e === '🍂' ? 'ورق يابس! 🍂' : 'حجرة! 🪨', 800);
+                  if(hearts <= 0){ over = true; overT = 0; api.sfx.bad(); api.toast(api.L('خلصوا القلوب!','No more hearts!','Kalpler bitti!'), 1300); }
+                  else api.toast(it.e === '🍂' ? api.L('ورق يابس! 🍂','Dry leaf! 🍂','Kuru yaprak! 🍂') : api.L('حجرة! 🪨','A rock! 🪨','Taş! 🪨'), 800);
                 }
                 it.state = 'bounce'; it.vy = -s * 0.8; it.vx = (it.x < B.x ? -1 : 1) * s * 0.5;
               } else {
@@ -100,7 +100,7 @@ Solo.register({
                 if(it.kind === 'gold'){ api.sfx.good(); api.sfx.coin(); burst(it.x, rim, '#ffd34d', 20, 0.8); }
                 else { api.sfx.pop(); api.tone(600 + Math.min(12, streak) * 40, 0.08, 'triangle', 0.09, 0.03); burst(it.x, rim, fruitCol(it.e), 8, 0.45); }
                 pops.push({ str: '+' + api.AR(pts), x: it.x, y: rim - s * 0.06, t: 0, gold: it.kind === 'gold' });
-                if(streak > 0 && streak % 10 === 0){ api.toast('برافو! ' + api.AR(streak) + ' ورا بعض ⭐', 1000); api.sfx.win(); }
+                if(streak > 0 && streak % 10 === 0){ api.toast(api.L('برافو! ' + api.AR(streak) + ' ورا بعض ⭐', 'Well done! ' + api.AR(streak) + ' in a row ⭐', 'Aferin! Üst üste ' + api.AR(streak) + ' ⭐'), 1000); api.sfx.win(); }
               }
             } else if(it.y > gy - it.size * 0.3){
               it.state = 'ground'; it.t = 0; it.y = gy - it.size * 0.3;
@@ -171,7 +171,7 @@ Solo.register({
         c.globalAlpha = 1;
         c.restore();
         if(introT > 0){
-          api.text(c, 'اسحب بوبو يمين وشمال 👆', W / 2, H * 0.5, s * 0.065, '#fff7e8');
+          api.text(c, api.L('اسحب بوبو يمين وشمال 👆','Drag Bobo left and right 👆','Bobo\'yu sağa sola kaydır 👆'), W / 2, H * 0.5, Math.min(s * 0.065, W * 0.058), '#fff7e8');
           const hx = W / 2 + Math.sin(t * 3) * s * 0.18; emoji(c, '👆', hx, BY() + s * 0.02, s * 0.1);
         }
         // HUD (capped size on tablets)

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>عالم بوبو</title>
+<title data-en="Bobo World" data-tr="Bobo Dünyası">عالم بوبو</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="عالم بوبو: ٣٩ لعبة للأطفال، عملات وخزانة لبوبو وهدية كل يوم. بدون إعلانات.">
 <meta name="theme-color" content="#1c1838">
@@ -36,6 +36,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 .brand{flex:1;min-width:0}
 .brand h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8.5vw,44px);line-height:1;margin:0;color:var(--gold);text-shadow:0 4px 0 var(--face)}
 .brand span{color:var(--muted);font-size:14px}
+.lang-btn{flex:none;border:0;width:44px;height:44px;border-radius:14px;background:var(--night-3);font-size:22px;box-shadow:0 4px 0 var(--face)}
 .coins{flex:none;display:flex;align-items:center;gap:6px;background:var(--night-3);border-radius:999px;padding:8px 14px;font-family:var(--display);font-weight:800;font-size:22px;font-variant-numeric:tabular-nums;box-shadow:0 4px 0 var(--face)}
 
 .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -118,77 +119,84 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
 <body>
 <div class="wrap">
   <header class="top">
-    <canvas id="avatar" width="200" height="200" aria-label="بوبو"></canvas>
-    <div class="brand"><h1>عالم بوبو</h1><span>العب، اجمع عملات، ولبّس بوبو</span></div>
-    <div class="coins" aria-label="العملات">🪙 <span id="coinCount">٠</span></div>
+    <canvas id="avatar" width="200" height="200" aria-label="بوبو" data-en-aria="Bobo" data-tr-aria="Bobo"></canvas>
+    <div class="brand"><h1 data-en="Bobo World" data-tr="Bobo Dünyası">عالم بوبو</h1><span data-en="Play, collect coins, dress up Bobo" data-tr="Oyna, jeton topla, Bobo'yu giydir">العب، اجمع عملات، ولبّس بوبو</span></div>
+    <button class="lang-btn" id="langBtn" aria-label="اللغة" data-en-aria="Language" data-tr-aria="Dil">🌐</button>
+    <div class="coins" aria-label="العملات" data-en-aria="Coins" data-tr-aria="Jetonlar">🪙 <span id="coinCount">٠</span></div>
   </header>
 
   <div class="row3">
     <button class="pill-btn" id="giftBtn"><span class="ic">🎁</span><b id="giftT">هدية اليوم</b><small id="giftS">افتحها!</small></button>
-    <button class="pill-btn" id="closetBtn"><span class="ic">👕</span><b>الخزانة</b><small>لبّس بوبو</small></button>
-    <button class="pill-btn" id="albumBtn"><span class="ic">🏅</span><b>الملصقات</b><small id="albumS">٠ من ١٦</small></button>
+    <button class="pill-btn" id="closetBtn"><span class="ic">👕</span><b data-en="Wardrobe" data-tr="Dolap">الخزانة</b><small data-en="Dress Bobo" data-tr="Bobo'yu giydir">لبّس بوبو</small></button>
+    <button class="pill-btn" id="albumBtn"><span class="ic">🏅</span><b data-en="Stickers" data-tr="Çıkartmalar">الملصقات</b><small id="albumS">٠ من ١٦</small></button>
   </div>
 
   <section class="sec">
-    <div class="sec-h"><h2>العب لحالك</h2><span>👤 لاعب واحد</span></div>
+    <div class="sec-h"><h2 data-en="Play alone" data-tr="Tek başına oyna">العب لحالك</h2><span data-en="👤 1 player" data-tr="👤 1 oyuncu">👤 لاعب واحد</span></div>
     <div class="tiles" id="soloTiles"></div>
   </section>
 
   <section class="sec">
-    <div class="sec-h"><h2>العب مع أصحابك</h2><span>👥 على نفس الجوال</span></div>
+    <div class="sec-h"><h2 data-en="Play with friends" data-tr="Arkadaşlarınla oyna">العب مع أصحابك</h2><span data-en="👥 on one phone" data-tr="👥 tek telefonda">👥 على نفس الجوال</span></div>
     <div class="tiles" id="friendTiles"></div>
   </section>
 
-  <button class="save-btn" id="saveBtn">💾 حفظ اللعب ونقله لجوال تاني</button>
-  <p class="foot">بدون إعلانات · بيشتغل بدون إنترنت · <a href="privacy.html">الخصوصية</a></p>
+  <button class="save-btn" id="saveBtn" data-en="💾 Save progress / move to another phone" data-tr="💾 İlerlemeyi kaydet / başka telefona taşı">💾 حفظ اللعب ونقله لجوال تاني</button>
+  <p class="foot"><span data-en="No ads · Works offline · " data-tr="Reklam yok · İnternetsiz çalışır · ">بدون إعلانات · بيشتغل بدون إنترنت · </span><a href="privacy.html" data-en="Privacy" data-tr="Gizlilik">الخصوصية</a></p>
 </div>
 
 <div class="sheet" id="giftSheet" hidden><div class="card">
-  <button class="x" data-close aria-label="سكّر">✕</button>
-  <h2 id="gH">هدية اليوم</h2>
-  <button class="gift-box" id="giftBox" aria-label="افتح الهدية">🎁</button>
+  <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
+  <h2 id="gH" data-en="Today's gift" data-tr="Günün hediyesi">هدية اليوم</h2>
+  <button class="gift-box" id="giftBox" aria-label="افتح الهدية" data-en-aria="Open the gift" data-tr-aria="Hediyeyi aç">🎁</button>
   <div class="gift-amt" id="gAmt" hidden></div>
-  <p id="gP">اكبس عالهدية لتفتحها</p>
+  <p id="gP" data-en="Tap the gift to open it" data-tr="Açmak için hediyeye dokun">اكبس عالهدية لتفتحها</p>
   <div class="streak" id="gStreak"></div>
-  <p style="font-size:13px">ارجع كل يوم، والهدية بتكبر لـ ٧ أيام ورا بعض</p>
+  <p style="font-size:13px" data-en="Come back every day: the gift grows for 7 days in a row" data-tr="Her gün gel: hediye 7 gün boyunca büyür">ارجع كل يوم، والهدية بتكبر لـ ٧ أيام ورا بعض</p>
 </div></div>
 
 <div class="sheet" id="closetSheet" hidden><div class="card">
-  <button class="x" data-close aria-label="سكّر">✕</button>
-  <h2>خزانة بوبو</h2>
-  <canvas id="closetCv" width="400" height="380" aria-label="بوبو بلبسه"></canvas>
+  <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
+  <h2 data-en="Bobo's wardrobe" data-tr="Bobo'nun dolabı">خزانة بوبو</h2>
+  <canvas id="closetCv" width="400" height="380" aria-label="بوبو بلبسه" data-en-aria="Bobo in his outfit" data-tr-aria="Bobo kıyafetiyle"></canvas>
   <div class="coins" style="box-shadow:none">🪙 <span id="coinCount2">٠</span></div>
-  <div class="tabs"><button data-tab="color" aria-pressed="true">الألوان</button><button data-tab="hat" aria-pressed="false">القبعات</button><button data-tab="glasses" aria-pressed="false">النضارات</button></div>
+  <div class="tabs"><button data-tab="color" aria-pressed="true" data-en="Colours" data-tr="Renkler">الألوان</button><button data-tab="hat" aria-pressed="false" data-en="Hats" data-tr="Şapkalar">القبعات</button><button data-tab="glasses" aria-pressed="false" data-en="Glasses" data-tr="Gözlükler">النضارات</button></div>
   <div class="items" id="items"></div>
-  <p id="closetMsg" style="font-size:14px;min-height:1.5em">العب أكتر لتجمع عملات 🪙</p>
+  <p id="closetMsg" style="font-size:14px;min-height:1.5em" data-en="Play more to collect coins 🪙" data-tr="Jeton toplamak için daha çok oyna 🪙">العب أكتر لتجمع عملات 🪙</p>
 </div></div>
 
 <div class="sheet" id="albumSheet" hidden><div class="card">
-  <button class="x" data-close aria-label="سكّر">✕</button>
-  <h2>ألبوم الملصقات</h2>
+  <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
+  <h2 data-en="Sticker album" data-tr="Çıkartma albümü">ألبوم الملصقات</h2>
   <p id="albumP">العب واجمع كل الملصقات!</p>
   <div class="stickers" id="stickers"></div>
 </div></div>
 
 <div class="sheet" id="saveSheet" hidden><div class="card">
-  <button class="x" data-close aria-label="سكّر">✕</button>
-  <h2>حفظ اللعب 💾</h2>
+  <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
+  <h2 data-en="Save progress 💾" data-tr="İlerlemeyi kaydet 💾">حفظ اللعب 💾</h2>
   <p>اللعب بينحفظ لحاله على هالجوال. لتنقله لجوال تاني أو تحفظه عندك، انسخ هالرمز وخبّيه (مثلاً ابعته لحالك عالواتساب).</p>
-  <textarea id="codeOut" readonly aria-label="رمز الحفظ"></textarea>
-  <div class="row-btns"><button class="small-btn gold" id="copyBtn">انسخ الرمز</button></div>
-  <p style="margin-top:6px">عندك رمز من جوال تاني؟ حطّه هون:</p>
-  <textarea id="codeIn" aria-label="حط الرمز هون" placeholder="BOBO-..."></textarea>
-  <div class="row-btns"><button class="small-btn" id="restoreBtn">رجّع اللعب</button></div>
+  <textarea id="codeOut" readonly aria-label="رمز الحفظ" data-en-aria="Save code" data-tr-aria="Kayıt kodu"></textarea>
+  <div class="row-btns"><button class="small-btn gold" id="copyBtn" data-en="Copy code" data-tr="Kodu kopyala">انسخ الرمز</button></div>
+  <p style="margin-top:6px" data-en="Have a code from another phone? Paste it here:" data-tr="Başka telefondan kodun mu var? Buraya yapıştır:">عندك رمز من جوال تاني؟ حطّه هون:</p>
+  <textarea id="codeIn" aria-label="حط الرمز هون" data-en-aria="Paste the code here" data-tr-aria="Kodu buraya yapıştır" placeholder="BOBO-..."></textarea>
+  <div class="row-btns"><button class="small-btn" id="restoreBtn" data-en="Restore" data-tr="Geri yükle">رجّع اللعب</button></div>
   <p id="saveMsg" style="min-height:1.5em;font-weight:700"></p>
+</div></div>
+
+<div class="sheet" id="langSheet" hidden><div class="card">
+  <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
+  <h2>🌐</h2>
+  <div class="row-btns" id="langList" style="flex-direction:column;width:100%"></div>
 </div></div>
 
 <script src="world.js"></script>
 <script>
 (function(){
 'use strict';
-const W = window.World, AR = W.AR;
-const DUEL = [{"id": "tictactoe", "title": "إكس أو", "emoji": "❌", "bg": "#ff8fa3"}, {"id": "soccer", "title": "كرة القدم", "emoji": "⚽", "bg": "#4cc35a"}, {"id": "pong", "title": "تنس الطاولة", "emoji": "🏓", "bg": "#2fb36d"}, {"id": "pool", "title": "البلياردو", "emoji": "🎱", "bg": "#3fa9ff"}, {"id": "basketball", "title": "السلة", "emoji": "🏀", "bg": "#ff8a3d"}, {"id": "snake", "title": "الأفعى", "emoji": "🐍", "bg": "#7c5cff"}, {"id": "cars", "title": "سباق السيارات", "emoji": "🏎️", "bg": "#5b6475"}, {"id": "paint", "title": "حرب الألوان", "emoji": "🎨", "bg": "#ff7aa8"}, {"id": "sumo", "title": "دفّش برّا", "emoji": "🥊", "bg": "#ffb347"}, {"id": "darts", "title": "الأسهم والجذع", "emoji": "🎯", "bg": "#b07cff"}, {"id": "statue", "title": "ضو أحمر ضو أخضر", "emoji": "🚦", "bg": "#3fd47a"}, {"id": "slap", "title": "ضربة الكف", "emoji": "👋", "bg": "#2ec4b6"}, {"id": "coins", "title": "جمع المصاري", "emoji": "💰", "bg": "#ff6f61"}, {"id": "fruit", "title": "تقطيع الفواكه", "emoji": "🍉", "bg": "#8e5cf7"}, {"id": "flappy", "title": "العصفور الطاير", "emoji": "🐤", "bg": "#54c7ec"}, {"id": "chop", "title": "الحطّاب", "emoji": "🪓", "bg": "#5fbf4a"}, {"id": "tug", "title": "شد الحبل", "emoji": "🪢", "bg": "#ffa94d"}, {"id": "rps", "title": "حجرة ورقة مقص", "emoji": "✊", "bg": "#ff7aa8"}, {"id": "bowling", "title": "البولينغ", "emoji": "🎳", "bg": "#5b6cff"}, {"id": "balloon", "title": "نفخ البالون", "emoji": "🎈", "bg": "#ff5a5f"}, {"id": "archery", "title": "الرماية", "emoji": "🏹", "bg": "#2ec4b6"}, {"id": "mathduel", "title": "مين أسرع بالحساب", "emoji": "🧮", "bg": "#ffb020"}];
-const SOLO = [{"id": "memory", "title": "الذاكرة", "emoji": "🃏", "bg": "#ff8fa3"}, {"id": "letters", "title": "صيد الحروف", "emoji": "🔤", "bg": "#4fb3ff"}, {"id": "math", "title": "حساب بوبو", "emoji": "➕", "bg": "#ffb020"}, {"id": "colors", "title": "فقاعات الألوان", "emoji": "🎈", "bg": "#ff5fa2"}, {"id": "jumper", "title": "قفز بوبو", "emoji": "🦘", "bg": "#7c5cff"}, {"id": "runner", "title": "بوبو الراكض", "emoji": "🏃", "bg": "#2fb36d"}, {"id": "stack", "title": "برج المكعبات", "emoji": "🧱", "bg": "#ff7a59"}, {"id": "fishing", "title": "صيد السمك", "emoji": "🎣", "bg": "#1fa2d6"}, {"id": "puzzle", "title": "البازل", "emoji": "🧩", "bg": "#3fd47a"}, {"id": "shapes", "title": "الأشكال", "emoji": "🔺", "bg": "#9b6bff"}, {"id": "catch", "title": "لقط الفواكه", "emoji": "🧺", "bg": "#ff9f1c"}, {"id": "peek", "title": "وين بوبو؟", "emoji": "🕳️", "bg": "#5fbf4a"}];
+const W = window.World, AR = W.AR, L = window.L;
+const DUEL = [{"id": "tictactoe", "title": "إكس أو", "emoji": "❌", "bg": "#ff8fa3"}, {"id": "soccer", "title": "كرة القدم", "emoji": "⚽", "bg": "#4cc35a"}, {"id": "pong", "title": "تنس الطاولة", "emoji": "🏓", "bg": "#2fb36d"}, {"id": "pool", "title": "البلياردو", "emoji": "🎱", "bg": "#3fa9ff"}, {"id": "basketball", "title": "السلة", "emoji": "🏀", "bg": "#ff8a3d"}, {"id": "snake", "title": "الأفعى", "emoji": "🐍", "bg": "#7c5cff"}, {"id": "cars", "title": "سباق السيارات", "emoji": "🏎️", "bg": "#5b6475"}, {"id": "paint", "title": "حرب الألوان", "emoji": "🎨", "bg": "#ff7aa8"}, {"id": "sumo", "title": "دفّش برّا", "emoji": "🥊", "bg": "#ffb347"}, {"id": "darts", "title": "الأسهم والجذع", "emoji": "🎯", "bg": "#b07cff"}, {"id": "statue", "title": "ضو أحمر ضو أخضر", "emoji": "🚦", "bg": "#3fd47a"}, {"id": "slap", "title": {"ar": "ضربة الكف", "en": "Hand Slap", "tr": "Şaplak"}, "emoji": "👋", "bg": "#2ec4b6"}, {"id": "coins", "title": {"ar": "جمع المصاري", "en": "Coin Grab", "tr": "Para Topla"}, "emoji": "💰", "bg": "#ff6f61"}, {"id": "fruit", "title": {"ar": "تقطيع الفواكه", "en": "Fruit Slice", "tr": "Meyve Kesme"}, "emoji": "🍉", "bg": "#8e5cf7"}, {"id": "flappy", "title": {"ar": "العصفور الطاير", "en": "Flying Bird", "tr": "Uçan Kuş"}, "emoji": "🐤", "bg": "#54c7ec"}, {"id": "chop", "title": {"ar": "الحطّاب", "en": "Woodcutter", "tr": "Oduncu"}, "emoji": "🪓", "bg": "#5fbf4a"}, {"id": "tug", "title": {"ar": "شد الحبل", "en": "Tug of War", "tr": "Halat Çekme"}, "emoji": "🪢", "bg": "#ffa94d"}, {"id": "rps", "title": {"ar": "حجرة ورقة مقص", "en": "Rock Paper Scissors", "tr": "Taş Kağıt Makas"}, "emoji": "✊", "bg": "#ff7aa8"}, {"id": "bowling", "title": {"ar": "البولينغ", "en": "Bowling", "tr": "Bovling"}, "emoji": "🎳", "bg": "#5b6cff"}, {"id": "balloon", "title": {"ar": "نفخ البالون", "en": "Balloon Pump", "tr": "Balon Şişirme"}, "emoji": "🎈", "bg": "#ff5a5f"}, {"id": "archery", "title": {"ar": "الرماية", "en": "Archery", "tr": "Okçuluk"}, "emoji": "🏹", "bg": "#2ec4b6"}, {"id": "mathduel", "title": {"ar": "مين أسرع بالحساب", "en": "Math Race", "tr": "Hızlı Hesap"}, "emoji": "🧮", "bg": "#ffb020"}];
+const SOLO = [{"id": "memory", "title": {"ar": "الذاكرة", "en": "Memory", "tr": "Hafıza"}, "emoji": "🃏", "bg": "#ff8fa3"}, {"id": "letters", "title": {"ar": "صيد الحروف", "en": "Letter Catch", "tr": "Harf Avı"}, "emoji": "🔤", "bg": "#4fb3ff"}, {"id": "math", "title": {"ar": "حساب بوبو", "en": "Bobo Math", "tr": "Bobo ile Matematik"}, "emoji": "➕", "bg": "#ffb020"}, {"id": "colors", "title": {"ar": "فقاعات الألوان", "en": "Color Balloons", "tr": "Renkli Balonlar"}, "emoji": "🎈", "bg": "#ff5fa2"}, {"id": "jumper", "title": "قفز بوبو", "emoji": "🦘", "bg": "#7c5cff"}, {"id": "runner", "title": "بوبو الراكض", "emoji": "🏃", "bg": "#2fb36d"}, {"id": "stack", "title": "برج المكعبات", "emoji": "🧱", "bg": "#ff7a59"}, {"id": "fishing", "title": "صيد السمك", "emoji": "🎣", "bg": "#1fa2d6"}, {"id": "puzzle", "title": "البازل", "emoji": "🧩", "bg": "#3fd47a"}, {"id": "shapes", "title": {"ar": "الأشكال", "en": "Shapes", "tr": "Şekiller"}, "emoji": "🔺", "bg": "#9b6bff"}, {"id": "catch", "title": "لقط الفواكه", "emoji": "🧺", "bg": "#ff9f1c"}, {"id": "peek", "title": "وين بوبو؟", "emoji": "🕳️", "bg": "#5fbf4a"}];
 function drawBobo(c, cx, cy, r, t, look, state, pal){
   c.save(); c.translate(cx, cy);
   const nap = state === 'nap', chase = state === 'chase', tickle = state === 'tickle';
@@ -250,21 +258,22 @@ function drawBobo(c, cx, cy, r, t, look, state, pal){
 /* tiles */
 function tile(box, href, g, badge){
   const a = document.createElement('a'); a.className = 'tile'; a.href = href; a.style.setProperty('--bg', g.bg);
-  a.innerHTML = (badge ? '<span class="badge">' + badge + '</span>' : '') + '<span class="em">' + g.emoji + '</span><span class="nm">' + g.title + '</span>'; box.appendChild(a);
+  const title = typeof g.title === 'object' ? (g.title[I18N.lang] || g.title.en) : g.title;
+  a.innerHTML = (badge ? '<span class="badge">' + badge + '</span>' : '') + '<span class="em">' + g.emoji + '</span><span class="nm">' + title + '</span>'; box.appendChild(a);
 }
 const soloBox = document.getElementById('soloTiles'), friendBox = document.getElementById('friendTiles');
-tile(soloBox, 'bobo/', { title:'بيت بوبو', emoji:'🏠', bg:'#7b52e6' }, '٦ مراحل');
+tile(soloBox, 'bobo/', { title:L('بيت بوبو',"Bobo's House","Bobo'nun Evi"), emoji:'🏠', bg:'#7b52e6' }, L('٦ مراحل','6 levels','6 bölüm'));
 SOLO.forEach(g => tile(soloBox, 'solo/#' + g.id, g));
-tile(friendBox, 'party/', { title:'حفلة الأصحاب', emoji:'🎉', bg:'#e8494e' }, '٢–٤');
-DUEL.forEach(g => tile(friendBox, 'duel/#' + g.id, g, '٢'));
+tile(friendBox, 'party/', { title:L('حفلة الأصحاب','Friends Party','Arkadaş Partisi'), emoji:'🎉', bg:'#e8494e' }, AR(2) + '–' + AR(4));
+DUEL.forEach(g => tile(friendBox, 'duel/#' + g.id, g, AR(2)));
 
 function refresh(){
   document.getElementById('coinCount').textContent = AR(W.coins);
   document.getElementById('coinCount2').textContent = AR(W.coins);
   const gb = document.getElementById('giftBtn'), ready = W.giftReady();
   gb.classList.toggle('done', !ready);
-  document.getElementById('giftT').textContent = ready ? 'هدية اليوم' : 'أخدت هدية اليوم';
-  document.getElementById('giftS').textContent = ready ? 'اكبس وافتحها!' : 'ارجع بكرا لهدية جديدة';
+  document.getElementById('giftT').textContent = ready ? L('هدية اليوم',"Today's gift",'Günün hediyesi') : L('أخدت هدية اليوم','Gift opened','Hediye alındı');
+  document.getElementById('giftS').textContent = ready ? L('اكبس وافتحها!','Tap to open!','Aç!') : L('ارجع بكرا لهدية جديدة','New gift tomorrow','Yarın yeni hediye');
 }
 addEventListener('pageshow', refresh); addEventListener('focus', refresh); refresh();
 
@@ -287,16 +296,16 @@ function drawStreak(n){ document.getElementById('gStreak').innerHTML = [1,2,3,4,
 document.getElementById('giftBtn').onclick = () => {
   const ready = W.giftReady(); open('giftSheet');
   document.getElementById('giftBox').hidden = !ready; document.getElementById('gAmt').hidden = true;
-  document.getElementById('gH').textContent = ready ? 'هدية اليوم' : 'شفناك اليوم! 👋';
-  document.getElementById('gP').textContent = ready ? 'اكبس عالهدية لتفتحها' : 'ارجع بكرا لتاخد هدية جديدة. أيامك ورا بعض:';
+  document.getElementById('gH').textContent = ready ? L('هدية اليوم',"Today's gift",'Günün hediyesi') : L('شفناك اليوم! 👋','See you tomorrow! 👋','Yarın görüşürüz! 👋');
+  document.getElementById('gP').textContent = ready ? L('اكبس عالهدية لتفتحها','Tap the gift to open it','Açmak için hediyeye dokun') : L('ارجع بكرا لتاخد هدية جديدة. أيامك ورا بعض:','Come back tomorrow for a new gift. Your days in a row:','Yeni hediye için yarın gel. Art arda günlerin:');
   drawStreak(W.streak);
 };
 document.getElementById('giftBox').onclick = () => {
   const n = W.openGift(); if(!n) return;
   document.getElementById('giftBox').hidden = true;
   const amt = document.getElementById('gAmt'); amt.hidden = false; amt.textContent = '+' + AR(n) + ' 🪙';
-  document.getElementById('gH').textContent = 'يا سلام! 🎉';
-  document.getElementById('gP').textContent = W.streak > 1 ? 'يوم ' + AR(W.streak) + ' ورا بعض! الهدية كبرت' : 'ارجع بكرا والهدية بتكبر';
+  document.getElementById('gH').textContent = L('يا سلام! 🎉','Hooray! 🎉','Yaşasın! 🎉');
+  document.getElementById('gP').textContent = W.streak > 1 ? L('يوم ' + AR(W.streak) + ' ورا بعض! الهدية كبرت', 'Day ' + W.streak + ' in a row! Bigger gift', 'Art arda ' + W.streak + '. gün! Hediye büyüdü') : L('ارجع بكرا والهدية بتكبر','Come back tomorrow for a bigger gift','Yarın gel, hediye büyüsün');
   drawStreak(W.streak); ding(); refresh();
 };
 
@@ -306,19 +315,19 @@ const LISTS = { color: W.COLORS, hat: W.HATS, glasses: W.GLASSES };
 function renderItems(){
   const list = LISTS[tab], o = W.outfit, el = document.getElementById('items'); el.innerHTML = '';
   const entries = Object.entries(list);
-  if(tab !== 'color') entries.unshift(['none', { name:'بلا', price:0, e:'🚫' }]);
+  if(tab !== 'color') entries.unshift(['none', { name:L('بلا','None','Yok'), price:0, e:'🚫' }]);
   entries.forEach(([key, it]) => {
     const id = tab + ':' + key, owned = key === 'none' || it.price === 0 || W.owns(id);
     const on = tab === 'color' ? o.color === key : (o[tab] || 'none') === key;
     const b = document.createElement('button'); b.className = 'item' + (on ? ' on' : '');
     b.innerHTML = (tab === 'color' ? '<span class="sw" style="background:' + it.color + '"></span>' : '<span class="ie">' + it.e + '</span>') +
-      '<b>' + it.name + '</b>' + (on ? '<small class="own">لابسه ✔</small>' : owned ? '<small class="own">البس</small>' : '<small>🪙 ' + AR(it.price) + '</small>');
+      '<b>' + it.name + '</b>' + (on ? '<small class="own">' + L('لابسه ✔','Wearing ✔','Giyili ✔') + '</small>' : owned ? '<small class="own">' + L('البس','Wear','Giy') + '</small>' : '<small>🪙 ' + AR(it.price) + '</small>');
     b.onclick = () => {
       const msg = document.getElementById('closetMsg');
       if(!owned){
-        if(!W.buy(id, it.price)){ nope(); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); msg.textContent = 'بدك كمان ' + AR(it.price - W.coins) + ' 🪙. العب لتجمع!'; return; }
-        msg.textContent = 'اشتريت ' + it.name + '! 🎉';
-      } else msg.textContent = 'بوبو لابس ' + it.name;
+        if(!W.buy(id, it.price)){ nope(); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); msg.textContent = L('بدك كمان ' + AR(it.price - W.coins) + ' 🪙. العب لتجمع!', 'You need ' + (it.price - W.coins) + ' more 🪙. Play to collect!', (it.price - W.coins) + ' 🪙 daha lazım. Oynayıp topla!'); return; }
+        msg.textContent = L('اشتريت ' + it.name + '! 🎉', 'You got the ' + it.name + '! 🎉', it.name + ' senin! 🎉');
+      } else msg.textContent = L('بوبو لابس ' + it.name, 'Bobo is wearing: ' + it.name, 'Bobo giydi: ' + it.name);
       W.wear(tab, key === 'none' ? null : key); ding(); renderItems(); refresh();
     };
     el.appendChild(b);
@@ -327,34 +336,41 @@ function renderItems(){
 document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; document.querySelectorAll('[data-tab]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderItems(); });
 document.getElementById('closetBtn').onclick = () => { open('closetSheet'); renderItems(); };
 
+/* language */
+document.getElementById('langBtn').onclick = () => {
+  const box = document.getElementById('langList'); box.innerHTML = '';
+  I18N.langs.forEach(l => { const b = document.createElement('button'); b.className = 'small-btn' + (l === I18N.lang ? ' gold' : ''); b.style.fontSize = '20px'; b.textContent = I18N.names[l]; b.onclick = () => I18N.set(l); box.appendChild(b); });
+  open('langSheet');
+};
+
 /* sticker album */
 function bestOf(key, i){ try{ const v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v) ? (v[i] || 0) : 0; }catch(e){ return 0; } }
 function stickers(){
   const st = W.stats, g = st.games || {}, kinds = Object.keys(g), duel = kinds.filter(k => k.startsWith('duel_')).reduce((a, k) => a + g[k], 0);
   return [
-    ['🪙','أول عملة', W.total >= 1, 'العب أي لعبة'],
-    ['💰','١٠٠ عملة', W.total >= 100, 'اجمع ١٠٠ عملة'],
-    ['👑','٥٠٠ عملة', W.total >= 500, 'اجمع ٥٠٠ عملة'],
-    ['🎁','أول هدية', W.streak >= 1, 'افتح هدية اليوم'],
-    ['📅','٣ أيام', W.streak >= 3, 'افتح الهدية ٣ أيام ورا بعض'],
-    ['🔥','أسبوع كامل', W.streak >= 7, '٧ أيام ورا بعض'],
-    ['👕','أول لبسة', W.owned.length > 1, 'اشتري شي من الخزانة'],
-    ['🎩','خزانة مليانة', W.owned.length >= 8, 'اشتري ٧ أغراض'],
-    ['🎮','١٠ ألعاب', st.plays >= 10, 'العب ١٠ مرات'],
-    ['🕹️','٥٠ لعبة', st.plays >= 50, 'العب ٥٠ مرة'],
-    ['🌈','جرّب ١٠', kinds.length >= 10, 'العب ١٠ ألعاب مختلفة'],
-    ['🌍','جرّب الكل', kinds.length >= 30, 'العب ٣٠ لعبة مختلفة'],
-    ['🏠','هربت!', (g.bobo || 0) >= 1, 'اهرب من بيت بوبو'],
-    ['🔦','القبو المعتم', bestOf('bobo_best', 5) > 0, 'خلّص المرحلة ٦'],
-    ['🎉','حفلة', (g.party || 0) >= 1, 'خلّص حفلة الأصحاب'],
-    ['⚔️','بطل التحدي', duel >= 5, 'خلّص ٥ تحديات']
+    ['🪙',L('أول عملة','First coin','İlk jeton'), W.total >= 1, L('العب أي لعبة','Play any game','Herhangi bir oyun oyna')],
+    ['💰',L('١٠٠ عملة','100 coins','100 jeton'), W.total >= 100, L('اجمع ١٠٠ عملة','Collect 100 coins','100 jeton topla')],
+    ['👑',L('٥٠٠ عملة','500 coins','500 jeton'), W.total >= 500, L('اجمع ٥٠٠ عملة','Collect 500 coins','500 jeton topla')],
+    ['🎁',L('أول هدية','First gift','İlk hediye'), W.streak >= 1, L('افتح هدية اليوم',"Open today's gift",'Günün hediyesini aç')],
+    ['📅',L('٣ أيام','3 days','3 gün'), W.streak >= 3, L('افتح الهدية ٣ أيام ورا بعض','Open the gift 3 days in a row','Hediyeyi art arda 3 gün aç')],
+    ['🔥',L('أسبوع كامل','Full week','Tam hafta'), W.streak >= 7, L('٧ أيام ورا بعض','7 days in a row','Art arda 7 gün')],
+    ['👕',L('أول لبسة','First outfit','İlk kıyafet'), W.owned.length > 1, L('اشتري شي من الخزانة','Buy something in the wardrobe','Dolaptan bir şey al')],
+    ['🎩',L('خزانة مليانة','Full wardrobe','Dolu dolap'), W.owned.length >= 8, L('اشتري ٧ أغراض','Buy 7 items','7 eşya al')],
+    ['🎮',L('١٠ ألعاب','10 games','10 oyun'), st.plays >= 10, L('العب ١٠ مرات','Play 10 times','10 kez oyna')],
+    ['🕹️',L('٥٠ لعبة','50 games','50 oyun'), st.plays >= 50, L('العب ٥٠ مرة','Play 50 times','50 kez oyna')],
+    ['🌈',L('جرّب ١٠','Try 10','10 dene'), kinds.length >= 10, L('العب ١٠ ألعاب مختلفة','Play 10 different games','10 farklı oyun oyna')],
+    ['🌍',L('جرّب الكل','Try them all','Hepsini dene'), kinds.length >= 30, L('العب ٣٠ لعبة مختلفة','Play 30 different games','30 farklı oyun oyna')],
+    ['🏠',L('هربت!','Escaped!','Kaçtın!'), (g.bobo || 0) >= 1, L('اهرب من بيت بوبو',"Escape Bobo's House","Bobo'nun Evi'nden kaç")],
+    ['🔦',L('القبو المعتم','Dark basement','Karanlık bodrum'), bestOf('bobo_best', 5) > 0, L('خلّص المرحلة ٦','Finish level 6','6. bölümü bitir')],
+    ['🎉',L('حفلة','Party','Parti'), (g.party || 0) >= 1, L('خلّص حفلة الأصحاب','Finish a Friends Party','Bir Arkadaş Partisi bitir')],
+    ['⚔️',L('بطل التحدي','Duel champ','Düello şampiyonu'), duel >= 5, L('خلّص ٥ تحديات','Finish 5 duels','5 düello bitir')]
   ];
 }
 let newSticker = false;
 function renderAlbum(){
   const list = stickers(), got = list.filter(x => x[2]).length;
-  document.getElementById('albumS').textContent = AR(got) + ' من ' + AR(list.length);
-  document.getElementById('albumP').textContent = got === list.length ? 'جمعت كل الملصقات! إنت بطل 🏆' : 'جمعت ' + AR(got) + ' من ' + AR(list.length) + '. اكبس على أي ملصق لتعرف كيف تاخده';
+  document.getElementById('albumS').textContent = L(AR(got) + ' من ' + AR(list.length), got + ' of ' + list.length, got + ' / ' + list.length);
+  document.getElementById('albumP').textContent = got === list.length ? L('جمعت كل الملصقات! إنت بطل 🏆','You got every sticker! Champion 🏆','Tüm çıkartmaları topladın! Şampiyon 🏆') : L('جمعت ' + AR(got) + ' من ' + AR(list.length) + '. اكبس على أي ملصق لتعرف كيف تاخده', 'You have ' + got + ' of ' + list.length + '. Tap a sticker to see how to get it', got + ' / ' + list.length + ' topladın. Nasıl alınır görmek için çıkartmaya dokun');
   const el = document.getElementById('stickers'); el.innerHTML = '';
   list.forEach(([e, n, on, how]) => { const d = document.createElement('button'); d.className = 'stk ' + (on ? 'on' : 'off');
     d.innerHTML = '<span>' + e + '</span><b>' + n + '</b>'; d.onclick = () => { document.getElementById('albumP').textContent = (on ? '✔ ' : '🔒 ') + n + ': ' + how; }; el.appendChild(d); });
@@ -362,23 +378,23 @@ function renderAlbum(){
   if(got > seen){ try{ localStorage.setItem('bobo_seen_stickers', got); }catch(e){} newSticker = true; }
 }
 renderAlbum();
-if(newSticker) document.getElementById('albumS').textContent = 'ملصق جديد! ✨';
+if(newSticker) document.getElementById('albumS').textContent = L('ملصق جديد! ✨','New sticker! ✨','Yeni çıkartma! ✨');
 document.getElementById('albumBtn').onclick = () => { renderAlbum(); open('albumSheet'); };
 
 /* save code */
 document.getElementById('saveBtn').onclick = () => { document.getElementById('codeOut').value = W.exportCode(); document.getElementById('saveMsg').textContent = ''; open('saveSheet'); };
 document.getElementById('copyBtn').onclick = () => {
   const ta = document.getElementById('codeOut'), msg = document.getElementById('saveMsg');
-  const manual = () => { ta.select(); msg.textContent = 'علّم الرمز وانسخه بإيدك'; };
-  try{ navigator.clipboard.writeText(ta.value).then(() => { msg.textContent = 'انسخ ✔ خبّيه بمكان أمين'; }, manual); }catch(e){ manual(); }
+  const manual = () => { ta.select(); msg.textContent = L('علّم الرمز وانسخه بإيدك','Select the code and copy it','Kodu seç ve kopyala'); };
+  try{ navigator.clipboard.writeText(ta.value).then(() => { msg.textContent = L('انسخ ✔ خبّيه بمكان أمين','Copied ✔ Keep it somewhere safe','Kopyalandı ✔ Güvenli bir yerde sakla'); }, manual); }catch(e){ manual(); }
 };
 let confirmRestore = false;
 document.getElementById('restoreBtn').onclick = () => {
   const code = document.getElementById('codeIn').value, msg = document.getElementById('saveMsg'), btn = document.getElementById('restoreBtn');
-  if(!code.trim()){ msg.textContent = 'حط الرمز أول'; return; }
-  if(!confirmRestore){ confirmRestore = true; btn.textContent = 'متأكد؟ اكبس كمان مرة'; msg.textContent = 'التقدم اللي على هالجوال رح يتبدّل'; return; }
-  confirmRestore = false; btn.textContent = 'رجّع اللعب';
-  if(W.importCode(code)){ msg.textContent = 'رجع كل شي! 🎉'; ding(); refresh(); renderAlbum(); } else { msg.textContent = 'الرمز مش صحيح. تأكد إنك نسخته كامل'; nope(); }
+  if(!code.trim()){ msg.textContent = L('حط الرمز أول','Paste the code first','Önce kodu yapıştır'); return; }
+  if(!confirmRestore){ confirmRestore = true; btn.textContent = L('متأكد؟ اكبس كمان مرة','Sure? Tap again','Emin misin? Tekrar dokun'); msg.textContent = L('التقدم اللي على هالجوال رح يتبدّل','Progress on this phone will be replaced','Bu telefondaki ilerleme değişecek'); return; }
+  confirmRestore = false; btn.textContent = L('رجّع اللعب','Restore','Geri yükle');
+  if(W.importCode(code)){ msg.textContent = L('رجع كل شي! 🎉','Everything is back! 🎉','Her şey geri geldi! 🎉'); ding(); refresh(); renderAlbum(); } else { msg.textContent = L('الرمز مش صحيح. تأكد إنك نسخته كامل','That code is not right. Copy all of it','Kod hatalı. Tamamını kopyala'); nope(); }
 };
 
 /* little animations */
