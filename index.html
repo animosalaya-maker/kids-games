@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ألعاب بوبو</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="ألعاب للأطفال: بيت بوبو وحفلة الأصحاب. بدون إعلانات وبتشتغل بدون إنترنت.">
+<meta name="description" content="ألعاب للأطفال: بيت بوبو، حفلة الأصحاب، وتحدّي الاثنين. بدون إعلانات وبتشتغل بدون إنترنت.">
 <meta name="theme-color" content="#1c1838">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -17,7 +17,7 @@
 /* Layout: app home screen. Big name, then one tall card per game, stacked on phones and side by side on wide screens. */
 :root{
   --night:#1c1838; --night-2:#2a2452; --night-3:#362e68; --face:#2f2858;
-  --ink:#fff7e8; --muted:#bdb4e6; --gold:#ffcd4d; --bobo:#9b6bff; --party:#ff5a5f;
+  --ink:#fff7e8; --muted:#bdb4e6; --gold:#ffcd4d; --bobo:#9b6bff; --party:#ff5a5f; --duel:#3fa9ff;
   --display:"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif; --body:"Tajawal",system-ui,sans-serif;
   color-scheme:dark;
 }
@@ -64,6 +64,13 @@ header p{margin:0;color:var(--muted);font-size:17px;text-wrap:balance}
       <div class="tags"><span class="tag">👥 ٢–٤ لاعبين</span><span class="tag">٤ ألعاب صغيرة</span></div>
       <span class="play" style="background:var(--party)">العب</span>
     </a>
+    <a class="game" href="duel/">
+      <canvas id="c3" width="640" height="400"></canvas>
+      <h2>تحدّي الاثنين</h2>
+      <p>لاعب من تحت ولاعب من فوق على نفس الجوال. ١٧ لعبة: كرة قدم، بلياردو، أفعى، سيارات، إكس أو، وأكتر.</p>
+      <div class="tags"><span class="tag">👥 لاعبين اثنين</span><span class="tag">١٧ لعبة</span></div>
+      <span class="play" style="background:var(--duel)">العب</span>
+    </a>
   </div>
   <p class="soon">ألعاب جديدة جاية قريباً ✨</p>
 </div>
@@ -85,7 +92,7 @@ function buddy(c,x,y,r,col,t){
   for(const s of[-1,1]){c.fillStyle='#fff';c.beginPath();c.arc(s*r*.3,-r*.2,r*.22,0,7);c.fill();c.fillStyle='#1c1838';c.beginPath();c.arc(s*r*.3,-r*.2,r*.11,0,7);c.fill();}
   c.fillStyle='#1c1838';c.beginPath();c.arc(0,r*.18,r*.3,0,Math.PI);c.fill();c.restore();
 }
-const c1=document.getElementById('c1').getContext('2d'), c2=document.getElementById('c2').getContext('2d');
+const c1=document.getElementById('c1').getContext('2d'), c2=document.getElementById('c2').getContext('2d'), c3=document.getElementById('c3').getContext('2d');
 function frame(now){
   const t=now/1000;
   c1.fillStyle='#2f2858';c1.fillRect(0,0,640,400);
@@ -96,6 +103,11 @@ function frame(now){
   c2.fillStyle='#ff6a1a';c2.fillRect(0,0,640,400);
   for(let y=0;y<5;y++)for(let x=0;x<8;x++){if((x*7+y*3)%5===0)continue;c2.fillStyle=(x+y)%2?'#8d6e63':'#7b5e55';c2.fillRect(x*80+3,y*80+3,74,74);}
   BUD.forEach((b,i)=>buddy(c2,110+i*140,200+Math.sin(t*4+i)*18,48,b,t));
+  c3.fillStyle='#4cc35a';c3.fillRect(0,0,640,400);c3.fillStyle='#3fae4f';for(let i=0;i<8;i++)if(i%2)c3.fillRect(i*80,0,80,400);
+  c3.strokeStyle='#fff';c3.lineWidth=6;c3.strokeRect(20,20,600,360);c3.beginPath();c3.moveTo(320,20);c3.lineTo(320,380);c3.stroke();c3.beginPath();c3.arc(320,200,60,0,7);c3.stroke();
+  c3.font='64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';c3.textAlign='center';c3.textBaseline='middle';
+  const bx=320+Math.sin(t*1.6)*150;c3.fillText('⚽',bx,200+Math.cos(t*2.3)*60);
+  buddy(c3,110,200+Math.sin(t*2)*50,52,BUD[0],t);buddy(c3,530,200-Math.sin(t*2)*50,52,BUD[1],t);
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
