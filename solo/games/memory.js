@@ -90,7 +90,7 @@ Solo.register({
       const s = S(), h = Math.max(40, s * 0.1);
       c.fillStyle = 'rgba(28,24,56,.72)'; c.beginPath(); c.roundRect(x - w / 2, y - h / 2, w, h, h / 2); c.fill();
       c.strokeStyle = '#fff7e8'; c.lineWidth = 3; c.stroke();
-      api.text(c, str, x, y + 1, h * 0.5, '#fff7e8');
+      api.text(c, str, x, y + 1, Math.min(h * 0.5, (w - h * 0.5) / Math.max(1, str.length) * 1.75), '#fff7e8');   // fit longer English/Turkish labels
     }
     function drawCard(c, cd){
       const w = L.cw, h = L.ch, s = S();
@@ -166,7 +166,7 @@ Solo.register({
         api.bobo(c, L.boboX, L.boboY - jump, L.boboR, mood, look, t);
         const ph = Math.max(40, s * 0.1), py = 10 + ph / 2;
         const pw = Math.min((W / 2 - L.boboR * 1.3) - 70, s * 0.36);
-        pill(c, W - 8 - pw / 2, py, api.L('جولة ','Round ','Tur ') + api.AR(round + 1) + '/' + api.AR(ROUNDS.length), pw);
+        pill(c, W - 8 - pw / 2, py, api.L('جولة ','Round ','Tur ') + api.AR(Math.min(round + 1, ROUNDS.length)) + '/' + api.AR(ROUNDS.length), pw);
         c.save(); const hs = 1 + hudPop * 0.15, hx = 64 + pw / 2; c.translate(hx, py); c.scale(hs, hs);
         pill(c, 0, 0, '👆 ' + api.AR(moves), pw); c.restore();
         if(bonusTxt) api.text(c, bonusTxt.s, W / 2, L.boboY + L.boboR * 1.6 - bonusTxt.t * s * 0.05, s * 0.08, '#ffd23f');

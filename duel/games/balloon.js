@@ -182,7 +182,10 @@ Duel.register({
             else if('big' in verdict) m = verdict.big === null ? L('نفس الحجم! 🤝', 'Same size! 🤝', 'Aynı boy! 🤝') : verdict.big === pl ? L('بالونك أكبر! 🎉', 'Yours is bigger! 🎉', 'Seninki daha büyük! 🎉') : L('بالون رفيقك أكبر', 'Friend\'s is bigger', 'Arkadaşınınki büyük');
             if(m){
               c.fillStyle = 'rgba(28,24,56,.7)'; c.beginPath(); c.roundRect(W / 2 - s * 0.4, mid + hf * 0.3 - s * 0.05, s * 0.8, s * 0.1, s * 0.05); c.fill();
-              api.text(c, m, W / 2, mid + hf * 0.3, Math.min(s * 0.065, 28), '#ffcd4d', 0);
+              let fs = Math.min(s * 0.065, 28);              // shrink longer (en/tr) lines to fit the pill
+              c.font = '800 ' + Math.round(fs) + 'px ' + api.FONT; const tw = c.measureText(m).width;
+              if(tw > s * 0.74) fs *= s * 0.74 / tw;
+              api.text(c, m, W / 2, mid + hf * 0.3, fs, '#ffcd4d', 0);
             }
           }
           c.restore();
