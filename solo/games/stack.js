@@ -3,6 +3,7 @@ Solo.register({
   id: 'stack', title: 'برج المكعبات', emoji: '🧱', bg: '#ff7a59',
   help: 'اكبس لتنزّل المكعب فوق البرج. كل ما كان مظبوط أكتر، بيضل البرج عريض',
   create(api){
+    const emoji = (c, e, x, y, sz, r) => { c.fillStyle = '#000'; api.emoji(c, e, x, y, sz, r); };
     const OUT = '#1c1838';
     const S = () => Math.min(api.W, api.H);
     const BH = () => S() * 0.075;
@@ -149,14 +150,14 @@ Solo.register({
         // particles
         for(const q of parts){
           c.globalAlpha = 1 - q.t / q.life;
-          if(q.star){ api.emoji(c, '✨', q.x, q.y, q.r * 4); }
+          if(q.star){ emoji(c, '✨', q.x, q.y, q.r * 4); }
           else { c.fillStyle = q.col; c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.283); c.fill(); }
         }
         c.globalAlpha = 1;
         for(const q of pops){ c.globalAlpha = 1 - Math.max(0, q.t - 0.5) * 2; const k = Math.min(1, q.t * 6); api.text(c, q.str, api.clamp(q.x, s * 0.25, W - s * 0.25), scr(q.y) - s * 0.08 - q.t * s * 0.1, s * 0.08 * (0.6 + 0.4 * k), '#fff6b0'); }
         c.globalAlpha = 1;
         // Bobo watching from his cloud at the bottom
-        const br = s * 0.085, bx = s * 0.13, by = H - br * 1.25;
+        const br = s * 0.085, bx = s * 0.13, by = H - br * 1.5;
         c.fillStyle = '#ffffff'; c.strokeStyle = OUT; c.lineWidth = 3;
         c.beginPath(); c.ellipse(bx, by + br * 0.95, br * 1.25, br * 0.32, 0, 0, 6.283); c.fill(); c.stroke();
         const lookX = mover ? api.clamp((mover.cx - bx) / (W * 0.5), -1, 1) : 0;
@@ -164,10 +165,11 @@ Solo.register({
         api.bobo(c, bx, by + jumpY, br, over ? 'sad' : mood, { x: lookX, y: -0.8 }, t);
         if(introT > 0) api.text(c, 'اكبس لتنزّل المكعب 👆', W / 2, H * 0.32, s * 0.065, '#fff7e8');
         else if(mover && mover.bounces >= 3 && !mover.dropping) api.text(c, 'اكبس! 👆', W / 2, H * 0.32, s * 0.07 * (1 + Math.sin(t * 8) * 0.06), '#fff7e8');
-        // HUD
+        // HUD (capped size on tablets)
+        { const s = Math.min(S(), 440);
         const ph = Math.max(40, s * 0.1);
         c.fillStyle = 'rgba(28,24,56,.72)'; c.beginPath(); c.roundRect(W / 2 - s * 0.18, 34 - ph / 2, s * 0.36, ph, ph / 2); c.fill();
-        api.text(c, '🧱 ' + api.AR(tower.length - 1), W / 2, 35, ph * 0.55, '#fff7e8');
+        api.text(c, '🧱 ' + api.AR(tower.length - 1), W / 2, 35, ph * 0.55, '#fff7e8'); }
       }
     };
   }

@@ -3,13 +3,14 @@ Solo.register({
   id: 'catch', title: 'لقط الفواكه', emoji: '🧺', bg: '#ff9f1c',
   help: 'حرّك بوبو يمين وشمال ليلقط الفواكه بالسلة، وانتبه من الحجار والورق اليابس',
   create(api){
+    const emoji = (c, e, x, y, sz, r) => { c.fillStyle = '#000'; api.emoji(c, e, x, y, sz, r); };
     const OUT = '#1c1838';
     const S = () => Math.min(api.W, api.H);
     const FRUITS = ['🍎', '🍌', '🍇', '🍊', '🍓', '🍐', '🍑', '🍒', '🍉'];
     const GROUNDY = () => api.H - S() * 0.07;
     const R = () => S() * 0.085;
-    const BY = () => GROUNDY() - R() * 0.95;          // Bobo centre y
-    const RIM = () => BY() + R() * 0.15;               // basket rim y
+    const BY = () => GROUNDY() - S() * 0.1 - R() * 0.45;   // Bobo centre y
+    const RIM = () => BY() + R() * 0.45;              // basket rim y
     const BASKW = () => S() * 0.24;
 
     let t = 0, score = 0, hearts = 3, over = false, overT = 0, inv = 0, introT = 2.5, streak = 0;
@@ -135,7 +136,7 @@ Solo.register({
         for(const tx of tops){ c.beginPath(); c.arc(tx, H * 0.1, cr * 0.75, 0, 6.283); c.fill(); c.stroke(); }
         c.fillStyle = '#3fae35'; c.fillRect(-20, 0, W + 40, H * 0.1);
         for(const tx of tops){ c.fillStyle = '#5fd34a'; c.beginPath(); c.arc(tx - cr * 0.2, H * 0.09, cr * 0.32, 0, 6.283); c.fill(); }
-        for(let i = 0; i < tops.length * 3; i++){ const fx = (i + 0.5) * W / (tops.length * 3), fy = H * 0.12 + Math.sin(i * 2.3) * s * 0.03; api.emoji(c, FRUITS[i % FRUITS.length], fx, fy + Math.sin(t * 2 + i) * 2, s * 0.05); }
+        for(let i = 0; i < tops.length * 3; i++){ const fx = (i + 0.5) * W / (tops.length * 3), fy = H * 0.12 + Math.sin(i * 2.3) * s * 0.03; emoji(c, FRUITS[i % FRUITS.length], fx, fy + Math.sin(t * 2 + i) * 2, s * 0.05); }
         // ground strip
         c.fillStyle = '#5fc24a'; c.fillRect(-20, gy, W + 40, H - gy); c.strokeStyle = OUT; c.lineWidth = 3; c.beginPath(); c.moveTo(-20, gy); c.lineTo(W + 20, gy); c.stroke();
         // falling things
@@ -147,7 +148,7 @@ Solo.register({
           c.globalAlpha = it.state === 'ground' ? Math.max(0, 1 - it.t / 0.8) : 1;
           if(it.kind === 'gold'){ c.fillStyle = 'rgba(255,230,120,.5)'; c.beginPath(); c.arc(it.x, it.y, it.size * (0.7 + Math.sin(t * 8) * 0.08), 0, 6.283); c.fill(); }
           if(it.kind === 'bad' && it.state === 'fall'){ c.strokeStyle = 'rgba(255,60,60,.55)'; c.lineWidth = 3; c.beginPath(); c.arc(it.x, it.y, it.size * 0.62, 0, 6.283); c.stroke(); }
-          api.emoji(c, it.e, it.x, it.y, it.size * (0.4 + 0.6 * it.grow), it.rot);
+          emoji(c, it.e, it.x, it.y, it.size * (0.4 + 0.6 * it.grow), it.rot);
           c.globalAlpha = 1;
         }
         // Bobo with basket
@@ -164,20 +165,22 @@ Solo.register({
           for(const sd of [-1, 1]){ c.beginPath(); c.arc(bx + sd * BASKW() * 0.46, rim + s * 0.01, s * 0.022, 0, 6.283); c.fill(); c.stroke(); }
           c.restore();
         }
-        for(const q of parts){ c.globalAlpha = 1 - q.t / q.life; if(q.star) api.emoji(c, '✨', q.x, q.y, q.r * 4); else { c.fillStyle = q.col; c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.283); c.fill(); } }
+        for(const q of parts){ c.globalAlpha = 1 - q.t / q.life; if(q.star) emoji(c, '✨', q.x, q.y, q.r * 4); else { c.fillStyle = q.col; c.beginPath(); c.arc(q.x, q.y, q.r, 0, 6.283); c.fill(); } }
         c.globalAlpha = 1;
         for(const q of pops){ c.globalAlpha = 1 - Math.max(0, q.t - 0.45) * 2.2; api.text(c, q.str, q.x, q.y - q.t * s * 0.14, s * (q.gold ? 0.09 : 0.065), '#ffd34d'); }
         c.globalAlpha = 1;
         c.restore();
         if(introT > 0){
           api.text(c, 'اسحب بوبو يمين وشمال 👆', W / 2, H * 0.5, s * 0.065, '#fff7e8');
-          const hx = W / 2 + Math.sin(t * 3) * s * 0.18; api.emoji(c, '👆', hx, BY() + s * 0.02, s * 0.1);
+          const hx = W / 2 + Math.sin(t * 3) * s * 0.18; emoji(c, '👆', hx, BY() + s * 0.02, s * 0.1);
         }
-        // HUD
+        // HUD (capped size on tablets)
+        { const s = Math.min(S(), 440);
         const ph = Math.max(40, s * 0.1);
         c.fillStyle = 'rgba(28,24,56,.72)'; c.beginPath(); c.roundRect(W / 2 - s * 0.16, 34 - ph / 2, s * 0.32, ph, ph / 2); c.fill();
         api.text(c, '🧺 ' + api.AR(score), W / 2, 35, ph * 0.55, '#fff7e8');
-        for(let i = 0; i < 3; i++) api.emoji(c, i < hearts ? '❤️' : '🤍', W - s * 0.08 - i * s * 0.085, 34, s * 0.065);
+        c.fillStyle = 'rgba(28,24,56,.72)'; c.beginPath(); c.roundRect(W - s * 0.33, 34 - ph / 2, s * 0.3, ph, ph / 2); c.fill();
+        for(let i = 0; i < 3; i++) emoji(c, i < hearts ? '❤️' : '🤍', W - s * 0.08 - i * s * 0.085, 34, s * 0.065); }
       }
     };
   }

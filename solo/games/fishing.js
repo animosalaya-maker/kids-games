@@ -3,6 +3,7 @@ Solo.register({
   id: 'fishing', title: 'صيد السمك', emoji: '🎣', bg: '#1fa2d6',
   help: 'اكبس فوق السمكة، بوبو بيروح بالقارب وبنزّل الصنارة',
   create(api){
+    const emoji = (c, e, x, y, sz, r) => { c.fillStyle = '#000'; api.emoji(c, e, x, y, sz, r); };
     const OUT = '#1c1838', ROUND = 45;
     const S = () => Math.min(api.W, api.H);
     const SEA = () => api.H * 0.26;                 // water surface
@@ -74,7 +75,7 @@ Solo.register({
     }
     function drawCreature(c, k, size, ph, rot){
       if(k.draw){ if(rot) c.rotate(rot); drawFish(c, k, size, ph); }
-      else api.emoji(c, k.e, 0, 0, size, rot || 0);
+      else emoji(c, k.e, 0, 0, size, rot || 0);
     }
 
     function drawBoat(c){
@@ -228,14 +229,15 @@ Solo.register({
         for(const q of pops){ c.globalAlpha = 1 - Math.max(0, q.t - 0.5) * 2; api.text(c, q.str, q.x, q.y - s * 0.05 - q.t * s * 0.12, s * 0.085, q.str === '٠' ? '#ffb3b3' : '#ffd34d'); }
         c.globalAlpha = 1;
         if(introT > 0) api.text(c, 'اكبس على سمكة 👆', W / 2, wy + (fl - wy) * 0.45, s * 0.07, '#fff7e8');
-        // HUD
+        // HUD (capped size on tablets)
+        { const s = Math.min(S(), 440);
         const ph = Math.max(40, s * 0.1), left = Math.max(0, Math.ceil(ROUND - t));
         c.fillStyle = 'rgba(28,24,56,.72)'; c.beginPath(); c.roundRect(W / 2 - s * 0.16, 34 - ph / 2, s * 0.32, ph, ph / 2); c.fill();
         api.text(c, '🎣 ' + api.AR(score), W / 2, 35, ph * 0.55, '#fff7e8');
         c.fillStyle = left <= 5 ? 'rgba(255,90,95,.9)' : 'rgba(28,24,56,.72)'; c.beginPath(); c.roundRect(W - s * 0.24 - 8, 34 - ph / 2, s * 0.24, ph, ph / 2); c.fill();
         api.text(c, '⏰ ' + api.AR(left), W - s * 0.12 - 8, 35, ph * 0.5 * (left <= 5 ? 1 + Math.sin(t * 12) * 0.06 : 1), '#fff7e8');
         // time bar
-        c.fillStyle = 'rgba(28,24,56,.4)'; c.fillRect(0, 0, W, 6); c.fillStyle = '#ffd34d'; c.fillRect(0, 0, W * Math.max(0, 1 - t / ROUND), 6);
+        c.fillStyle = 'rgba(28,24,56,.4)'; c.fillRect(0, 0, W, 6); c.fillStyle = '#ffd34d'; c.fillRect(0, 0, W * Math.max(0, 1 - t / ROUND), 6); }
       }
     };
   }

@@ -26,7 +26,7 @@ Solo.register({
       const W = api.W, H = api.H, n = LEVELS[level].kinds.length;
       const cols = n === 4 && W < 560 ? 2 : n, rows = Math.ceil(n / cols);
       const top = 70, avail = H - top - 14, half = avail / 2;
-      const R = Math.min(W / (cols * 2.7), half / (rows * 2.6), 82);
+      const R = Math.min(W / (cols * 2.45), half / (rows * 2.6), 82);
       const board = { x: 14, y: top, w: W - 28, h: half - 8 };
       const tray = { x: 14, y: top + half + 4, w: W - 28, h: half - 4 };
       const slot = (area, i) => {

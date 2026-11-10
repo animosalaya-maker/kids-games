@@ -3,6 +3,7 @@ Solo.register({
   id: 'jumper', title: 'قفز بوبو', emoji: '🦘', bg: '#7c5cff',
   help: 'اكبس يمين أو شمال ليمشي بوبو، ونطّ على الغيمات لفوق',
   create(api){
+    const emoji = (c, e, x, y, sz, r) => { c.fillStyle = '#000'; api.emoji(c, e, x, y, sz, r); };
     const OUT = '#1c1838';
     const S = () => Math.min(api.W, api.H);
     const MPX = () => S() * 0.12;               // pixels per "metre"
@@ -54,11 +55,11 @@ Solo.register({
     function drawCloud(c, p, scr){
       const s = S(), x = p.x, y = scr, w = p.w, h = PH() * (1 - p.squish * 0.35);
       c.save(); c.translate(x, y + h / 2); if(p.rot) c.rotate(p.rot); if(p.broken) c.globalAlpha = Math.max(0, 1 - p.fall * 1.5);
-      else if(p.hits && p.type !== 'ground' && p.type !== 'crumble') c.globalAlpha = p.hits >= 2 ? 0.55 : 0.8;
       let fillC = '#ffffff', shade = '#d9e4ff';
       if(p.type === 'move'){ fillC = '#ffe0f0'; shade = '#ffb3d6'; }
       if(p.type === 'crumble'){ fillC = '#e6dccb'; shade = '#c4b49b'; }
       if(p.type === 'ground'){ fillC = '#8be86f'; shade = '#5fc24a'; }
+      if(!p.broken && p.hits && (p.type === 'normal' || p.type === 'move')){ fillC = p.hits >= 2 ? '#c9d2ec' : (p.type === 'move' ? '#f3c6dd' : '#e4eaff'); }
       c.lineWidth = Math.max(3, s * 0.009); c.strokeStyle = OUT; c.lineJoin = 'round';
       if(p.type === 'ground'){
         c.fillStyle = fillC; c.beginPath(); c.rect(-w / 2, -h / 2, w, api.H); c.fill(); c.stroke();
@@ -165,7 +166,7 @@ Solo.register({
         // platforms
         for(const p of plats){ const sy = p.y - camTop; if(sy > -s * 0.2 && sy < H + s * 0.3) drawCloud(c, p, sy); }
         // stars
-        for(const q of pickups){ const sy = q.y - camTop; if(sy < -40 || sy > H + 40) continue; const b = Math.sin(t * 4 + q.ph) * s * 0.01; c.globalAlpha = 0.35; c.fillStyle = '#fff6b0'; c.beginPath(); c.arc(q.x, sy + b, s * 0.055, 0, 6.283); c.fill(); c.globalAlpha = 1; api.emoji(c, '⭐', q.x, sy + b, s * 0.08, Math.sin(t * 2 + q.ph) * 0.2); }
+        for(const q of pickups){ const sy = q.y - camTop; if(sy < -40 || sy > H + 40) continue; const b = Math.sin(t * 4 + q.ph) * s * 0.01; c.globalAlpha = 0.35; c.fillStyle = '#fff6b0'; c.beginPath(); c.arc(q.x, sy + b, s * 0.055, 0, 6.283); c.fill(); c.globalAlpha = 1; emoji(c, '⭐', q.x, sy + b, s * 0.08, Math.sin(t * 2 + q.ph) * 0.2); }
         // Bobo (with wrap ghost)
         const by = B.y - camTop;
         const drawB = x => {
@@ -191,13 +192,14 @@ Solo.register({
         c.globalAlpha = 1;
         if(introT > 0) api.text(c, 'اكبس يمين أو شمال 👆', W / 2, H * 0.62, s * 0.065, '#fff7e8');
         // HUD
-        pill(c, W / 2, 34, s * 0.42, '📏 ' + api.AR(heightM()) + ' م');
-        pill(c, W - s * 0.15, 34, s * 0.22, '⭐ ' + api.AR(stars));
+        const hud = Math.min(s, 440);
+        pill(c, W / 2, 34, hud * 0.42, '📏 ' + api.AR(heightM()) + ' م');
+        pill(c, W - hud * 0.15, 34, hud * 0.22, '⭐ ' + api.AR(stars));
       }
     };
 
     function pill(c, x, y, w, str){
-      const s = S(), h = Math.max(40, s * 0.1);
+      const s = Math.min(S(), 440), h = Math.max(40, s * 0.1);
       c.fillStyle = 'rgba(28,24,56,.72)'; c.beginPath(); c.roundRect(x - w / 2, y - h / 2, w, h, h / 2); c.fill();
       api.text(c, str, x, y + 1, h * 0.52, '#fff7e8');
     }
