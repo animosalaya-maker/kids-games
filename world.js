@@ -1,0 +1,72 @@
+/* Bobo World: coins, wardrobe and daily gift shared by every game (saved on this device only). */
+(function(){
+'use strict';
+const KEY = 'bobo_world';
+const COLORS = {
+  purple:{ name:'بنفسجي', price:0,   color:'#9b6bff', light:'#d2bcff', belly:'#b993ff' },
+  pink:  { name:'زهري',   price:40,  color:'#ff6fae', light:'#ffc2dd', belly:'#ff9fca' },
+  green: { name:'أخضر',   price:40,  color:'#35c76f', light:'#b6f2cc', belly:'#6fe39d' },
+  orange:{ name:'برتقالي', price:60,  color:'#ff9334', light:'#ffd2a6', belly:'#ffb46b' },
+  blue:  { name:'أزرق',   price:60,  color:'#3b9cff', light:'#b4dcff', belly:'#6fc0ff' },
+  gold:  { name:'ذهبي',   price:150, color:'#f5b700', light:'#ffe6a3', belly:'#ffd466' }
+};
+const HATS = { cap:{ e:'🧢', name:'كاب', price:30 }, bow:{ e:'🎀', name:'فيونكة', price:30 }, top:{ e:'🎩', name:'قبعة', price:50 },
+  flower:{ e:'🌸', name:'وردة', price:40 }, grad:{ e:'🎓', name:'تخرّج', price:80 }, crown:{ e:'👑', name:'تاج', price:200 } };
+const GLASSES = { round:{ e:'👓', name:'نضارة', price:30 }, sun:{ e:'🕶️', name:'نضارة شمس', price:50 }, goggles:{ e:'🥽', name:'نضارة سباحة', price:70 } };
+
+function today(){ const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); }
+function blank(){ return { coins:0, owned:['color:purple'], outfit:{ color:'purple', hat:null, glasses:null }, gift:{ last:null, streak:0 }, total:0 }; }
+let mem = null;
+function load(){
+  if(mem) return mem;
+  try{ const v = JSON.parse(localStorage.getItem(KEY)); mem = Object.assign(blank(), v || {}); }catch(e){ mem = blank(); }
+  if(!mem.outfit) mem.outfit = blank().outfit;
+  return mem;
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(mem)); }catch(e){} }
+
+const AR = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+function toast(text){
+  try{
+    const el = document.createElement('div');
+    el.textContent = text;
+    el.style.cssText = 'position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:99;background:#ffcd4d;color:#3a2a00;' +
+      'font:800 20px "Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif;padding:8px 18px;border-radius:999px;box-shadow:0 6px 0 #c48f12,0 10px 30px rgba(0,0,0,.4);pointer-events:none;transition:opacity .4s,transform .4s';
+    document.body.appendChild(el);
+    setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(-50%) translateY(-20px)'; }, 1800);
+    setTimeout(() => el.remove(), 2400);
+  }catch(e){}
+}
+
+const World = {
+  COLORS, HATS, GLASSES, AR,
+  get coins(){ return load().coins; },
+  get outfit(){ return load().outfit; },
+  addCoins(n, why){ const w = load(); w.coins += n; w.total = (w.total || 0) + n; save(); toast('+' + AR(n) + ' 🪙' + (why ? '  ' + why : '')); return w.coins; },
+  owns(id){ return load().owned.includes(id); },
+  buy(id, price){ const w = load(); if(w.owned.includes(id)) return true; if(w.coins < price) return false; w.coins -= price; w.owned.push(id); save(); return true; },
+  wear(kind, key){ const w = load(); w.outfit[kind] = key; save(); },
+  palette(){ return COLORS[load().outfit.color] || COLORS.purple; },
+  giftReady(){ return load().gift.last !== today(); },
+  openGift(){
+    const w = load(); if(w.gift.last === today()) return 0;
+    const y = new Date(); y.setDate(y.getDate() - 1);
+    const yk = y.getFullYear() + '-' + (y.getMonth() + 1) + '-' + y.getDate();
+    w.gift.streak = w.gift.last === yk ? Math.min(7, w.gift.streak + 1) : 1;
+    w.gift.last = today();
+    const amount = 10 + w.gift.streak * 5 + Math.floor(Math.random() * 6);
+    w.coins += amount; w.total = (w.total || 0) + amount; save();
+    return amount;
+  },
+  get streak(){ return load().gift.streak || 0; },
+  /* draws the hat and glasses on top of a Bobo drawn at (x,y) with radius r */
+  drawOutfit(c, x, y, r, outfit){
+    const o = outfit || load().outfit, F = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+    c.save(); c.textAlign = 'center'; c.textBaseline = 'middle';
+    if(o.glasses && GLASSES[o.glasses]){ c.font = Math.round(r * 0.95) + 'px ' + F; c.fillText(GLASSES[o.glasses].e, x, y - r * 0.2); }
+    if(o.hat && HATS[o.hat]){ c.font = Math.round(r * (HATS[o.hat].face ? 1.0 : 0.95)) + 'px ' + F; c.fillText(HATS[o.hat].e, x, y - r * 0.95); }
+    c.restore();
+  }
+};
+window.World = World;
+})();

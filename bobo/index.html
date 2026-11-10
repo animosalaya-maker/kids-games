@@ -126,6 +126,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   <div class="card" id="card"></div>
 </div>
 
+<script src="../world.js"></script>
 <script>
 (function(){
 'use strict';
@@ -158,7 +159,7 @@ const LEVELS = [
     '#...........#',
     '#..K..#.....#',
     '#.....#..B..#',
-    '#..b..#.....#',
+    '#..b........#',
     '######E######'] },
   { name:'البيت الكبير', patrol:2.3, chase:3.4, vision:5, map:[
     '#############',
@@ -178,7 +179,7 @@ const LEVELS = [
     '#.#######.#.#',
     '#.#..K..#.#.#',
     '#...B.......#',
-    '#.#..t..#...#',
+    '#.#.t...#...#',
     '#####E#######'] },
   { name:'بوبو وأخوه بيبو', patrol:2.3, chase:3.3, vision:5, map:[
     '#############',
@@ -198,8 +199,69 @@ const LEVELS = [
     '#..K..#..M..#',
     '#.....#..B..#',
     '#.B.........#',
-    '#P....#.....#',
+    '#P..........#',
     '######E######'] }
+  ,
+  { name:'المطبخ', patrol:2.4, chase:3.5, vision:5, map:[
+    '#############',
+    '#P....t#....#',
+    '#.....##..K.#',
+    '#..B........#',
+    '#.....##.B..#',
+    '##.####..####',
+    '#.....#.....#',
+    '#.K...#..s..#',
+    '#...........#',
+    '#..b..#..M..#',
+    '#.B...#.....#',
+    '####.###.####',
+    '#.....#.....#',
+    '#..T..#..B..#',
+    '#.....#.....#',
+    '#.###...###.#',
+    '#..K....B...#',
+    '#...........#',
+    '#####E#######'] },
+  { name:'الحديقة', patrol:2.2, chase:3.2, vision:4.5, map:[
+    '#############',
+    '#P....#....K#',
+    '#.B.t...t.B.#',
+    '#.....#.....#',
+    '#.#.#####.#.#',
+    '#...........#',
+    '#.t..B.B..t.#',
+    '#.....M.....#',
+    '###.#####.###',
+    '#.....#.....#',
+    '#.K.B.#.B.T.#',
+    '#.....#.....#',
+    '#.##.....##.#',
+    '#.....M.....#',
+    '#.t..B.B..t.#',
+    '#...........#',
+    '#.B.......B.#',
+    '#K.........K#',
+    '######E######'] },
+  { name:'القبو المعتم', dark:true, patrol:2.2, chase:3.3, vision:4.2, map:[
+    '#############',
+    '#P..#...#..K#',
+    '#...#.B.#...#',
+    '#.B.........#',
+    '#...#...#.B.#',
+    '##.###.###.##',
+    '#.....#.....#',
+    '#..K..#..B..#',
+    '#.....M.....#',
+    '#.B...#...T.#',
+    '##.###.###.##',
+    '#.....#.....#',
+    '#..B..#..K..#',
+    '#...........#',
+    '#.#.#####.#.#',
+    '#.#...B...#.#',
+    '#...#...#...#',
+    '#K..#...#..B#',
+    '#####E#######'] }
 ];
 const COLS = 13, ROWS = 19;
 const BLOCK = new Set(['#','s','b','t']);
@@ -341,7 +403,7 @@ function drawBobo(c, cx, cy, r, t, look, state, pal){
 
 /* ---------- Game state ---------- */
 let G = null, held = null, running = false, paused = true, toastTimer = 0;
-let unlocked = store.get('unlocked', 1), best = store.get('best', [0,0,0]);
+let unlocked = store.get('unlocked', 1), best = store.get('best', [0,0,0,0,0,0]);
 
 function ent(x, y, speed){ return { x, y, fx:x, fy:y, tx:x, ty:y, px:x, py:y, p:1, moving:false, speed, face:1 }; }
 function startMove(e, dx, dy){ e.fx = e.x; e.fy = e.y; e.tx = e.x + dx; e.ty = e.y + dy; e.p = 0; e.moving = true; if(dx) e.face = dx; }
@@ -370,12 +432,13 @@ function loadLevel(i){
   }
   G = g; held = null;
   updateHud();
-  toast('اجمع ' + AR(g.keys.length) + ' مفاتيح 🔑 واهرب من الباب!', 2600);
+  toast(L.dark ? 'القبو معتم! 🔦 دوّر على ' + AR(g.keys.length) + ' مفاتيح' : 'اجمع ' + AR(g.keys.length) + ' مفاتيح 🔑 واهرب من الباب!', 2600);
   say('اجمع المفاتيح، واهرب من ' + (g.monsters.length > 1 ? 'بوبو وبيبو' : 'بوبو'));
 }
+function boboPal(){ return window.World ? Object.assign({ name:'بوبو' }, World.palette()) : MONSTERS[0]; }
 function makeMonster(x, y, idx){
   const m = ent(x, y, 2);
-  return Object.assign(m, { idx, home:{ x, y }, pal: MONSTERS[idx % MONSTERS.length], state:'nap', timer: 2.2 + idx * 1.8,
+  return Object.assign(m, { idx, home:{ x, y }, pal: idx === 0 ? boboPal() : MONSTERS[idx % MONSTERS.length], state:'nap', timer: 2.2 + idx * 1.8,
                             path:[], last:null, wasPatrolling:false, look:{ x:0, y:1 } });
 }
 
@@ -565,6 +628,15 @@ function draw(){
   const actors = g.monsters.map(m => ({ y:m.py, d:() => drawMonster(m, t) }));
   actors.push({ y:p.py, d:() => drawPlayer(p, t) });
   actors.sort((a, b) => a.y - b.y).forEach(a => a.d());
+  if(g.L.dark){
+    const px = p.px * T + T / 2, py = p.py * T + T / 2, R = T * (2.8 + Math.sin(t * 3) * 0.08);
+    const dg = ctx.createRadialGradient(px, py, R * 0.45, px, py, R);
+    dg.addColorStop(0, 'rgba(12,9,32,0)'); dg.addColorStop(1, 'rgba(12,9,32,.94)');
+    ctx.fillStyle = dg; ctx.fillRect(0, 0, COLS * T, ROWS * T);
+    for(const m of g.monsters){ if(m.state === 'nap') continue; const mx = m.px * T + T / 2, my = m.py * T + T / 2 - T * 0.15;
+      ctx.fillStyle = m.state === 'chase' ? '#ff6b6b' : '#ffe9a8';
+      for(const s of [-1, 1]){ ctx.beginPath(); ctx.arc(mx + s * T * 0.15, my, T * 0.07, 0, Math.PI * 2); ctx.fill(); } }
+  }
 }
 function drawPlayer(p, t){
   const cx = p.px * T + T / 2, cy = p.py * T + T / 2;
@@ -578,6 +650,7 @@ function drawMonster(m, t){
   const cx = m.px * T + T / 2, cy = m.py * T + T / 2 - T * 0.05;
   const bob = m.moving ? Math.abs(Math.sin(t * 12)) * T * 0.06 : 0;
   drawBobo(ctx, cx, cy - bob, T * 0.5, t + m.idx, m.look, m.state, m.pal);
+  if(m.idx === 0 && window.World) World.drawOutfit(ctx, cx, cy - bob, T * 0.5);
   // bubble
   let txt = null, bg = '#fff7e8', fg = '#1c1838';
   if(m.state === 'chase'){ txt = '!'; bg = '#ff6b6b'; fg = '#fff'; }
@@ -645,6 +718,8 @@ function winLevel(){
   best[G.i] = Math.max(best[G.i] || 0, stars); store.set('best', best);
   if(G.i + 2 > unlocked){ unlocked = Math.min(LEVELS.length, G.i + 2); store.set('unlocked', unlocked); }
   SFX.win(); say('برافو! هربت');
+  const coins = stars * 4 + (G.caught === 0 ? 2 : 0);
+  if(window.World) World.addCoins(coins, 'لخزانة بوبو');
   const last = G.i === LEVELS.length - 1, i = G.i;
   const tips = [];
   if(G.caught > 0) tips.push('اهرب بدون ما ينمسك');
@@ -652,6 +727,7 @@ function winLevel(){
   openOverlay(
     '<div class="stars">' + starsHtml(stars) + '</div>' +
     '<h2>' + (last ? 'إنت بطل! خلصت كل البيوت 🏆' : 'برافو! هربت من البيت 🎉') + '</h2>' +
+    '<p style="color:var(--gold);font-weight:700">ربحت ' + AR(coins) + ' 🪙 عملة</p>' +
     (tips.length ? '<p>لتاخد نجوم أكتر: ' + tips.join(' و') + '</p>' : '<p>ثلاث نجوم! ما حدا متلك 😎</p>') +
     '<div class="row">' + (last ? '' : '<button class="big-btn" id="bNext">المرحلة الجاية</button>') + '</div>' +
     '<div class="row"><button class="ghost-btn" id="bAgain">عيدها</button><button class="ghost-btn" id="bHome">القائمة</button></div>'
@@ -708,7 +784,8 @@ function frame(now){
   if(bc && !overlay.hidden){
     const c = bc.getContext('2d'); c.clearRect(0, 0, bc.width, bc.height);
     const tt = now / 1000;
-    drawBobo(c, bc.width / 2, bc.height * 0.56, bc.height * 0.36, tt, { x:Math.sin(tt * 0.9) * 0.8, y:0.2 }, Math.floor(tt / 4) % 3 === 2 ? 'nap' : 'idle', MONSTERS[0]);
+    drawBobo(c, bc.width / 2, bc.height * 0.56, bc.height * 0.36, tt, { x:Math.sin(tt * 0.9) * 0.8, y:0.2 }, Math.floor(tt / 4) % 3 === 2 ? 'nap' : 'idle', boboPal());
+    if(window.World) World.drawOutfit(c, bc.width / 2, bc.height * 0.56, bc.height * 0.36);
   }
   requestAnimationFrame(frame);
 }

@@ -96,6 +96,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 
 <div class="overlay" id="overlay"><div class="card" id="card"></div></div>
 
+<script src="../world.js"></script>
 <script>
 (function(){
 'use strict';
@@ -454,11 +455,13 @@ function startMatch(){
 }
 function showChampion(p){
   phase = 'menu'; SFX.win(); say(p.name + ' هو البطل');
+  const coins = 6 + players.length * 2; if(window.World) World.addCoins(coins, 'لخزانة بوبو');
   overlay.hidden = false;
   const sorted = players.slice().sort((a, b) => b.score - a.score);
   card.innerHTML =
     '<canvas id="champCv" width="440" height="240" data-color="' + PLAYERS.findIndex(q => q.name === p.name) + '"></canvas>' +
     '<h2>' + p.name + ' هو البطل! 🏆</h2>' +
+    '<p style="color:var(--gold);font-weight:700">ربحتوا ' + AR(coins) + ' 🪙 عملة</p>' +
     '<div class="board">' + sorted.map(q => '<div><span><i style="background:' + q.color + '"></i>' + q.name + '</span><span>' + AR(q.score) + ' نقاط</span></div>').join('') + '</div>' +
     '<button class="big-btn" id="btnAgain">كمان حفلة</button>' +
     '<button class="ghost-btn" id="btnMenu">القائمة</button>';
