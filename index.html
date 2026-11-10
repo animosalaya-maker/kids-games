@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>ألعاب بوبو</title>
+<title>عالم بوبو</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="ألعاب للأطفال: بيت بوبو، حفلة الأصحاب، وتحدّي الاثنين. بدون إعلانات وبتشتغل بدون إنترنت.">
+<meta name="description" content="عالم بوبو: ٢٢ لعبة للأطفال، عملات وخزانة لبوبو وهدية كل يوم. بدون إعلانات.">
 <meta name="theme-color" content="#1c1838">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -14,104 +14,310 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap">
 <style>
-/* Layout: app home screen. Big name, then one tall card per game, stacked on phones and side by side on wide screens. */
+/* Layout: a kid's home screen. Bobo + coins on top, today's gift, then every game as a big bright tile grouped by how many kids play. */
 :root{
   --night:#1c1838; --night-2:#2a2452; --night-3:#362e68; --face:#2f2858;
-  --ink:#fff7e8; --muted:#bdb4e6; --gold:#ffcd4d; --bobo:#9b6bff; --party:#ff5a5f; --duel:#3fa9ff;
+  --ink:#fff7e8; --muted:#bdb4e6; --gold:#ffcd4d; --gold-d:#c48f12; --bobo:#9b6bff; --party:#ff5a5f; --mint:#3fd47a;
   --display:"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif; --body:"Tajawal",system-ui,sans-serif;
   color-scheme:dark;
 }
 html{box-sizing:border-box;min-height:100%;background:var(--night)}
 *,*::before,*::after{box-sizing:inherit}
-body{margin:0;min-height:100%;background:var(--night);color:var(--ink);font-family:var(--body);-webkit-tap-highlight-color:transparent}
-.wrap{max-width:820px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:22px}
-header{text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
-h1{font-family:var(--display);font-weight:800;font-size:clamp(44px,12vw,72px);line-height:1;margin:0;color:var(--gold);text-shadow:0 5px 0 var(--face)}
-header p{margin:0;color:var(--muted);font-size:17px;text-wrap:balance}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
-.game{display:flex;flex-direction:column;gap:10px;text-decoration:none;color:var(--ink);background:var(--night-2);border-radius:28px;padding:16px;
-  box-shadow:0 0 0 3px var(--night-3),0 8px 0 var(--face);transition:transform .15s}
-.game:active{transform:translateY(4px)}
-.game:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
-.game canvas{width:100%;aspect-ratio:16/10;max-width:100%;border-radius:20px;display:block}
-.game h2{font-family:var(--display);font-weight:800;font-size:30px;margin:0;line-height:1.1}
-.game p{margin:0;color:var(--muted);line-height:1.5;min-width:0}
-.tags{display:flex;gap:8px;flex-wrap:wrap}
-.tag{background:var(--night-3);border-radius:999px;padding:5px 12px;font-weight:700;font-size:13px}
-.play{margin-top:4px;align-self:flex-start;border-radius:16px;padding:10px 22px;font-family:var(--display);font-weight:800;font-size:20px;color:#1c1838}
-.soon{text-align:center;color:var(--muted);font-size:14px;margin:0}
+body{margin:0;min-height:100%;background:var(--night);color:var(--ink);font-family:var(--body);-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+a{color:inherit}
+button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.wrap{max-width:760px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:calc(14px + env(safe-area-inset-top,0px)) calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:18px}
+
+.top{display:flex;align-items:center;gap:12px}
+#avatar{width:76px;height:76px;flex:none}
+.brand{flex:1;min-width:0}
+.brand h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8.5vw,44px);line-height:1;margin:0;color:var(--gold);text-shadow:0 4px 0 var(--face)}
+.brand span{color:var(--muted);font-size:14px}
+.coins{flex:none;display:flex;align-items:center;gap:6px;background:var(--night-3);border-radius:999px;padding:8px 14px;font-family:var(--display);font-weight:800;font-size:22px;font-variant-numeric:tabular-nums;box-shadow:0 4px 0 var(--face)}
+
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.pill-btn{border:0;border-radius:22px;padding:12px 14px;display:flex;align-items:center;gap:10px;text-align:start;box-shadow:0 6px 0 var(--face)}
+.pill-btn .ic{font-size:36px;line-height:1;flex:none}
+.pill-btn b{display:block;font-family:var(--display);font-weight:800;font-size:19px;line-height:1.1}
+.pill-btn small{display:block;font-size:12.5px;opacity:.85;line-height:1.3}
+.pill-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--face)}
+#giftBtn{background:var(--gold);color:#3a2a00}
+#giftBtn.done{background:var(--night-3);color:var(--ink)}
+#giftBtn:not(.done) .ic{animation:wiggle 1.2s ease-in-out infinite}
+@keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-6deg)}}
+#closetBtn{background:var(--bobo);color:#fff}
+
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec-h{display:flex;align-items:baseline;gap:8px}
+.sec-h h2{font-family:var(--display);font-weight:800;font-size:24px;margin:0;line-height:1.1}
+.sec-h span{color:var(--muted);font-size:14px;font-weight:700}
+.big{display:flex;gap:14px;align-items:center;text-decoration:none;border-radius:24px;padding:12px;background:var(--bg);box-shadow:inset 0 0 0 4px rgba(28,24,56,.85),0 6px 0 var(--face)}
+.big:active{transform:translateY(4px)}
+.big canvas{width:118px;height:96px;flex:none;border-radius:16px;background:rgba(28,24,56,.25)}
+.big div{min-width:0}
+.big b{display:block;font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.3)}
+.big small{display:block;color:rgba(255,255,255,.92);font-size:14px;line-height:1.4;font-weight:500}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media (min-width:560px){.tiles{grid-template-columns:repeat(5,minmax(0,1fr))}}
+.tile{aspect-ratio:1;max-width:100%;text-decoration:none;border-radius:22px;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px;
+  box-shadow:inset 0 0 0 4px rgba(28,24,56,.85),0 6px 0 var(--face)}
+.tile:active{transform:translateY(4px);box-shadow:inset 0 0 0 4px rgba(28,24,56,.85),0 2px 0 var(--face)}
+.tile .em{font-size:clamp(34px,11vw,50px);line-height:1;filter:drop-shadow(0 3px 0 rgba(0,0,0,.25))}
+.tile .nm{font-family:var(--display);font-weight:800;font-size:clamp(13px,3.6vw,16px);line-height:1.1;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);text-align:center}
+.foot{text-align:center;color:var(--muted);font-size:13px}
+
+/* sheets */
+.sheet{position:fixed;inset:0;z-index:20;background:rgba(18,14,40,.92);display:grid;place-items:center;overflow-y:auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
+.card{width:100%;max-width:440px;background:var(--night-2);border-radius:28px;padding:18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;box-shadow:0 0 0 3px var(--night-3),0 24px 60px rgba(0,0,0,.5)}
+.card h2{font-family:var(--display);font-weight:800;font-size:30px;margin:0;line-height:1.1}
+.card p{margin:0;color:var(--muted);line-height:1.5}
+.x{align-self:flex-start;border:0;width:40px;height:40px;border-radius:12px;background:var(--night-3);font-size:18px}
+#closetCv{width:200px;height:190px}
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.tabs button{border:0;border-radius:14px;padding:9px 4px;background:var(--night-3);font-weight:700}
+.tabs button[aria-pressed="true"]{background:var(--gold);color:#3a2a00}
+.items{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;width:100%}
+.item{border:0;border-radius:18px;background:var(--night);padding:10px 4px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;box-shadow:inset 0 0 0 3px var(--night-3)}
+.item.on{box-shadow:inset 0 0 0 3px var(--gold)}
+.item .sw{width:40px;height:40px;border-radius:50%;box-shadow:inset 0 -5px 0 rgba(0,0,0,.18)}
+.item .ie{font-size:34px;line-height:40px;height:40px}
+.item b{font-size:13px;font-weight:700}
+.item small{font-size:12px;font-weight:700;color:var(--gold)}
+.item small.own{color:var(--mint)}
+.item.shake{animation:shake .4s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.gift-box{font-size:110px;line-height:1;border:0;background:none;animation:wiggle 1s ease-in-out infinite}
+.gift-amt{font-family:var(--display);font-weight:800;font-size:54px;color:var(--gold);line-height:1}
+.streak{display:flex;gap:6px;justify-content:center}
+.streak i{font-style:normal;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--night-3);font-size:13px;font-weight:700}
+.streak i.on{background:var(--gold);color:#3a2a00}
+.big-btn{border:0;border-radius:20px;background:var(--gold);color:#3a2a00;font-family:var(--display);font-weight:800;font-size:22px;padding:10px 28px;box-shadow:0 6px 0 var(--gold-d)}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <h1>ألعاب بوبو</h1>
-    <p>ألعاب للأطفال، بدون إعلانات، وبتشتغل بدون إنترنت</p>
+  <header class="top">
+    <canvas id="avatar" width="200" height="200" aria-label="بوبو"></canvas>
+    <div class="brand"><h1>عالم بوبو</h1><span>العب، اجمع عملات، ولبّس بوبو</span></div>
+    <div class="coins" aria-label="العملات">🪙 <span id="coinCount">٠</span></div>
   </header>
-  <div class="grid">
-    <a class="game" href="bobo/">
-      <canvas id="c1" width="640" height="400"></canvas>
-      <h2>بيت بوبو</h2>
-      <p>اجمع المفاتيح وتخبّى بالصناديق، واهرب من بوبو الوحش النعسان قبل ما يدغدغك.</p>
-      <div class="tags"><span class="tag">👤 لاعب واحد</span><span class="tag">٣ مراحل</span></div>
-      <span class="play" style="background:var(--bobo)">العب</span>
-    </a>
-    <a class="game" href="party/">
-      <canvas id="c2" width="640" height="400"></canvas>
-      <h2>حفلة الأصحاب</h2>
-      <p>من ٢ لـ ٤ أولاد على نفس الجوال. ألعاب صغيرة سريعة، واللي بيجمع النقاط بياخد الكاس.</p>
-      <div class="tags"><span class="tag">👥 ٢–٤ لاعبين</span><span class="tag">٤ ألعاب صغيرة</span></div>
-      <span class="play" style="background:var(--party)">العب</span>
-    </a>
-    <a class="game" href="duel/">
-      <canvas id="c3" width="640" height="400"></canvas>
-      <h2>تحدّي الاثنين</h2>
-      <p>لاعب من تحت ولاعب من فوق على نفس الجوال. ١٧ لعبة: كرة قدم، بلياردو، أفعى، سيارات، إكس أو، وأكتر.</p>
-      <div class="tags"><span class="tag">👥 لاعبين اثنين</span><span class="tag">١٧ لعبة</span></div>
-      <span class="play" style="background:var(--duel)">العب</span>
-    </a>
+
+  <div class="row2">
+    <button class="pill-btn" id="giftBtn"><span class="ic">🎁</span><span><b id="giftT">هدية اليوم</b><small id="giftS">اكبس وافتحها!</small></span></button>
+    <button class="pill-btn" id="closetBtn"><span class="ic">👕</span><span><b>خزانة بوبو</b><small>قبعات ونضارات وألوان</small></span></button>
   </div>
-  <p class="soon">ألعاب جديدة جاية قريباً ✨ · <a href="privacy.html" style="color:inherit">الخصوصية</a></p>
+
+  <section class="sec">
+    <div class="sec-h"><h2>مغامرة بوبو</h2><span>👤 لاعب واحد</span></div>
+    <a class="big" href="bobo/" style="--bg:#7b52e6"><canvas id="cBobo" width="236" height="192"></canvas>
+      <div><b>بيت بوبو</b><small>اجمع المفاتيح واهرب من بوبو. ٦ مراحل: البيت، المطبخ، الحديقة، والقبو المعتم!</small></div></a>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>حفلة الأصحاب</h2><span>👥 ٢–٤ لاعبين</span></div>
+    <a class="big" href="party/" style="--bg:#e8494e"><canvas id="cParty" width="236" height="192"></canvas>
+      <div><b>حفلة الأصحاب</b><small>كل واحد بزاوية: مين الأسرع ⚡ سباق الكبس 🏁 أرض الحمم 🌋 شد الحبل 🪢</small></div></a>
+  </section>
+
+  <section class="sec">
+    <div class="sec-h"><h2>تحدّي الاثنين</h2><span>⚔️ واحد ضد واحد · <b id="duelCount"></b></span></div>
+    <div class="tiles" id="duelTiles"></div>
+  </section>
+
+  <p class="foot">بدون إعلانات · بيشتغل بدون إنترنت · <a href="privacy.html">الخصوصية</a></p>
 </div>
+
+<div class="sheet" id="giftSheet" hidden><div class="card">
+  <button class="x" data-close aria-label="سكّر">✕</button>
+  <h2 id="gH">هدية اليوم</h2>
+  <button class="gift-box" id="giftBox" aria-label="افتح الهدية">🎁</button>
+  <div class="gift-amt" id="gAmt" hidden></div>
+  <p id="gP">اكبس عالهدية لتفتحها</p>
+  <div class="streak" id="gStreak"></div>
+  <p style="font-size:13px">ارجع كل يوم، والهدية بتكبر لـ ٧ أيام ورا بعض</p>
+</div></div>
+
+<div class="sheet" id="closetSheet" hidden><div class="card">
+  <button class="x" data-close aria-label="سكّر">✕</button>
+  <h2>خزانة بوبو</h2>
+  <canvas id="closetCv" width="400" height="380" aria-label="بوبو بلبسه"></canvas>
+  <div class="coins" style="box-shadow:none">🪙 <span id="coinCount2">٠</span></div>
+  <div class="tabs"><button data-tab="color" aria-pressed="true">الألوان</button><button data-tab="hat" aria-pressed="false">القبعات</button><button data-tab="glasses" aria-pressed="false">النضارات</button></div>
+  <div class="items" id="items"></div>
+  <p id="closetMsg" style="font-size:14px;min-height:1.5em">العب أكتر لتجمع عملات 🪙</p>
+</div></div>
+
+<script src="world.js"></script>
 <script>
 (function(){
+'use strict';
+const W = window.World, AR = W.AR;
+const DUEL = [{"id": "tictactoe", "title": "إكس أو", "emoji": "❌", "bg": "#ff8fa3"}, {"id": "soccer", "title": "كرة القدم", "emoji": "⚽", "bg": "#4cc35a"}, {"id": "pong", "title": "تنس الطاولة", "emoji": "🏓", "bg": "#2fb36d"}, {"id": "pool", "title": "البلياردو", "emoji": "🎱", "bg": "#3fa9ff"}, {"id": "basketball", "title": "السلة", "emoji": "🏀", "bg": "#ff8a3d"}, {"id": "snake", "title": "الأفعى", "emoji": "🐍", "bg": "#7c5cff"}, {"id": "cars", "title": "سباق السيارات", "emoji": "🏎️", "bg": "#5b6475"}, {"id": "paint", "title": "حرب الألوان", "emoji": "🎨", "bg": "#ff7aa8"}, {"id": "sumo", "title": "دفّش برّا", "emoji": "🥊", "bg": "#ffb347"}, {"id": "darts", "title": "الأسهم والجذع", "emoji": "🎯", "bg": "#b07cff"}, {"id": "statue", "title": "ضو أحمر ضو أخضر", "emoji": "🚦", "bg": "#3fd47a"}, {"id": "slap", "title": "ضربة الكف", "emoji": "👋", "bg": "#2ec4b6"}, {"id": "coins", "title": "جمع المصاري", "emoji": "💰", "bg": "#ff6f61"}, {"id": "fruit", "title": "تقطيع الفواكه", "emoji": "🍉", "bg": "#8e5cf7"}, {"id": "flappy", "title": "العصفور الطاير", "emoji": "🐤", "bg": "#54c7ec"}, {"id": "chop", "title": "الحطّاب", "emoji": "🪓", "bg": "#5fbf4a"}, {"id": "tug", "title": "شد الحبل", "emoji": "🪢", "bg": "#ffa94d"}];
+function drawBobo(c, cx, cy, r, t, look, state, pal){
+  c.save(); c.translate(cx, cy);
+  const nap = state === 'nap', chase = state === 'chase', tickle = state === 'tickle';
+  const sq = nap ? 1 + Math.sin(t * 2) * 0.04 : 1 + Math.sin(t * (chase ? 14 : 8)) * 0.05;
+  if(tickle) c.rotate(Math.sin(t * 30) * 0.15);
+  // shadow
+  c.fillStyle = 'rgba(0,0,0,.22)'; c.beginPath(); c.ellipse(0, r * 0.92, r * 0.78, r * 0.2, 0, 0, Math.PI * 2); c.fill();
+  c.scale(1 / sq, sq);
+  // feet
+  c.fillStyle = pal.belly;
+  c.beginPath(); c.ellipse(-r * 0.4, r * 0.78, r * 0.24, r * 0.15, 0, 0, Math.PI * 2); c.ellipse(r * 0.4, r * 0.78, r * 0.24, r * 0.15, 0, 0, Math.PI * 2); c.fill();
+  // horns
+  c.fillStyle = pal.light;
+  for(const s of [-1, 1]){
+    c.beginPath(); c.moveTo(s * r * 0.62, -r * 0.45);
+    c.quadraticCurveTo(s * r * 0.9, -r * 1.15, s * r * 0.28, -r * 0.82); c.closePath(); c.fill();
+  }
+  // fluffy body
+  c.fillStyle = pal.color; c.beginPath();
+  c.arc(0, 0, r * 0.86, 0, Math.PI * 2);
+  for(let i = 0; i < 16; i++){
+    const a = i / 16 * Math.PI * 2 + Math.sin(t * 3 + i) * 0.03;
+    c.moveTo(Math.cos(a) * r * 0.86 + r * 0.2, Math.sin(a) * r * 0.86);
+    c.arc(Math.cos(a) * r * 0.86, Math.sin(a) * r * 0.86, r * 0.2, 0, Math.PI * 2);
+  }
+  c.fill();
+  // belly
+  c.fillStyle = pal.belly; c.beginPath(); c.ellipse(0, r * 0.32, r * 0.5, r * 0.42, 0, 0, Math.PI * 2); c.fill();
+  // cheeks
+  c.fillStyle = 'rgba(255,143,184,.75)';
+  c.beginPath(); c.ellipse(-r * 0.56, r * 0.08, r * 0.14, r * 0.09, 0, 0, Math.PI * 2); c.ellipse(r * 0.56, r * 0.08, r * 0.14, r * 0.09, 0, 0, Math.PI * 2); c.fill();
+  // eyes
+  const ex = r * 0.3, ey = -r * 0.22;
+  if(nap){
+    c.strokeStyle = '#2a1f4f'; c.lineWidth = Math.max(1.5, r * 0.08); c.lineCap = 'round';
+    for(const s of [-1, 1]){ c.beginPath(); c.arc(s * ex, ey, r * 0.15, 0.15 * Math.PI, 0.85 * Math.PI); c.stroke(); }
+  } else {
+    const er = r * (chase ? 0.27 : 0.24);
+    for(const s of [-1, 1]){
+      c.fillStyle = '#fff'; c.beginPath(); c.arc(s * ex, ey, er, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#2a1f4f'; c.beginPath(); c.arc(s * ex + look.x * er * 0.4, ey + look.y * er * 0.4, er * 0.52, 0, Math.PI * 2); c.fill();
+      c.fillStyle = '#fff'; c.beginPath(); c.arc(s * ex + look.x * er * 0.4 - er * 0.18, ey + look.y * er * 0.4 - er * 0.18, er * 0.17, 0, Math.PI * 2); c.fill();
+    }
+  }
+  // mouth
+  c.fillStyle = '#2a1f4f'; c.strokeStyle = '#2a1f4f'; c.lineWidth = Math.max(1.5, r * 0.07); c.lineCap = 'round';
+  if(chase || tickle){
+    c.beginPath(); c.ellipse(0, r * 0.2, r * 0.2, r * (tickle ? 0.2 : 0.16), 0, 0, Math.PI * 2); c.fill();
+    c.fillStyle = '#ff8fb8'; c.beginPath(); c.ellipse(0, r * 0.28, r * 0.11, r * 0.07, 0, 0, Math.PI * 2); c.fill();
+  } else if(nap){
+    c.beginPath(); c.ellipse(0, r * 0.2, r * 0.07, r * 0.09, 0, 0, Math.PI * 2); c.fill();
+  } else {
+    c.beginPath(); c.arc(0, r * 0.08, r * 0.24, 0.2 * Math.PI, 0.8 * Math.PI); c.stroke();
+    c.fillStyle = '#fff'; c.fillRect(-r * 0.07, r * 0.28, r * 0.1, r * 0.1);
+  }
+  c.restore();
+}
+
+/* tiles */
+const box = document.getElementById('duelTiles');
+DUEL.forEach(g => {
+  const a = document.createElement('a'); a.className = 'tile'; a.href = 'duel/#' + g.id; a.style.setProperty('--bg', g.bg);
+  a.innerHTML = '<span class="em">' + g.emoji + '</span><span class="nm">' + g.title + '</span>'; box.appendChild(a);
+});
+document.getElementById('duelCount').textContent = AR(DUEL.length) + ' لعبة';
+
+function refresh(){
+  document.getElementById('coinCount').textContent = AR(W.coins);
+  document.getElementById('coinCount2').textContent = AR(W.coins);
+  const gb = document.getElementById('giftBtn'), ready = W.giftReady();
+  gb.classList.toggle('done', !ready);
+  document.getElementById('giftT').textContent = ready ? 'هدية اليوم' : 'أخدت هدية اليوم';
+  document.getElementById('giftS').textContent = ready ? 'اكبس وافتحها!' : 'ارجع بكرا لهدية جديدة';
+}
+addEventListener('pageshow', refresh); addEventListener('focus', refresh); refresh();
+
+/* sound */
+let actx = null;
+function tone(f, d, type, v, delay){ try{ actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === 'suspended') actx.resume();
+  const t0 = actx.currentTime + (delay || 0), o = actx.createOscillator(), g = actx.createGain(); o.type = type || 'triangle'; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v || 0.14, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+  o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + d + 0.05); }catch(e){} }
+const ding = () => [784, 988, 1318].forEach((f, i) => tone(f, .18, 'triangle', .13, i * .08));
+const nope = () => tone(160, .25, 'sawtooth', .07);
+
+/* sheets */
+function open(id){ document.getElementById(id).hidden = false; }
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => { b.closest('.sheet').hidden = true; refresh(); });
+document.querySelectorAll('.sheet').forEach(s => s.addEventListener('click', e => { if(e.target === s){ s.hidden = true; refresh(); } }));
+
+/* gift */
+function drawStreak(n){ document.getElementById('gStreak').innerHTML = [1,2,3,4,5,6,7].map(d => '<i class="' + (d <= n ? 'on' : '') + '">' + AR(d) + '</i>').join(''); }
+document.getElementById('giftBtn').onclick = () => {
+  const ready = W.giftReady(); open('giftSheet');
+  document.getElementById('giftBox').hidden = !ready; document.getElementById('gAmt').hidden = true;
+  document.getElementById('gH').textContent = ready ? 'هدية اليوم' : 'شفناك اليوم! 👋';
+  document.getElementById('gP').textContent = ready ? 'اكبس عالهدية لتفتحها' : 'ارجع بكرا لتاخد هدية جديدة. أيامك ورا بعض:';
+  drawStreak(W.streak);
+};
+document.getElementById('giftBox').onclick = () => {
+  const n = W.openGift(); if(!n) return;
+  document.getElementById('giftBox').hidden = true;
+  const amt = document.getElementById('gAmt'); amt.hidden = false; amt.textContent = '+' + AR(n) + ' 🪙';
+  document.getElementById('gH').textContent = 'يا سلام! 🎉';
+  document.getElementById('gP').textContent = W.streak > 1 ? 'يوم ' + AR(W.streak) + ' ورا بعض! الهدية كبرت' : 'ارجع بكرا والهدية بتكبر';
+  drawStreak(W.streak); ding(); refresh();
+};
+
+/* closet */
+let tab = 'color';
+const LISTS = { color: W.COLORS, hat: W.HATS, glasses: W.GLASSES };
+function renderItems(){
+  const list = LISTS[tab], o = W.outfit, el = document.getElementById('items'); el.innerHTML = '';
+  const entries = Object.entries(list);
+  if(tab !== 'color') entries.unshift(['none', { name:'بلا', price:0, e:'🚫' }]);
+  entries.forEach(([key, it]) => {
+    const id = tab + ':' + key, owned = key === 'none' || it.price === 0 || W.owns(id);
+    const on = tab === 'color' ? o.color === key : (o[tab] || 'none') === key;
+    const b = document.createElement('button'); b.className = 'item' + (on ? ' on' : '');
+    b.innerHTML = (tab === 'color' ? '<span class="sw" style="background:' + it.color + '"></span>' : '<span class="ie">' + it.e + '</span>') +
+      '<b>' + it.name + '</b>' + (on ? '<small class="own">لابسه ✔</small>' : owned ? '<small class="own">البس</small>' : '<small>🪙 ' + AR(it.price) + '</small>');
+    b.onclick = () => {
+      const msg = document.getElementById('closetMsg');
+      if(!owned){
+        if(!W.buy(id, it.price)){ nope(); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); msg.textContent = 'بدك كمان ' + AR(it.price - W.coins) + ' 🪙. العب لتجمع!'; return; }
+        msg.textContent = 'اشتريت ' + it.name + '! 🎉';
+      } else msg.textContent = 'بوبو لابس ' + it.name;
+      W.wear(tab, key === 'none' ? null : key); ding(); renderItems(); refresh();
+    };
+    el.appendChild(b);
+  });
+}
+document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; document.querySelectorAll('[data-tab]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderItems(); });
+document.getElementById('closetBtn').onclick = () => { open('closetSheet'); renderItems(); };
+
+/* little animations */
 const BUD = [['#ff5a5f','#c23a40'],['#3fa9ff','#2276c4'],['#3fd47a','#249c55'],['#ffc233','#c48f12']];
-function bobo(c,x,y,r,t){
-  c.save();c.translate(x,y);const sq=1+Math.sin(t*3)*.04;c.scale(1/sq,sq);
-  c.fillStyle='#d2bcff';for(const s of[-1,1]){c.beginPath();c.moveTo(s*r*.62,-r*.45);c.quadraticCurveTo(s*r*.9,-r*1.15,s*r*.28,-r*.82);c.closePath();c.fill();}
-  c.fillStyle='#9b6bff';c.beginPath();c.arc(0,0,r*.86,0,7);for(let i=0;i<16;i++){const a=i/16*6.283;c.moveTo(Math.cos(a)*r*.86+r*.2,Math.sin(a)*r*.86);c.arc(Math.cos(a)*r*.86,Math.sin(a)*r*.86,r*.2,0,7);}c.fill();
-  c.fillStyle='#b993ff';c.beginPath();c.ellipse(0,r*.32,r*.5,r*.42,0,0,7);c.fill();
-  c.fillStyle='rgba(255,143,184,.75)';c.beginPath();c.ellipse(-r*.56,r*.08,r*.14,r*.09,0,0,7);c.ellipse(r*.56,r*.08,r*.14,r*.09,0,0,7);c.fill();
-  for(const s of[-1,1]){c.fillStyle='#fff';c.beginPath();c.arc(s*r*.3,-r*.22,r*.24,0,7);c.fill();c.fillStyle='#2a1f4f';c.beginPath();c.arc(s*r*.3+Math.sin(t)*r*.08,-r*.22,r*.12,0,7);c.fill();}
-  c.strokeStyle='#2a1f4f';c.lineWidth=r*.07;c.lineCap='round';c.beginPath();c.arc(0,r*.08,r*.24,.2*Math.PI,.8*Math.PI);c.stroke();c.restore();
-}
-function buddy(c,x,y,r,col,t){
-  c.save();c.translate(x,y);
-  c.fillStyle=col[1];c.beginPath();c.ellipse(0,r*.08,r*.92,r*.95,0,0,7);c.fill();c.fillStyle=col[0];c.beginPath();c.arc(0,0,r*.9,0,7);c.fill();
-  for(const s of[-1,1]){c.fillStyle='#fff';c.beginPath();c.arc(s*r*.3,-r*.2,r*.22,0,7);c.fill();c.fillStyle='#1c1838';c.beginPath();c.arc(s*r*.3,-r*.2,r*.11,0,7);c.fill();}
-  c.fillStyle='#1c1838';c.beginPath();c.arc(0,r*.18,r*.3,0,Math.PI);c.fill();c.restore();
-}
-const c1=document.getElementById('c1').getContext('2d'), c2=document.getElementById('c2').getContext('2d'), c3=document.getElementById('c3').getContext('2d');
+function buddy(c, x, y, r, col){ c.save(); c.translate(x, y);
+  c.fillStyle = col[1]; c.beginPath(); c.ellipse(0, r * .08, r * .92, r * .95, 0, 0, 7); c.fill(); c.fillStyle = col[0]; c.beginPath(); c.arc(0, 0, r * .9, 0, 7); c.fill();
+  for(const s of [-1, 1]){ c.fillStyle = '#fff'; c.beginPath(); c.arc(s * r * .3, -r * .2, r * .22, 0, 7); c.fill(); c.fillStyle = '#1c1838'; c.beginPath(); c.arc(s * r * .3, -r * .2, r * .11, 0, 7); c.fill(); }
+  c.fillStyle = '#1c1838'; c.beginPath(); c.arc(0, r * .18, r * .3, 0, Math.PI); c.fill(); c.restore(); }
+const ctxs = ['avatar','cBobo','cParty','closetCv'].map(id => document.getElementById(id).getContext('2d'));
 function frame(now){
-  const t=now/1000;
-  c1.fillStyle='#2f2858';c1.fillRect(0,0,640,400);
-  for(let y=0;y<5;y++)for(let x=0;x<8;x++){c1.fillStyle=(x+y)%2?'#f4ddb2':'#ecd2a2';c1.fillRect(x*80,y*80+400-5*80,80,80);}
-  c1.font='70px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';c1.textAlign='center';c1.textBaseline='middle';
-  c1.fillText('📦',110,300);c1.fillText('🔑',540,110+Math.sin(t*3)*8);c1.fillText('🧒',190,300);c1.fillText('🚪',560,300);
-  bobo(c1,370,210,95,t);
-  c2.fillStyle='#ff6a1a';c2.fillRect(0,0,640,400);
-  for(let y=0;y<5;y++)for(let x=0;x<8;x++){if((x*7+y*3)%5===0)continue;c2.fillStyle=(x+y)%2?'#8d6e63':'#7b5e55';c2.fillRect(x*80+3,y*80+3,74,74);}
-  BUD.forEach((b,i)=>buddy(c2,110+i*140,200+Math.sin(t*4+i)*18,48,b,t));
-  c3.fillStyle='#4cc35a';c3.fillRect(0,0,640,400);c3.fillStyle='#3fae4f';for(let i=0;i<8;i++)if(i%2)c3.fillRect(i*80,0,80,400);
-  c3.strokeStyle='#fff';c3.lineWidth=6;c3.strokeRect(20,20,600,360);c3.beginPath();c3.moveTo(320,20);c3.lineTo(320,380);c3.stroke();c3.beginPath();c3.arc(320,200,60,0,7);c3.stroke();
-  c3.font='64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';c3.textAlign='center';c3.textBaseline='middle';
-  const bx=320+Math.sin(t*1.6)*150;c3.fillText('⚽',bx,200+Math.cos(t*2.3)*60);
-  buddy(c3,110,200+Math.sin(t*2)*50,52,BUD[0],t);buddy(c3,530,200-Math.sin(t*2)*50,52,BUD[1],t);
+  const t = now / 1000, pal = W.palette();
+  const [ca, cb, cp, cc] = ctxs;
+  ca.clearRect(0, 0, 200, 200); drawBobo(ca, 100, 112, 66, t, { x:Math.sin(t * .8) * .7, y:.2 }, 'idle', pal); W.drawOutfit(ca, 100, 112, 66);
+  cb.clearRect(0, 0, 236, 192);
+  for(let y = 0; y < 4; y++) for(let x = 0; x < 5; x++){ cb.fillStyle = (x + y) % 2 ? '#f4ddb2' : '#ecd2a2'; cb.fillRect(x * 48 - 2, y * 48, 48, 48); }
+  cb.font = '40px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; cb.textAlign = 'center'; cb.textBaseline = 'middle';
+  cb.fillText('🔑', 200, 40 + Math.sin(t * 3) * 5); cb.fillText('📦', 34, 150); cb.fillText('🧒', 70, 150);
+  drawBobo(cb, 150, 112, 50, t, { x:-.8, y:.2 }, 'idle', pal); W.drawOutfit(cb, 150, 112, 50);
+  cp.clearRect(0, 0, 236, 192); cp.fillStyle = '#ff6a1a'; cp.fillRect(0, 0, 236, 192);
+  for(let y = 0; y < 4; y++) for(let x = 0; x < 5; x++){ if((x * 7 + y * 3) % 5 === 0) continue; cp.fillStyle = (x + y) % 2 ? '#8d6e63' : '#7b5e55'; cp.fillRect(x * 48 + 2, y * 48 + 2, 44, 44); }
+  BUD.forEach((b, i) => buddy(cp, 34 + i * 56, 96 + Math.sin(t * 4 + i) * 12, 24, b));
+  if(!document.getElementById('closetSheet').hidden){ cc.clearRect(0, 0, 400, 380); drawBobo(cc, 200, 215, 130, t, { x:Math.sin(t) * .6, y:.1 }, 'idle', pal); W.drawOutfit(cc, 200, 215, 130); }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 })();
 </script>
 </body>

@@ -189,6 +189,8 @@ function frame(now){
 
 function showChampion(p){
   phase = 'champ'; SFX.win();
+  const coins = 8; if(window.World) World.addCoins(coins, 'لخزانة بوبو');
+  document.querySelector('#champ .coins').textContent = 'ربحتوا ' + AR(coins) + ' 🪙 عملة';
   const box = document.getElementById('champ'); box.hidden = false;
   box.querySelector('h2').textContent = PLAYERS[p].name + ' هو البطل! 🏆';
   box.querySelector('h2').style.color = PLAYERS[p].color;
@@ -217,6 +219,7 @@ function boot(){
   document.getElementById('toMenu').onclick = backToMenu;
   buildMenu();
   const want = new URLSearchParams(location.search).get('game') || location.hash.slice(1);
+  addEventListener('hashchange', () => { const g2 = GAMES.find(x => x.id === location.hash.slice(1)); if(g2) openGame(g2); });
   const g = GAMES.find(x => x.id === want); if(g) openGame(g);
   requestAnimationFrame(frame);
   if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').catch(() => {});
