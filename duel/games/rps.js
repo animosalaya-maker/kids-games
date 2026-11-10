@@ -89,13 +89,13 @@ Duel.register({
           const col = api.players[pl], other = 1 - pl;
           // points: three stars on the left of the hand
           for(let i = 0; i < GOAL; i++){
-            const x = W * 0.1 + i * s * 0.085, y = mid + hf * 0.33;
+            const x = W * 0.075 + i * s * 0.07, y = mid + hf * 0.33;
             c.globalAlpha = i < pts[pl] ? 1 : 0.25;
-            api.emoji(c, '⭐', x, y, s * 0.075);
+            api.emoji(c, '⭐', x, y, s * 0.065);
           }
           c.globalAlpha = 1;
           // hand
-          const hs = hf * 0.34;
+          const hs = hf * 0.27;
           let hx = W / 2, hy = mid + hf * 0.33, ch = '✊', scale = 1, rot = 0, alpha = 1;
           if(stage === 'reveal'){
             const f = (st % BEAT) / BEAT;
@@ -120,7 +120,7 @@ Duel.register({
           // status text
           let msg, mc = col.dark;
           if(ended && res) msg = res.w === pl || endWinner === pl ? 'ربحت! 🎉' : 'خسرت 😅';
-          else if(stage === 'pick') msg = pick[pl] === null ? 'اختار وحدة 👇' : (pick[other] === null ? 'اخترت ✔ استنى…' : 'اخترت ✔');
+          else if(stage === 'pick') msg = pick[pl] === null ? 'اختار وحدة 👇' : (pick[other] === null ? 'استنى رفيقك… ⏳' : 'يلا!');
           else if(stage === 'reveal') msg = BEATS[Math.min(2, Math.floor(st / BEAT))];
           else { msg = res.w === null ? 'تعادل! 🤝' : res.w === pl ? 'نقطة إلك! 🎉' : 'نقطة إلو'; mc = res.w === pl ? '#ffcd4d' : res.w === null ? '#fff7e8' : col.dark; }
           api.text(c, msg, W / 2, mid + hf * 0.6, Math.min(s * 0.075, 30), mc, 0);

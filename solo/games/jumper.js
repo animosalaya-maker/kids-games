@@ -54,6 +54,7 @@ Solo.register({
     function drawCloud(c, p, scr){
       const s = S(), x = p.x, y = scr, w = p.w, h = PH() * (1 - p.squish * 0.35);
       c.save(); c.translate(x, y + h / 2); if(p.rot) c.rotate(p.rot); if(p.broken) c.globalAlpha = Math.max(0, 1 - p.fall * 1.5);
+      else if(p.hits && p.type !== 'ground' && p.type !== 'crumble') c.globalAlpha = p.hits >= 2 ? 0.55 : 0.8;
       let fillC = '#ffffff', shade = '#d9e4ff';
       if(p.type === 'move'){ fillC = '#ffe0f0'; shade = '#ffb3d6'; }
       if(p.type === 'crumble'){ fillC = '#e6dccb'; shade = '#c4b49b'; }
@@ -123,7 +124,9 @@ Solo.register({
             if(p.type === 'ground' || dx < half){
               B.y = p.y - r * 0.85; B.vy = -JUMP(); squash = 1; p.squish = 1;
               api.sfx.jump(); burst(B.x, p.y, '#ffffff', 6, 0.4);
+              p.hits = (p.hits || 0) + 1;
               if(p.type === 'ground' && ++groundHits >= 6){ p.broken = true; }
+              if((p.type === 'normal' || p.type === 'move') && p.hits >= 3){ p.broken = true; api.sfx.pop(); burst(p.x, p.y, '#ffffff', 10, 0.5); }
               if(p.type === 'crumble'){ p.broken = true; api.sfx.pop(); burst(p.x, p.y, '#c4b49b', 10, 0.5); }
             }
           }
