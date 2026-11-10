@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ألعاب بوبو</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="ألعاب للأطفال: بيت بوبو، حفلة الأصحاب، وتحدّي الاثنين. بدون إعلانات وبتشتغل بدون إنترنت.">
+<meta name="theme-color" content="#1c1838">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<style>
+/* Layout: app home screen. Big name, then one tall card per game, stacked on phones and side by side on wide screens. */
+:root{
+  --night:#1c1838; --night-2:#2a2452; --night-3:#362e68; --face:#2f2858;
+  --ink:#fff7e8; --muted:#bdb4e6; --gold:#ffcd4d; --bobo:#9b6bff; --party:#ff5a5f; --duel:#3fa9ff;
+  --display:"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif; --body:"Tajawal",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html{box-sizing:border-box;min-height:100%;background:var(--night)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100%;background:var(--night);color:var(--ink);font-family:var(--body);-webkit-tap-highlight-color:transparent}
+.wrap{max-width:820px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:calc(24px + env(safe-area-inset-top,0px)) calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:22px}
+header{text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(44px,12vw,72px);line-height:1;margin:0;color:var(--gold);text-shadow:0 5px 0 var(--face)}
+header p{margin:0;color:var(--muted);font-size:17px;text-wrap:balance}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.game{display:flex;flex-direction:column;gap:10px;text-decoration:none;color:var(--ink);background:var(--night-2);border-radius:28px;padding:16px;
+  box-shadow:0 0 0 3px var(--night-3),0 8px 0 var(--face);transition:transform .15s}
+.game:active{transform:translateY(4px)}
+.game:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.game canvas{width:100%;aspect-ratio:16/10;max-width:100%;border-radius:20px;display:block}
+.game h2{font-family:var(--display);font-weight:800;font-size:30px;margin:0;line-height:1.1}
+.game p{margin:0;color:var(--muted);line-height:1.5;min-width:0}
+.tags{display:flex;gap:8px;flex-wrap:wrap}
+.tag{background:var(--night-3);border-radius:999px;padding:5px 12px;font-weight:700;font-size:13px}
+.play{margin-top:4px;align-self:flex-start;border-radius:16px;padding:10px 22px;font-family:var(--display);font-weight:800;font-size:20px;color:#1c1838}
+.soon{text-align:center;color:var(--muted);font-size:14px;margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>ألعاب بوبو</h1>
+    <p>ألعاب للأطفال، بدون إعلانات، وبتشتغل بدون إنترنت</p>
+  </header>
+  <div class="grid">
+    <a class="game" href="bobo/">
+      <canvas id="c1" width="640" height="400"></canvas>
+      <h2>بيت بوبو</h2>
+      <p>اجمع المفاتيح وتخبّى بالصناديق، واهرب من بوبو الوحش النعسان قبل ما يدغدغك.</p>
+      <div class="tags"><span class="tag">👤 لاعب واحد</span><span class="tag">٣ مراحل</span></div>
+      <span class="play" style="background:var(--bobo)">العب</span>
+    </a>
+    <a class="game" href="party/">
+      <canvas id="c2" width="640" height="400"></canvas>
+      <h2>حفلة الأصحاب</h2>
+      <p>من ٢ لـ ٤ أولاد على نفس الجوال. ألعاب صغيرة سريعة، واللي بيجمع النقاط بياخد الكاس.</p>
+      <div class="tags"><span class="tag">👥 ٢–٤ لاعبين</span><span class="tag">٤ ألعاب صغيرة</span></div>
+      <span class="play" style="background:var(--party)">العب</span>
+    </a>
+    <a class="game" href="duel/">
+      <canvas id="c3" width="640" height="400"></canvas>
+      <h2>تحدّي الاثنين</h2>
+      <p>لاعب من تحت ولاعب من فوق على نفس الجوال. ١٧ لعبة: كرة قدم، بلياردو، أفعى، سيارات، إكس أو، وأكتر.</p>
+      <div class="tags"><span class="tag">👥 لاعبين اثنين</span><span class="tag">١٧ لعبة</span></div>
+      <span class="play" style="background:var(--duel)">العب</span>
+    </a>
+  </div>
+  <p class="soon">ألعاب جديدة جاية قريباً ✨ · <a href="privacy.html" style="color:inherit">الخصوصية</a></p>
+</div>
+<script>
+(function(){
+const BUD = [['#ff5a5f','#c23a40'],['#3fa9ff','#2276c4'],['#3fd47a','#249c55'],['#ffc233','#c48f12']];
+function bobo(c,x,y,r,t){
+  c.save();c.translate(x,y);const sq=1+Math.sin(t*3)*.04;c.scale(1/sq,sq);
+  c.fillStyle='#d2bcff';for(const s of[-1,1]){c.beginPath();c.moveTo(s*r*.62,-r*.45);c.quadraticCurveTo(s*r*.9,-r*1.15,s*r*.28,-r*.82);c.closePath();c.fill();}
+  c.fillStyle='#9b6bff';c.beginPath();c.arc(0,0,r*.86,0,7);for(let i=0;i<16;i++){const a=i/16*6.283;c.moveTo(Math.cos(a)*r*.86+r*.2,Math.sin(a)*r*.86);c.arc(Math.cos(a)*r*.86,Math.sin(a)*r*.86,r*.2,0,7);}c.fill();
+  c.fillStyle='#b993ff';c.beginPath();c.ellipse(0,r*.32,r*.5,r*.42,0,0,7);c.fill();
+  c.fillStyle='rgba(255,143,184,.75)';c.beginPath();c.ellipse(-r*.56,r*.08,r*.14,r*.09,0,0,7);c.ellipse(r*.56,r*.08,r*.14,r*.09,0,0,7);c.fill();
+  for(const s of[-1,1]){c.fillStyle='#fff';c.beginPath();c.arc(s*r*.3,-r*.22,r*.24,0,7);c.fill();c.fillStyle='#2a1f4f';c.beginPath();c.arc(s*r*.3+Math.sin(t)*r*.08,-r*.22,r*.12,0,7);c.fill();}
+  c.strokeStyle='#2a1f4f';c.lineWidth=r*.07;c.lineCap='round';c.beginPath();c.arc(0,r*.08,r*.24,.2*Math.PI,.8*Math.PI);c.stroke();c.restore();
+}
+function buddy(c,x,y,r,col,t){
+  c.save();c.translate(x,y);
+  c.fillStyle=col[1];c.beginPath();c.ellipse(0,r*.08,r*.92,r*.95,0,0,7);c.fill();c.fillStyle=col[0];c.beginPath();c.arc(0,0,r*.9,0,7);c.fill();
+  for(const s of[-1,1]){c.fillStyle='#fff';c.beginPath();c.arc(s*r*.3,-r*.2,r*.22,0,7);c.fill();c.fillStyle='#1c1838';c.beginPath();c.arc(s*r*.3,-r*.2,r*.11,0,7);c.fill();}
+  c.fillStyle='#1c1838';c.beginPath();c.arc(0,r*.18,r*.3,0,Math.PI);c.fill();c.restore();
+}
+const c1=document.getElementById('c1').getContext('2d'), c2=document.getElementById('c2').getContext('2d'), c3=document.getElementById('c3').getContext('2d');
+function frame(now){
+  const t=now/1000;
+  c1.fillStyle='#2f2858';c1.fillRect(0,0,640,400);
+  for(let y=0;y<5;y++)for(let x=0;x<8;x++){c1.fillStyle=(x+y)%2?'#f4ddb2':'#ecd2a2';c1.fillRect(x*80,y*80+400-5*80,80,80);}
+  c1.font='70px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';c1.textAlign='center';c1.textBaseline='middle';
+  c1.fillText('📦',110,300);c1.fillText('🔑',540,110+Math.sin(t*3)*8);c1.fillText('🧒',190,300);c1.fillText('🚪',560,300);
+  bobo(c1,370,210,95,t);
+  c2.fillStyle='#ff6a1a';c2.fillRect(0,0,640,400);
+  for(let y=0;y<5;y++)for(let x=0;x<8;x++){if((x*7+y*3)%5===0)continue;c2.fillStyle=(x+y)%2?'#8d6e63':'#7b5e55';c2.fillRect(x*80+3,y*80+3,74,74);}
+  BUD.forEach((b,i)=>buddy(c2,110+i*140,200+Math.sin(t*4+i)*18,48,b,t));
+  c3.fillStyle='#4cc35a';c3.fillRect(0,0,640,400);c3.fillStyle='#3fae4f';for(let i=0;i<8;i++)if(i%2)c3.fillRect(i*80,0,80,400);
+  c3.strokeStyle='#fff';c3.lineWidth=6;c3.strokeRect(20,20,600,360);c3.beginPath();c3.moveTo(320,20);c3.lineTo(320,380);c3.stroke();c3.beginPath();c3.arc(320,200,60,0,7);c3.stroke();
+  c3.font='64px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';c3.textAlign='center';c3.textBaseline='middle';
+  const bx=320+Math.sin(t*1.6)*150;c3.fillText('⚽',bx,200+Math.cos(t*2.3)*60);
+  buddy(c3,110,200+Math.sin(t*2)*50,52,BUD[0],t);buddy(c3,530,200-Math.sin(t*2)*50,52,BUD[1],t);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+if('serviceWorker' in navigator && location.protocol==='https:') navigator.serviceWorker.register('sw.js').catch(()=>{});
+})();
+</script>
+</body>
+</html>
