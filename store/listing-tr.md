@@ -1,6 +1,6 @@
 # Google Play mağaza sayfası – Türkçe (tr-TR)
 
-**Uygulama adı:** Bobo Dünyası – Çocuk Oyunları
+**Uygulama adı:** Bobo Land – Çocuk Oyunları
 **Kategori:** Oyunlar → Eğitici / Aile · **Yaş:** 5 ve altı, 6–8, 9–12
 **Reklam:** Yok · **Uygulama içi satın alma:** Yok · **Gizlilik politikası:** `https://animosalaya-maker.github.io/kids-games/privacy.html`
 
@@ -8,7 +8,7 @@
 Çocuklar için 39 eğlenceli oyun: Bobo'dan kaç, harfleri öğren, arkadaşlarınla oyna!
 
 ## Tam açıklama
-Bobo Dünyası, çocuklar için eğlenceli ve güvenli bir oyun uygulamasıdır: 39 oyun ve hiç reklam yok.
+Bobo Land, çocuklar için eğlenceli ve güvenli bir oyun uygulamasıdır: 39 oyun ve hiç reklam yok.
 
 🏠 Bobo'nun Evi: anahtarları topla, kutulara saklan ve uykucu Bobo seni gıdıklamadan kaç! Karanlık bodrum dahil 6 bölüm.
 
