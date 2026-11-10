@@ -189,7 +189,7 @@ function frame(now){
 
 function showChampion(p){
   phase = 'champ'; SFX.win();
-  const coins = 8; if(window.World) World.addCoins(coins, 'لخزانة بوبو');
+  const coins = 8; if(window.World){ World.addCoins(coins, 'لخزانة بوبو'); World.track('play', 'duel_' + cur.id); }
   document.querySelector('#champ .coins').textContent = 'ربحتوا ' + AR(coins) + ' 🪙 عملة';
   const box = document.getElementById('champ'); box.hidden = false;
   box.querySelector('h2').textContent = PLAYERS[p].name + ' هو البطل! 🏆';

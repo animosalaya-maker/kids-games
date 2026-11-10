@@ -59,6 +59,20 @@ const World = {
     return amount;
   },
   get streak(){ return load().gift.streak || 0; },
+  /* play statistics for the sticker album */
+  track(kind, id, score){ const w = load(); w.stats = w.stats || { plays:0, games:{}, wins:0 }; w.stats.plays++; w.stats.games[id] = (w.stats.games[id] || 0) + 1; if(kind === 'win') w.stats.wins++; save(); },
+  get stats(){ const w = load(); return w.stats || { plays:0, games:{}, wins:0 }; },
+  get total(){ return load().total || 0; },
+  get owned(){ return load().owned.slice(); },
+  exportCode(){ const w = load(); return 'BOBO-' + btoa(unescape(encodeURIComponent(JSON.stringify(w)))).replace(/=+$/, ''); },
+  importCode(code){
+    try{
+      const raw = String(code).trim().replace(/^BOBO-/, '').replace(/\s+/g, '');
+      const data = JSON.parse(decodeURIComponent(escape(atob(raw))));
+      if(typeof data !== 'object' || typeof data.coins !== 'number' || !Array.isArray(data.owned)) return false;
+      mem = Object.assign(blank(), data); save(); return true;
+    }catch(e){ return false; }
+  },
   /* draws the hat and glasses on top of a Bobo drawn at (x,y) with radius r */
   drawOutfit(c, x, y, r, outfit){
     const o = outfit || load().outfit, F = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';

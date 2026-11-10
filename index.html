@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>عالم بوبو</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="عالم بوبو: ٢٢ لعبة للأطفال، عملات وخزانة لبوبو وهدية كل يوم. بدون إعلانات.">
+<meta name="description" content="عالم بوبو: ٣٩ لعبة للأطفال، عملات وخزانة لبوبو وهدية كل يوم. بدون إعلانات.">
 <meta name="theme-color" content="#1c1838">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
@@ -38,10 +38,10 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 .brand span{color:var(--muted);font-size:14px}
 .coins{flex:none;display:flex;align-items:center;gap:6px;background:var(--night-3);border-radius:999px;padding:8px 14px;font-family:var(--display);font-weight:800;font-size:22px;font-variant-numeric:tabular-nums;box-shadow:0 4px 0 var(--face)}
 
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.pill-btn{border:0;border-radius:22px;padding:12px 14px;display:flex;align-items:center;gap:10px;text-align:start;box-shadow:0 6px 0 var(--face)}
+.row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pill-btn{border:0;border-radius:22px;padding:10px 4px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;box-shadow:0 6px 0 var(--face);min-width:0}
 .pill-btn .ic{font-size:36px;line-height:1;flex:none}
-.pill-btn b{display:block;font-family:var(--display);font-weight:800;font-size:19px;line-height:1.1}
+.pill-btn b{display:block;font-family:var(--display);font-weight:800;font-size:17px;line-height:1.1}
 .pill-btn small{display:block;font-size:12.5px;opacity:.85;line-height:1.3}
 .pill-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--face)}
 #giftBtn{background:var(--gold);color:#3a2a00}
@@ -49,6 +49,21 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 #giftBtn:not(.done) .ic{animation:wiggle 1.2s ease-in-out infinite}
 @keyframes wiggle{0%,100%{transform:rotate(0)}20%{transform:rotate(-14deg)}40%{transform:rotate(12deg)}60%{transform:rotate(-6deg)}}
 #closetBtn{background:var(--bobo);color:#fff}
+#albumBtn{background:#2ec4b6;color:#fff}
+.tile{position:relative}
+.tile .badge{position:absolute;top:8px;inset-inline-start:8px;background:rgba(28,24,56,.75);color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;font-weight:700}
+.save-btn{border:0;border-radius:18px;background:var(--night-3);padding:14px;font-weight:700;font-size:16px;box-shadow:0 5px 0 var(--face)}
+.stickers{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
+.stk{border:0;border-radius:16px;background:var(--night);padding:8px 2px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:inset 0 0 0 3px var(--night-3)}
+.stk span{font-size:30px;line-height:1}
+.stk b{font-size:11px;font-weight:700;line-height:1.2}
+.stk.off span{filter:grayscale(1);opacity:.3}
+.stk.off b{color:var(--muted);opacity:.7}
+.stk.on{box-shadow:inset 0 0 0 3px var(--gold)}
+textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--night-3);background:var(--night);color:var(--ink);font:13px/1.4 ui-monospace,monospace;padding:10px;direction:ltr;resize:vertical;-webkit-user-select:text;user-select:text}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.small-btn{border:0;border-radius:14px;background:var(--night-3);padding:9px 16px;font-weight:700}
+.small-btn.gold{background:var(--gold);color:#3a2a00}
 
 .sec{display:flex;flex-direction:column;gap:10px}
 .sec-h{display:flex;align-items:baseline;gap:8px}
@@ -108,28 +123,23 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
     <div class="coins" aria-label="العملات">🪙 <span id="coinCount">٠</span></div>
   </header>
 
-  <div class="row2">
-    <button class="pill-btn" id="giftBtn"><span class="ic">🎁</span><span><b id="giftT">هدية اليوم</b><small id="giftS">اكبس وافتحها!</small></span></button>
-    <button class="pill-btn" id="closetBtn"><span class="ic">👕</span><span><b>خزانة بوبو</b><small>قبعات ونضارات وألوان</small></span></button>
+  <div class="row3">
+    <button class="pill-btn" id="giftBtn"><span class="ic">🎁</span><b id="giftT">هدية اليوم</b><small id="giftS">افتحها!</small></button>
+    <button class="pill-btn" id="closetBtn"><span class="ic">👕</span><b>الخزانة</b><small>لبّس بوبو</small></button>
+    <button class="pill-btn" id="albumBtn"><span class="ic">🏅</span><b>الملصقات</b><small id="albumS">٠ من ١٦</small></button>
   </div>
 
   <section class="sec">
-    <div class="sec-h"><h2>مغامرة بوبو</h2><span>👤 لاعب واحد</span></div>
-    <a class="big" href="bobo/" style="--bg:#7b52e6"><canvas id="cBobo" width="236" height="192"></canvas>
-      <div><b>بيت بوبو</b><small>اجمع المفاتيح واهرب من بوبو. ٦ مراحل: البيت، المطبخ، الحديقة، والقبو المعتم!</small></div></a>
+    <div class="sec-h"><h2>العب لحالك</h2><span>👤 لاعب واحد</span></div>
+    <div class="tiles" id="soloTiles"></div>
   </section>
 
   <section class="sec">
-    <div class="sec-h"><h2>حفلة الأصحاب</h2><span>👥 ٢–٤ لاعبين</span></div>
-    <a class="big" href="party/" style="--bg:#e8494e"><canvas id="cParty" width="236" height="192"></canvas>
-      <div><b>حفلة الأصحاب</b><small>كل واحد بزاوية: مين الأسرع ⚡ سباق الكبس 🏁 أرض الحمم 🌋 شد الحبل 🪢</small></div></a>
+    <div class="sec-h"><h2>العب مع أصحابك</h2><span>👥 على نفس الجوال</span></div>
+    <div class="tiles" id="friendTiles"></div>
   </section>
 
-  <section class="sec">
-    <div class="sec-h"><h2>تحدّي الاثنين</h2><span>⚔️ واحد ضد واحد · <b id="duelCount"></b></span></div>
-    <div class="tiles" id="duelTiles"></div>
-  </section>
-
+  <button class="save-btn" id="saveBtn">💾 حفظ اللعب ونقله لجوال تاني</button>
   <p class="foot">بدون إعلانات · بيشتغل بدون إنترنت · <a href="privacy.html">الخصوصية</a></p>
 </div>
 
@@ -153,12 +163,32 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
   <p id="closetMsg" style="font-size:14px;min-height:1.5em">العب أكتر لتجمع عملات 🪙</p>
 </div></div>
 
+<div class="sheet" id="albumSheet" hidden><div class="card">
+  <button class="x" data-close aria-label="سكّر">✕</button>
+  <h2>ألبوم الملصقات</h2>
+  <p id="albumP">العب واجمع كل الملصقات!</p>
+  <div class="stickers" id="stickers"></div>
+</div></div>
+
+<div class="sheet" id="saveSheet" hidden><div class="card">
+  <button class="x" data-close aria-label="سكّر">✕</button>
+  <h2>حفظ اللعب 💾</h2>
+  <p>اللعب بينحفظ لحاله على هالجوال. لتنقله لجوال تاني أو تحفظه عندك، انسخ هالرمز وخبّيه (مثلاً ابعته لحالك عالواتساب).</p>
+  <textarea id="codeOut" readonly aria-label="رمز الحفظ"></textarea>
+  <div class="row-btns"><button class="small-btn gold" id="copyBtn">انسخ الرمز</button></div>
+  <p style="margin-top:6px">عندك رمز من جوال تاني؟ حطّه هون:</p>
+  <textarea id="codeIn" aria-label="حط الرمز هون" placeholder="BOBO-..."></textarea>
+  <div class="row-btns"><button class="small-btn" id="restoreBtn">رجّع اللعب</button></div>
+  <p id="saveMsg" style="min-height:1.5em;font-weight:700"></p>
+</div></div>
+
 <script src="world.js"></script>
 <script>
 (function(){
 'use strict';
 const W = window.World, AR = W.AR;
 const DUEL = [{"id": "tictactoe", "title": "إكس أو", "emoji": "❌", "bg": "#ff8fa3"}, {"id": "soccer", "title": "كرة القدم", "emoji": "⚽", "bg": "#4cc35a"}, {"id": "pong", "title": "تنس الطاولة", "emoji": "🏓", "bg": "#2fb36d"}, {"id": "pool", "title": "البلياردو", "emoji": "🎱", "bg": "#3fa9ff"}, {"id": "basketball", "title": "السلة", "emoji": "🏀", "bg": "#ff8a3d"}, {"id": "snake", "title": "الأفعى", "emoji": "🐍", "bg": "#7c5cff"}, {"id": "cars", "title": "سباق السيارات", "emoji": "🏎️", "bg": "#5b6475"}, {"id": "paint", "title": "حرب الألوان", "emoji": "🎨", "bg": "#ff7aa8"}, {"id": "sumo", "title": "دفّش برّا", "emoji": "🥊", "bg": "#ffb347"}, {"id": "darts", "title": "الأسهم والجذع", "emoji": "🎯", "bg": "#b07cff"}, {"id": "statue", "title": "ضو أحمر ضو أخضر", "emoji": "🚦", "bg": "#3fd47a"}, {"id": "slap", "title": "ضربة الكف", "emoji": "👋", "bg": "#2ec4b6"}, {"id": "coins", "title": "جمع المصاري", "emoji": "💰", "bg": "#ff6f61"}, {"id": "fruit", "title": "تقطيع الفواكه", "emoji": "🍉", "bg": "#8e5cf7"}, {"id": "flappy", "title": "العصفور الطاير", "emoji": "🐤", "bg": "#54c7ec"}, {"id": "chop", "title": "الحطّاب", "emoji": "🪓", "bg": "#5fbf4a"}, {"id": "tug", "title": "شد الحبل", "emoji": "🪢", "bg": "#ffa94d"}];
+const SOLO = [{"id": "colors", "title": "فقاعات الألوان", "emoji": "🎈", "bg": "#ff5fa2"}];
 function drawBobo(c, cx, cy, r, t, look, state, pal){
   c.save(); c.translate(cx, cy);
   const nap = state === 'nap', chase = state === 'chase', tickle = state === 'tickle';
@@ -218,12 +248,15 @@ function drawBobo(c, cx, cy, r, t, look, state, pal){
 }
 
 /* tiles */
-const box = document.getElementById('duelTiles');
-DUEL.forEach(g => {
-  const a = document.createElement('a'); a.className = 'tile'; a.href = 'duel/#' + g.id; a.style.setProperty('--bg', g.bg);
-  a.innerHTML = '<span class="em">' + g.emoji + '</span><span class="nm">' + g.title + '</span>'; box.appendChild(a);
-});
-document.getElementById('duelCount').textContent = AR(DUEL.length) + ' لعبة';
+function tile(box, href, g, badge){
+  const a = document.createElement('a'); a.className = 'tile'; a.href = href; a.style.setProperty('--bg', g.bg);
+  a.innerHTML = (badge ? '<span class="badge">' + badge + '</span>' : '') + '<span class="em">' + g.emoji + '</span><span class="nm">' + g.title + '</span>'; box.appendChild(a);
+}
+const soloBox = document.getElementById('soloTiles'), friendBox = document.getElementById('friendTiles');
+tile(soloBox, 'bobo/', { title:'بيت بوبو', emoji:'🏠', bg:'#7b52e6' }, '٦ مراحل');
+SOLO.forEach(g => tile(soloBox, 'solo/#' + g.id, g));
+tile(friendBox, 'party/', { title:'حفلة الأصحاب', emoji:'🎉', bg:'#e8494e' }, '٢–٤');
+DUEL.forEach(g => tile(friendBox, 'duel/#' + g.id, g, '٢'));
 
 function refresh(){
   document.getElementById('coinCount').textContent = AR(W.coins);
@@ -294,25 +327,71 @@ function renderItems(){
 document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; document.querySelectorAll('[data-tab]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderItems(); });
 document.getElementById('closetBtn').onclick = () => { open('closetSheet'); renderItems(); };
 
+/* sticker album */
+function bestOf(key, i){ try{ const v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v) ? (v[i] || 0) : 0; }catch(e){ return 0; } }
+function stickers(){
+  const st = W.stats, g = st.games || {}, kinds = Object.keys(g), duel = kinds.filter(k => k.startsWith('duel_')).reduce((a, k) => a + g[k], 0);
+  return [
+    ['🪙','أول عملة', W.total >= 1, 'العب أي لعبة'],
+    ['💰','١٠٠ عملة', W.total >= 100, 'اجمع ١٠٠ عملة'],
+    ['👑','٥٠٠ عملة', W.total >= 500, 'اجمع ٥٠٠ عملة'],
+    ['🎁','أول هدية', W.streak >= 1, 'افتح هدية اليوم'],
+    ['📅','٣ أيام', W.streak >= 3, 'افتح الهدية ٣ أيام ورا بعض'],
+    ['🔥','أسبوع كامل', W.streak >= 7, '٧ أيام ورا بعض'],
+    ['👕','أول لبسة', W.owned.length > 1, 'اشتري شي من الخزانة'],
+    ['🎩','خزانة مليانة', W.owned.length >= 8, 'اشتري ٧ أغراض'],
+    ['🎮','١٠ ألعاب', st.plays >= 10, 'العب ١٠ مرات'],
+    ['🕹️','٥٠ لعبة', st.plays >= 50, 'العب ٥٠ مرة'],
+    ['🌈','جرّب ١٠', kinds.length >= 10, 'العب ١٠ ألعاب مختلفة'],
+    ['🌍','جرّب الكل', kinds.length >= 30, 'العب ٣٠ لعبة مختلفة'],
+    ['🏠','هربت!', (g.bobo || 0) >= 1, 'اهرب من بيت بوبو'],
+    ['🔦','القبو المعتم', bestOf('bobo_best', 5) > 0, 'خلّص المرحلة ٦'],
+    ['🎉','حفلة', (g.party || 0) >= 1, 'خلّص حفلة الأصحاب'],
+    ['⚔️','بطل التحدي', duel >= 5, 'خلّص ٥ تحديات']
+  ];
+}
+let newSticker = false;
+function renderAlbum(){
+  const list = stickers(), got = list.filter(x => x[2]).length;
+  document.getElementById('albumS').textContent = AR(got) + ' من ' + AR(list.length);
+  document.getElementById('albumP').textContent = got === list.length ? 'جمعت كل الملصقات! إنت بطل 🏆' : 'جمعت ' + AR(got) + ' من ' + AR(list.length) + '. اكبس على أي ملصق لتعرف كيف تاخده';
+  const el = document.getElementById('stickers'); el.innerHTML = '';
+  list.forEach(([e, n, on, how]) => { const d = document.createElement('button'); d.className = 'stk ' + (on ? 'on' : 'off');
+    d.innerHTML = '<span>' + e + '</span><b>' + n + '</b>'; d.onclick = () => { document.getElementById('albumP').textContent = (on ? '✔ ' : '🔒 ') + n + ': ' + how; }; el.appendChild(d); });
+  let seen = 0; try{ seen = +localStorage.getItem('bobo_seen_stickers') || 0; }catch(e){}
+  if(got > seen){ try{ localStorage.setItem('bobo_seen_stickers', got); }catch(e){} newSticker = true; }
+}
+renderAlbum();
+if(newSticker) document.getElementById('albumS').textContent = 'ملصق جديد! ✨';
+document.getElementById('albumBtn').onclick = () => { renderAlbum(); open('albumSheet'); };
+
+/* save code */
+document.getElementById('saveBtn').onclick = () => { document.getElementById('codeOut').value = W.exportCode(); document.getElementById('saveMsg').textContent = ''; open('saveSheet'); };
+document.getElementById('copyBtn').onclick = () => {
+  const ta = document.getElementById('codeOut'), msg = document.getElementById('saveMsg');
+  const manual = () => { ta.select(); msg.textContent = 'علّم الرمز وانسخه بإيدك'; };
+  try{ navigator.clipboard.writeText(ta.value).then(() => { msg.textContent = 'انسخ ✔ خبّيه بمكان أمين'; }, manual); }catch(e){ manual(); }
+};
+let confirmRestore = false;
+document.getElementById('restoreBtn').onclick = () => {
+  const code = document.getElementById('codeIn').value, msg = document.getElementById('saveMsg'), btn = document.getElementById('restoreBtn');
+  if(!code.trim()){ msg.textContent = 'حط الرمز أول'; return; }
+  if(!confirmRestore){ confirmRestore = true; btn.textContent = 'متأكد؟ اكبس كمان مرة'; msg.textContent = 'التقدم اللي على هالجوال رح يتبدّل'; return; }
+  confirmRestore = false; btn.textContent = 'رجّع اللعب';
+  if(W.importCode(code)){ msg.textContent = 'رجع كل شي! 🎉'; ding(); refresh(); renderAlbum(); } else { msg.textContent = 'الرمز مش صحيح. تأكد إنك نسخته كامل'; nope(); }
+};
+
 /* little animations */
 const BUD = [['#ff5a5f','#c23a40'],['#3fa9ff','#2276c4'],['#3fd47a','#249c55'],['#ffc233','#c48f12']];
 function buddy(c, x, y, r, col){ c.save(); c.translate(x, y);
   c.fillStyle = col[1]; c.beginPath(); c.ellipse(0, r * .08, r * .92, r * .95, 0, 0, 7); c.fill(); c.fillStyle = col[0]; c.beginPath(); c.arc(0, 0, r * .9, 0, 7); c.fill();
   for(const s of [-1, 1]){ c.fillStyle = '#fff'; c.beginPath(); c.arc(s * r * .3, -r * .2, r * .22, 0, 7); c.fill(); c.fillStyle = '#1c1838'; c.beginPath(); c.arc(s * r * .3, -r * .2, r * .11, 0, 7); c.fill(); }
   c.fillStyle = '#1c1838'; c.beginPath(); c.arc(0, r * .18, r * .3, 0, Math.PI); c.fill(); c.restore(); }
-const ctxs = ['avatar','cBobo','cParty','closetCv'].map(id => document.getElementById(id).getContext('2d'));
+const ctxs = ['avatar','closetCv'].map(id => document.getElementById(id).getContext('2d'));
 function frame(now){
   const t = now / 1000, pal = W.palette();
-  const [ca, cb, cp, cc] = ctxs;
+  const [ca, cc] = ctxs;
   ca.clearRect(0, 0, 200, 200); drawBobo(ca, 100, 112, 66, t, { x:Math.sin(t * .8) * .7, y:.2 }, 'idle', pal); W.drawOutfit(ca, 100, 112, 66);
-  cb.clearRect(0, 0, 236, 192);
-  for(let y = 0; y < 4; y++) for(let x = 0; x < 5; x++){ cb.fillStyle = (x + y) % 2 ? '#f4ddb2' : '#ecd2a2'; cb.fillRect(x * 48 - 2, y * 48, 48, 48); }
-  cb.font = '40px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; cb.textAlign = 'center'; cb.textBaseline = 'middle';
-  cb.fillText('🔑', 200, 40 + Math.sin(t * 3) * 5); cb.fillText('📦', 34, 150); cb.fillText('🧒', 70, 150);
-  drawBobo(cb, 150, 112, 50, t, { x:-.8, y:.2 }, 'idle', pal); W.drawOutfit(cb, 150, 112, 50);
-  cp.clearRect(0, 0, 236, 192); cp.fillStyle = '#ff6a1a'; cp.fillRect(0, 0, 236, 192);
-  for(let y = 0; y < 4; y++) for(let x = 0; x < 5; x++){ if((x * 7 + y * 3) % 5 === 0) continue; cp.fillStyle = (x + y) % 2 ? '#8d6e63' : '#7b5e55'; cp.fillRect(x * 48 + 2, y * 48 + 2, 44, 44); }
-  BUD.forEach((b, i) => buddy(cp, 34 + i * 56, 96 + Math.sin(t * 4 + i) * 12, 24, b));
   if(!document.getElementById('closetSheet').hidden){ cc.clearRect(0, 0, 400, 380); drawBobo(cc, 200, 215, 130, t, { x:Math.sin(t) * .6, y:.1 }, 'idle', pal); W.drawOutfit(cc, 200, 215, 130); }
   requestAnimationFrame(frame);
 }
