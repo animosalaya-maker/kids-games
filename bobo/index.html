@@ -5,7 +5,6 @@
 <script src="../i18n.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Bobo's House" data-tr="Bobo'nun Evi">بيت بوبو</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="لعبة أطفال: اجمع المفاتيح، تخبّى من بوبو الوحش اللطيف، واهرب من البيت." data-en="A kids' game: get the keys, hide from Bobo the friendly monster, and get out of the house." data-tr="Çocuk oyunu: anahtarları topla, sevimli canavar Bobo'dan saklan ve evden kaç.">
 <meta name="theme-color" content="#1c1838">
 <link rel="manifest" href="../manifest.webmanifest">
@@ -807,7 +806,7 @@ function start(){
     navigator.serviceWorker.register('../sw.js').catch(() => {});
   }
 }
-if(window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start); else start();
+start();
 })();
 </script>
 </body>
