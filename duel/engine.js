@@ -138,8 +138,8 @@ function drawOverlay(now){
       const cy = pl === 0 ? H * 0.75 : H * 0.25, s = pl === 0 ? 1 : -1;
       emoji(ctx, cur.emoji, W / 2, cy - s * 70, 54, pl === 1 ? Math.PI : 0);
       text(ctx, cur.title, W / 2, cy - s * 18, Math.min(38, W * 0.09), '#ffcd4d', pl);
-      wrapText(cur.help, W / 2, cy + s * 22, Math.min(W * 0.84, 420), 17, pl);
-      text(ctx, ready[pl] ? L('جاهز ✔','Ready ✔','Hazır ✔') : L('اكبس هون لما تكون جاهز','Tap here when ready','Hazır olunca buraya dokun'), W / 2, cy + s * 92, 22, ready[pl] ? '#3fd47a' : PLAYERS[pl].light, pl);
+      wrapText(cur.help, W / 2, cy + s * 20, Math.min(W * 0.88, 420), 16, pl);
+      text(ctx, ready[pl] ? L('جاهز ✔','Ready ✔','Hazır ✔') : L('اكبس هون لما تكون جاهز','Tap here when ready','Hazır olunca buraya dokun'), W / 2, cy + s * 112, 22, ready[pl] ? '#3fd47a' : PLAYERS[pl].light, pl);
     }
     ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke(); ctx.setLineDash([]);
   } else if(phase === 'count'){
