@@ -31,7 +31,7 @@ function text(c, str, x, y, size, color, weight){
   c.save(); c.font = (weight || 800) + ' ' + Math.round(size) + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.direction = 'rtl'; c.lineJoin = 'round';
   c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = Math.max(2, size * 0.12); c.strokeText(str, x, y); c.fillStyle = color || '#fff7e8'; c.fillText(str, x, y); c.restore();
 }
-function emoji(c, ch, x, y, size, rot){ c.save(); c.translate(x, y); if(rot) c.rotate(rot); c.font = Math.round(size) + 'px ' + EMOJI_FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, 0, size * 0.05); c.restore(); }
+function emoji(c, ch, x, y, size, rot){ c.save(); c.translate(x, y); if(rot) c.rotate(rot); c.font = Math.round(size) + 'px ' + EMOJI_FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#000'; c.globalAlpha = c.globalAlpha; c.fillText(ch, 0, size * 0.05); c.restore(); }
 
 /* Bobo, in the colour and clothes the kid picked in the wardrobe */
 function bobo(c, cx, cy, r, mood, look, t){

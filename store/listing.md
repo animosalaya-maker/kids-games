@@ -6,12 +6,14 @@
 **الإعلانات:** لا · **الشراء داخل التطبيق:** لا · **سياسة الخصوصية:** `https://animosalaya-maker.github.io/kids-games/privacy.html`
 
 ## وصف قصير (٨٠ حرف كحد أقصى)
-٢٢ لعبة للأطفال: اهرب من بوبو، والعب مع أصحابك على نفس الجوال. بدون إعلانات!
+٣٩ لعبة للأطفال: اهرب من بوبو، والعب مع أصحابك على نفس الجوال. بدون إعلانات!
 
 ## الوصف الكامل
-عالم بوبو هو تطبيق ألعاب مرح وآمن للأطفال، فيه ٢٢ لعبة، وما فيه ولا إعلان.
+عالم بوبو هو تطبيق ألعاب مرح وآمن للأطفال، فيه ٣٩ لعبة، وما فيه ولا إعلان.
 
 🏠 بيت بوبو: إنت محبوس بالبيت مع بوبو، الوحش البنفسجي النعسان! اجمع المفاتيح، تخبّى بالصناديق، واطلع من الباب قبل ما يمسكك ويدغدغك. ٦ مراحل ونجوم.
+
+👤 ١٢ لعبة مع بوبو: الذاكرة، صيد الحروف، الحساب، الألوان، القفز، الركض، المكعبات، صيد السمك، البازل، الأشكال وأكتر.
 
 🎉 حفلة الأصحاب: من ٢ لـ ٤ أولاد على نفس الجوال، كل واحد بزاوية. مين الأسرع، سباق الكبس، أرض الحمم، وشد الحبل.
 
@@ -19,13 +21,15 @@
 
 🪙 اجمع عملات ولبّس بوبو قبعات ونضارات وألوان
 🎁 هدية جديدة كل يوم
+🏅 ألبوم ملصقات
+💾 رمز حفظ لنقل اللعب لجوال تاني
 ✅ بدون إعلانات وبدون شراء
 ✅ بيشتغل بدون إنترنت
 ✅ بالعربي ومناسب للأطفال
 ✅ ما بيجمع أي معلومات
 
 ## English full description
-Bobo World is a fun, safe games app for kids with 22 games and no ads.
+Bobo World is a fun, safe games app for kids with 39 games and no ads.
 - Bobo's House: collect the keys, hide in boxes and escape before sleepy Bobo tickles you.
 - Friends Party: 2–4 kids on one phone: reaction, tap race, lava floor and tug of war.
 - Two-Player Challenge: 17 one-vs-one games: soccer, table tennis, pool, basketball, snake, car race, paint war, tic-tac-toe, fruit slicing, flappy bird, lumberjack and more.

@@ -67,7 +67,7 @@ function text(c, str, x, y, size, color, player, weight){
 }
 function emoji(c, ch, x, y, size, rot){
   c.save(); c.translate(x, y); if(rot) c.rotate(rot);
-  c.font = Math.round(size) + 'px ' + EMOJI_FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(ch, 0, size * 0.05); c.restore();
+  c.font = Math.round(size) + 'px ' + EMOJI_FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#000'; c.globalAlpha = c.globalAlpha; c.fillText(ch, 0, size * 0.05); c.restore();
 }
 
 /* registry */
