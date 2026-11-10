@@ -1,8 +1,15 @@
-[{
-  "relation": ["delegate_permission/common.handle_all_urls"],
-  "target": {
-    "namespace": "android_app",
-    "package_name": "com.boboland.kids",
-    "sha256_cert_fingerprints": ["2A:4A:48:EE:0F:3D:5D:D7:AF:9D:58:43:34:14:8F:E6:48:E4:B8:1F:D7:8B:42:37:2F:EC:4D:F2:B9:4F:0C:1C"]
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.boboland.kids",
+      "sha256_cert_fingerprints": [
+        "2A:4A:48:EE:0F:3D:5D:D7:AF:9D:58:43:34:14:8F:E6:48:E4:B8:1F:D7:8B:42:37:2F:EC:4D:F2:B9:4F:0C:1C",
+        "C7:41:D2:64:F9:33:14:E1:8E:AD:A4:39:C9:51:AA:26:AB:BD:AC:ED:0A:37:ED:BF:93:54:AA:2D:57:B1:06:50"
+      ]
+    }
   }
-}]
+]
