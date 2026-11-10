@@ -1,8 +1,8 @@
 /* Archery. A target slides left and right across the middle line and keeps changing speed.
    Tap your half to shoot your arrow straight at the middle. 5 arrows each, bullseye 10, middle ring 5, outer ring 2. */
 Duel.register({
-  id: 'archery', title: 'الرماية', emoji: '🏹', bg: '#2ec4b6',
-  help: 'اكبس لترمي سهمك لما يكون الهدف قدّامك. النص الأصفر بيعطي ١٠',
+  id: 'archery', title: L('الرماية', 'Archery', 'Okçuluk'), emoji: '🏹', bg: '#2ec4b6',
+  help: L('اكبس لترمي سهمك لما يكون الهدف قدّامك. النص الأصفر بيعطي ١٠', 'Tap to shoot when the target is in front of you. The yellow middle gives 10', 'Hedef önüne gelince okunu atmak için dokun. Sarı orta 10 puan verir'),
   create(api){
     const OUT = '#1c1838', N = 5, COOL = 0.6, LIMIT = 40;
     const S = () => Math.min(api.W, api.H);
@@ -31,10 +31,10 @@ Duel.register({
         score[f.pl] += ring.p; wobble = 1;
         stuck.push({ pl: f.pl, dx, t: time });
         pops.push({ pl: f.pl, x: api.W / 2, s: '+' + api.AR(ring.p), t: 0, big: ring.p === 10 });
-        if(ring.p === 10){ api.sfx.point(); api.say('بالنص! 🎯', f.pl, 900); } else api.sfx.hit();
+        if(ring.p === 10){ api.sfx.point(); api.say(L('بالنص! 🎯', 'Bullseye! 🎯', 'Tam isabet! 🎯'), f.pl, 900); } else api.sfx.hit();
       } else {
         misses.push({ pl: f.pl, d: 0, life: 1 });
-        pops.push({ pl: f.pl, x: api.W / 2, s: 'فاتت!', t: 0 });
+        pops.push({ pl: f.pl, x: api.W / 2, s: L('فاتت!', 'Missed!', 'Iska!'), t: 0, miss: true });
         api.sfx.buzz();
       }
     }
@@ -148,11 +148,11 @@ Duel.register({
           c.fillStyle = 'rgba(28,24,56,.7)'; c.beginPath(); c.roundRect(W * 0.7, hy - s * 0.045, W * 0.25, s * 0.09, s * 0.045); c.fill();
           c.strokeStyle = col.color; c.lineWidth = 4; c.stroke();
           api.text(c, '🎯 ' + api.AR(score[pl]), W * 0.825, hy, s * 0.055, '#fff7e8', 0);
-          if(time < 3 && !ended) api.text(c, 'اكبس لترمي 👆', W / 2, mid + hf * 0.42, s * 0.06, col.dark, 0);
-          else if(left[pl] === 0 && !ended) api.text(c, 'خلصت أسهمك!', W / 2, mid + hf * 0.42, s * 0.055, col.dark, 0);
+          if(time < 3 && !ended) api.text(c, L('اكبس لترمي 👆', 'Tap to shoot 👆', 'Atmak için dokun 👆'), W / 2, mid + hf * 0.42, s * 0.06, col.dark, 0);
+          else if(left[pl] === 0 && !ended) api.text(c, L('خلصت أسهمك!', 'No more arrows!', 'Okların bitti!'), W / 2, mid + hf * 0.42, s * 0.055, col.dark, 0);
           for(const p of pops){
             if(p.pl !== pl) continue;
-            api.text(c, p.s, p.x + W * 0.22, mid + r * 0.9 + hf * 0.12 - p.t * hf * 0.1, s * (p.big ? 0.085 : 0.065) * (1 + Math.max(0, 0.3 - p.t)), p.s === 'فاتت!' ? '#fff7e8' : '#ffcd4d', 0);
+            api.text(c, p.s, p.x + W * 0.22, mid + r * 0.9 + hf * 0.12 - p.t * hf * 0.1, s * (p.big ? 0.085 : 0.065) * (1 + Math.max(0, 0.3 - p.t)), p.miss ? '#fff7e8' : '#ffcd4d', 0);
           }
           c.restore();
         }

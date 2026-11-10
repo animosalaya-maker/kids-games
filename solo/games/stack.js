@@ -1,7 +1,7 @@
 /* Block tower: a block slides above the tower, tap to drop it. The overhang is cut off; perfect drops keep full width. */
 Solo.register({
-  id: 'stack', title: 'برج المكعبات', emoji: '🧱', bg: '#ff7a59',
-  help: 'اكبس لتنزّل المكعب فوق البرج. كل ما كان مظبوط أكتر، بيضل البرج عريض',
+  id: 'stack', title: L('برج المكعبات','Block Tower','Küp Kulesi'), emoji: '🧱', bg: '#ff7a59',
+  help: L('اكبس لتنزّل المكعب فوق البرج. كل ما كان مظبوط أكتر، بيضل البرج عريض','Tap to drop the block on the tower. The better you line it up, the wider the tower stays','Küpü kulenin üstüne bırakmak için dokun. Ne kadar tam denk getirirsen kule o kadar geniş kalır'),
   create(api){
     const emoji = (c, e, x, y, sz, r) => { c.fillStyle = '#000'; api.emoji(c, e, x, y, sz, r); };
     const OUT = '#1c1838';
@@ -49,15 +49,15 @@ Solo.register({
         tower.push({ x, w, col: m.col, land: 1 });
         api.sfx.good(); flash = 1; mood = 'wow'; moodT = 0.8;
         burst(x + w / 2, scr(y), '#fff6b0', 18, 0.7);
-        pops.push({ str: combo >= 3 ? 'ممتاز! ×' + api.AR(combo) : 'ممتاز!', x: x + w / 2, y, t: 0 });
-        if(combo === 3 || combo === 6 || combo === 10) api.say('ممتاز');
+        pops.push({ str: combo >= 3 ? api.L('ممتاز! ×','Perfect! ×','Mükemmel! ×') + api.AR(combo) : api.L('ممتاز!','Perfect!','Mükemmel!'), x: x + w / 2, y, t: 0 });
+        if(combo === 3 || combo === 6 || combo === 10) api.say(api.L('ممتاز','Perfect','Mükemmel'));
       } else {
         combo = 0;
         const ox0 = Math.max(x0, top.x), ox1 = Math.min(x1, top.x + top.w);
         if(ox1 - ox0 <= 0){
           // missed completely
           chunks.push({ x: x0, w: m.w, y, vy: 0, vx: (x0 < top.x ? -1 : 1) * S() * 0.3, rot: 0, vr: x0 < top.x ? -2.5 : 2.5, col: m.col });
-          over = true; overT = 0; mood = 'sad'; api.sfx.bad(); api.toast('وقع المكعب!', 1300); mover = null; return;
+          over = true; overT = 0; mood = 'sad'; api.sfx.bad(); api.toast(api.L('وقع المكعب!','The block fell!','Küp düştü!'), 1300); mover = null; return;
         }
         // cut the overhang
         const left = x0 < ox0, cw = m.w - (ox1 - ox0);
@@ -67,7 +67,7 @@ Solo.register({
         burst(left ? ox0 : ox1, scr(y) + BH() / 2, m.col, 6, 0.3);
         const lost = cw / m.w;
         mood = lost > 0.4 ? 'sad' : 'happy'; moodT = 0.9;
-        if(lost < 0.15) pops.push({ str: 'حلو!', x: ox0 + (ox1 - ox0) / 2, y, t: 0 });
+        if(lost < 0.15) pops.push({ str: api.L('حلو!','Nice!','Güzel!'), x: ox0 + (ox1 - ox0) / 2, y, t: 0 });
       }
       newMover();
     }
@@ -100,7 +100,7 @@ Solo.register({
         // camera: keep the top of the tower around the middle of the screen
         const want = Math.max(0, api.H * 0.5 - topY(tower.length - 1));
         camT = want; cam += (camT - cam) * Math.min(1, dt * 4);
-        if(over){ overT += dt; if(overT > 1.3) api.end({ score: tower.length - 1, msg: tower.length > 25 ? 'برج عالي كتير!' : undefined }); return; }
+        if(over){ overT += dt; if(overT > 1.3) api.end({ score: tower.length - 1, msg: tower.length > 25 ? api.L('برج عالي كتير!','A super tall tower!','Çok yüksek bir kule!') : undefined }); return; }
         const m = mover; if(!m) return;
         if(m.dropping){
           m.drop += dt / 0.14;
@@ -163,8 +163,8 @@ Solo.register({
         const lookX = mover ? api.clamp((mover.cx - bx) / (W * 0.5), -1, 1) : 0;
         const jumpY = mood === 'wow' ? -Math.abs(Math.sin(moodT * 10)) * br * 0.4 : 0;
         api.bobo(c, bx, by + jumpY, br, over ? 'sad' : mood, { x: lookX, y: -0.8 }, t);
-        if(introT > 0) api.text(c, 'اكبس لتنزّل المكعب 👆', W / 2, H * 0.32, s * 0.065, '#fff7e8');
-        else if(mover && mover.bounces >= 3 && !mover.dropping) api.text(c, 'اكبس! 👆', W / 2, H * 0.32, s * 0.07 * (1 + Math.sin(t * 8) * 0.06), '#fff7e8');
+        if(introT > 0) api.text(c, api.L('اكبس لتنزّل المكعب 👆','Tap to drop the block 👆','Küpü bırakmak için dokun 👆'), W / 2, H * 0.32, Math.min(s * 0.065, W * 0.056), '#fff7e8');
+        else if(mover && mover.bounces >= 3 && !mover.dropping) api.text(c, api.L('اكبس! 👆','Tap! 👆','Dokun! 👆'), W / 2, H * 0.32, s * 0.07 * (1 + Math.sin(t * 8) * 0.06), '#fff7e8');
         // HUD (capped size on tablets)
         { const s = Math.min(S(), 440);
         const ph = Math.max(40, s * 0.1);

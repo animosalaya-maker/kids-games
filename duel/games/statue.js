@@ -1,8 +1,8 @@
 /* Red light, green light: a sleepy traffic-light buddy sits in the middle. While it is green (eyes closed) tap to run.
    Yellow = careful! Red = it is watching: tapping sends you back 3 steps. First to the middle line wins. */
 Duel.register({
-  id: 'statue', title: 'ضو أحمر ضو أخضر', emoji: '🚦', bg: '#3fd47a',
-  help: 'لما الضو أخضر اكبس لتركض، ولما يصير أحمر وقّف ولا تتحرك!',
+  id: 'statue', title: L('ضو أحمر ضو أخضر', 'Red Light Green Light', 'Kırmızı Işık Yeşil Işık'), emoji: '🚦', bg: '#3fd47a',
+  help: L('لما الضو أخضر اكبس لتركض، ولما يصير أحمر وقّف ولا تتحرك!', 'When the light is green, tap to run. When it\'s red, stop and don\'t move!', 'Işık yeşilken koşmak için dokun. Kırmızı olunca dur ve kıpırdama!'),
   create(api){
     const OUT = '#1c1838', STEPS = 24, LIMIT = 40, BACK = 3;
     const LIGHT = { green: '#3fd47a', yellow: '#ffcd4d', red: '#ff4d4d' };
@@ -86,7 +86,7 @@ Duel.register({
         if(state === 'red' && t - redSince > 0.12){
           if(sad[pl] > 0.4) return; // already caught a moment ago: don't stack penalties
           step[pl] = Math.max(0, step[pl] - BACK); sad[pl] = 0.9; shake[pl] = 1;
-          api.sfx.buzz(); api.say('شفتك! ارجع ٣ 🙈', pl, 900);
+          api.sfx.buzz(); api.say(api.L('شفتك! ارجع ٣ 🙈', 'I saw you! Go back 3 🙈', 'Gördüm seni! 3 geri 🙈'), pl, 900);
           return;
         }
         if(state === 'red') return;
@@ -120,11 +120,11 @@ Duel.register({
           const mood = sad[pl] > 0 ? 'sad' : (ending && ending.w === pl) ? 'happy' : state === 'red' ? 'idle' : 'happy';
           api.buddy(c, lx + sx, y, r, pl, t, mood, { x: 0, y: -1 });
           // instruction
-          const msg = state === 'green' ? 'اكبس! اركض 🏃' : state === 'yellow' ? 'انتبه! ⚠️' : 'وقّف! ✋';
+          const msg = state === 'green' ? api.L('اكبس! اركض 🏃', 'Tap! Run 🏃', 'Dokun! Koş 🏃') : state === 'yellow' ? api.L('انتبه! ⚠️', 'Get ready! ⚠️', 'Dikkat! ⚠️') : api.L('وقّف! ✋', 'Stop! ✋', 'Dur! ✋');
           const mcol = state === 'green' ? '#14843a' : state === 'yellow' ? '#a86b00' : '#c41f1f';
           api.text(c, msg, -W * 0.12, H / 2 - s * 0.09, Math.min(30, W * 0.075), mcol, 0);
           // progress
-          api.text(c, api.AR(STEPS - step[pl]) + ' خطوة', -W * 0.12, H / 2 - s * 0.19, Math.min(20, W * 0.05), col.dark, 0, 700);
+          api.text(c, api.L(api.AR(STEPS - step[pl]) + ' خطوة', (STEPS - step[pl]) + (STEPS - step[pl] === 1 ? ' step' : ' steps'), (STEPS - step[pl]) + ' adım'), -W * 0.12, H / 2 - s * 0.19, Math.min(20, W * 0.05), col.dark, 0, 700);
           const left = Math.ceil(LIMIT - api.time);
           if(left <= 10 && !ending) api.text(c, '⏱ ' + api.AR(Math.max(0, left)), -W * 0.12, H / 2 - s * 0.27, Math.min(22, W * 0.055), OUT, 0);
         });

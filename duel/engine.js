@@ -2,10 +2,11 @@
    A game file calls Duel.register({...}). See duel/GAME_API.md. */
 (function(){
 'use strict';
-const AR = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+const AR = n => (window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]));
+const L = window.L || ((a) => a);
 const PLAYERS = [
-  { name:'الأحمر', color:'#ff5a5f', dark:'#c23a40', light:'#ffb3b5' },
-  { name:'الأزرق', color:'#3fa9ff', dark:'#2276c4', light:'#b4dcff' }
+  { name:L('الأحمر','Red','Kırmızı'), color:'#ff5a5f', dark:'#c23a40', light:'#ffb3b5' },
+  { name:L('الأزرق','Blue','Mavi'), color:'#3fa9ff', dark:'#2276c4', light:'#b4dcff' }
 ];
 const WIN_ROUNDS = 3;
 if(!CanvasRenderingContext2D.prototype.roundRect){
@@ -61,7 +62,7 @@ const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans
 function text(c, str, x, y, size, color, player, weight){
   c.save(); c.translate(x, y); if(player === 1) c.rotate(Math.PI);
   c.font = (weight || 800) + ' ' + Math.round(size) + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
-  c.direction = 'rtl'; c.lineJoin = 'round';
+  c.direction = (window.I18N ? I18N.dir : 'rtl'); c.lineJoin = 'round';
   c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = Math.max(2, size * 0.12); c.strokeText(str, 0, 0);
   c.fillStyle = color || '#fff7e8'; c.fillText(str, 0, 0); c.restore();
 }
@@ -80,7 +81,7 @@ let cur = null, inst = null, phase = 'menu', score = [0, 0], ready = [false, fal
 const pointers = new Map();
 const api = {
   get W(){ return W; }, get H(){ return H; }, get mid(){ return H / 2; }, get time(){ return roundT; },
-  players: PLAYERS, sfx: SFX, tone, buddy, text, emoji, AR, FONT,
+  players: PLAYERS, sfx: SFX, tone, buddy, text, emoji, AR, FONT, L, get lang(){ return window.I18N ? I18N.lang : 'ar'; }, get dir(){ return window.I18N ? I18N.dir : 'rtl'; },
   rand: (a, b) => a + Math.random() * (b - a),
   clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
   win(p){ if(phase !== 'play') return; endRound(p); },
@@ -137,8 +138,8 @@ function drawOverlay(now){
       const cy = pl === 0 ? H * 0.75 : H * 0.25, s = pl === 0 ? 1 : -1;
       emoji(ctx, cur.emoji, W / 2, cy - s * 70, 54, pl === 1 ? Math.PI : 0);
       text(ctx, cur.title, W / 2, cy - s * 18, Math.min(38, W * 0.09), '#ffcd4d', pl);
-      wrapText(cur.help, W / 2, cy + s * 22, Math.min(W * 0.84, 420), 17, pl);
-      text(ctx, ready[pl] ? 'جاهز ✔' : 'اكبس هون لما تكون جاهز', W / 2, cy + s * 92, 22, ready[pl] ? '#3fd47a' : PLAYERS[pl].light, pl);
+      wrapText(cur.help, W / 2, cy + s * 20, Math.min(W * 0.88, 420), 16, pl);
+      text(ctx, ready[pl] ? L('جاهز ✔','Ready ✔','Hazır ✔') : L('اكبس هون لما تكون جاهز','Tap here when ready','Hazır olunca buraya dokun'), W / 2, cy + s * 112, 22, ready[pl] ? '#3fd47a' : PLAYERS[pl].light, pl);
     }
     ctx.strokeStyle = 'rgba(255,255,255,.2)'; ctx.setLineDash([8, 8]); ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(W, mid); ctx.stroke(); ctx.setLineDash([]);
   } else if(phase === 'count'){
@@ -148,8 +149,8 @@ function drawOverlay(now){
     for(const pl of [0, 1]){
       const y = pl === 0 ? H * 0.7 : H * 0.3;
       let s;
-      if(lastWinner === 0 || lastWinner === 1) s = lastWinner === pl ? 'ربحت الجولة! 🎉' : PLAYERS[lastWinner].name + ' ربح الجولة';
-      else s = 'تعادل! 🤝';
+      if(lastWinner === 0 || lastWinner === 1) s = lastWinner === pl ? L('ربحت الجولة! 🎉','You won the round! 🎉','Turu kazandın! 🎉') : L(PLAYERS[lastWinner].name + ' ربح الجولة', PLAYERS[lastWinner].name + ' won the round', PLAYERS[lastWinner].name + ' turu kazandı');
+      else s = L('تعادل! 🤝','Draw! 🤝','Berabere! 🤝');
       text(ctx, s, W / 2, y, Math.min(34, W * 0.08), lastWinner === pl ? '#ffcd4d' : '#fff7e8', pl);
     }
   }
@@ -190,9 +191,9 @@ function frame(now){
 function showChampion(p){
   phase = 'champ'; SFX.win();
   const coins = 8; if(window.World){ World.addCoins(coins, 'لخزانة بوبو'); World.track('play', 'duel_' + cur.id); }
-  document.querySelector('#champ .coins').textContent = 'ربحتوا ' + AR(coins) + ' 🪙 عملة';
+  document.querySelector('#champ .coins').textContent = L('ربحتوا ' + AR(coins) + ' 🪙 عملة', 'You earned ' + AR(coins) + ' 🪙 coins', AR(coins) + ' 🪙 jeton kazandınız');
   const box = document.getElementById('champ'); box.hidden = false;
-  box.querySelector('h2').textContent = PLAYERS[p].name + ' هو البطل! 🏆';
+  box.querySelector('h2').textContent = L(PLAYERS[p].name + ' هو البطل! 🏆', PLAYERS[p].name + ' is the champion! 🏆', PLAYERS[p].name + ' şampiyon! 🏆');
   box.querySelector('h2').style.color = PLAYERS[p].color;
   box.querySelector('.sc').textContent = AR(score[0]) + ' – ' + AR(score[1]);
   box.classList.toggle('flip', p === 1);
@@ -205,7 +206,7 @@ function buildMenu(){
     b.innerHTML = '<span class="em">' + g.emoji + '</span><span class="nm">' + g.title + '</span>';
     b.onclick = () => openGame(g); grid.appendChild(b);
   });
-  document.getElementById('count').textContent = AR(GAMES.length) + ' لعبة';
+  document.getElementById('count').textContent = L(AR(GAMES.length) + ' لعبة', GAMES.length + ' games', GAMES.length + ' oyun');
 }
 
 function boot(){

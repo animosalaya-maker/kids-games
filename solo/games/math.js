@@ -1,14 +1,19 @@
 /* Bobo's maths: counting, then adding and taking away with pictures. Numbers up to 10, 3 big answer cards. 10 questions. */
 Solo.register({
-  id: 'math', title: 'حساب بوبو', emoji: '➕', bg: '#ffb020',
-  help: 'عدّ الصور واختار الرقم الصح',
+  id: 'math', title: L('حساب بوبو','Bobo Math','Bobo ile Matematik'), emoji: '➕', bg: '#ffb020',
+  help: L('عدّ الصور واختار الرقم الصح','Count the pictures and pick the right number','Resimleri say, doğru sayıyı seç'),
   create(api){
     const OUT = '#1c1838', N = 10;
     const THINGS = [
-      { e: '🍎', w: 'تفاحة' }, { e: '🍌', w: 'موزة' }, { e: '🍓', w: 'فراولة' }, { e: '⭐', w: 'نجمة' },
-      { e: '🐟', w: 'سمكة' }, { e: '🎈', w: 'بالون' }, { e: '🐥', w: 'صوص' }, { e: '🍪', w: 'بسكوتة' },
-      { e: '🌸', w: 'وردة' }, { e: '🚗', w: 'سيارة' }, { e: '🦋', w: 'فراشة' }, { e: '🍩', w: 'دونات' }
+      { e: '🍎', w: 'تفاحة', en: 'apples', tr: 'elma' }, { e: '🍌', w: 'موزة', en: 'bananas', tr: 'muz' },
+      { e: '🍓', w: 'فراولة', en: 'strawberries', tr: 'çilek' }, { e: '⭐', w: 'نجمة', en: 'stars', tr: 'yıldız' },
+      { e: '🐟', w: 'سمكة', en: 'fish', tr: 'balık' }, { e: '🎈', w: 'بالون', en: 'balloons', tr: 'balon' },
+      { e: '🐥', w: 'صوص', en: 'chicks', tr: 'civciv' }, { e: '🍪', w: 'بسكوتة', en: 'cookies', tr: 'kurabiye' },
+      { e: '🌸', w: 'وردة', en: 'flowers', tr: 'çiçek' }, { e: '🚗', w: 'سيارة', en: 'cars', tr: 'araba' },
+      { e: '🦋', w: 'فراشة', en: 'butterflies', tr: 'kelebek' }, { e: '🍩', w: 'دونات', en: 'donuts', tr: 'donut' }
     ];
+    const RTL = api.dir === 'rtl';
+    const howMany = th => api.L('كم ' + th.w + '؟', 'How many ' + th.en + '?', 'Kaç ' + th.tr + ' var?');
     const BTN = ['#ff5d8f', '#4fb3ff', '#7ed957'];
     const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
     // plan: kind + ranges, gets harder slowly
@@ -30,11 +35,11 @@ Solo.register({
     }
     function next(){
       q++; first = true; nextT = -1; qt = 0;
-      if(q >= N){ api.end({ score, win: true, msg: 'بطل الحساب! 🧮' }); return; }
+      if(q >= N){ api.end({ score, win: true, msg: api.L('بطل الحساب! 🧮','Math hero! 🧮','Matematik kahramanı! 🧮') }); return; }
       Q = make(PLAN[q]);
       btns = Q.opts.map((n, i) => ({ n, col: BTN[i], wob: 0, wrong: false, ok: false, press: 0, pop: 0 }));
       layout(); api.sfx.swoosh();
-      api.say(Q.type === 'count' ? 'كم ' + Q.th.w + '؟' : Q.type === 'add' ? Q.a + ' زائد ' + Q.b + '؟' : Q.a + ' ناقص ' + Q.b + '؟');
+      api.say(Q.type === 'count' ? howMany(Q.th) : Q.type === 'add' ? api.L(Q.a + ' زائد ' + Q.b + '؟', 'What is ' + Q.a + ' plus ' + Q.b + '?', Q.a + ' artı ' + Q.b + ' kaç?') : api.L(Q.a + ' ناقص ' + Q.b + '؟', 'What is ' + Q.a + ' minus ' + Q.b + '?', Q.a + ' eksi ' + Q.b + ' kaç?'));
     }
     function grid(n, x, y, w, h){
       if(n <= 0) return { pts: [], size: 0 };
@@ -46,7 +51,7 @@ Solo.register({
       const { cols, rows, size } = best, pts = [];
       for(let i = 0; i < n; i++){
         const r = Math.floor(i / cols), inRow = Math.min(cols, n - r * cols), cIdx = i % cols;
-        pts.push({ x: x + w / 2 + (inRow / 2 - cIdx - 0.5) * size, y: y + h / 2 + (r - (rows - 1) / 2) * size });   // RTL: first item on the right
+        pts.push({ x: x + w / 2 + (RTL ? 1 : -1) * (inRow / 2 - cIdx - 0.5) * size, y: y + h / 2 + (r - (rows - 1) / 2) * size });   // first item on the right in RTL, on the left in LTR
       }
       return { pts, size: Math.min(size * 0.8, S() * 0.26) };
     }
@@ -63,10 +68,11 @@ Solo.register({
       const P = L.panel, pad = s * 0.04;
       if(Q.type === 'add'){
         const gw = (P.w - pad * 2 - s * 0.12) / 2;
-        L.g1 = grid(Q.a, P.x + P.w - pad - gw, P.y + pad, gw, P.h - pad * 2);
-        L.g2 = grid(Q.b, P.x + pad, P.y + pad, gw, P.h - pad * 2);
+        const xa = RTL ? P.x + P.w - pad - gw : P.x + pad, xb = RTL ? P.x + pad : P.x + P.w - pad - gw;   // first group where reading starts
+        L.g1 = grid(Q.a, xa, P.y + pad, gw, P.h - pad * 2);
+        L.g2 = grid(Q.b, xb, P.y + pad, gw, P.h - pad * 2);
         L.g2.size = L.g1.size = Math.min(L.g1.size, L.g2.size);
-        L.boxes = [[P.x + P.w - pad * 0.5 - gw - pad * 0.5, gw + pad], [P.x + pad * 0.5, gw + pad]];
+        L.boxes = [[xa - pad * 0.5, gw + pad], [xb - pad * 0.5, gw + pad]];
       } else {
         L.g1 = grid(Q.a, P.x + pad, P.y + pad, P.w - pad * 2, P.h - pad * 2); L.g2 = null;
       }
@@ -89,11 +95,11 @@ Solo.register({
         b.ok = true; b.pop = 1; api.sfx.coin(); api.sfx.good(); burst(b.x, b.y - b.h * 0.3);
         if(first) score += 10;
         mood = 'happy'; moodT = 1.4; nextT = 0;
-        api.toast(first ? api.pick(['برافو! ⭐', 'شاطر! 🌟', 'صح! 🎉']) : 'صح! 👍', 900);
+        api.toast(first ? api.pick(api.lang === 'ar' ? ['برافو! ⭐', 'شاطر! 🌟', 'صح! 🎉'] : api.lang === 'tr' ? ['Aferin! ⭐', 'Süper! 🌟', 'Doğru! 🎉'] : ['Well done! ⭐', 'Super! 🌟', 'Yes! 🎉']) : api.L('صح! 👍','Yes! 👍','Doğru! 👍'), 900);
         api.say(String(Q.ans));
       } else {
         b.wrong = true; b.wob = 1; first = false; api.sfx.bad(); mood = 'sad'; moodT = 0.6;
-        api.toast('جرّب كمان 🙂', 800);
+        api.toast(api.L('جرّب كمان 🙂','Try again 🙂','Tekrar dene 🙂'), 800);
       }
     }
 
@@ -101,7 +107,7 @@ Solo.register({
       const W = api.W, H = api.H, g = c.createLinearGradient(0, 0, 0, H);
       g.addColorStop(0, '#ffd77a'); g.addColorStop(1, '#ffa412'); c.fillStyle = g; c.fillRect(0, 0, W, H);
       c.fillStyle = 'rgba(255,255,255,.18)'; const step = S() * 0.16;
-      const sym = ['+', '٣', '−', '٥', '٢', '+', '٧', '١'];
+      const sym = ['+', api.AR(3), '−', api.AR(5), api.AR(2), '+', api.AR(7), api.AR(1)];
       c.save(); c.font = '900 ' + Math.round(step * 0.5) + 'px ' + api.FONT; c.textAlign = 'center'; c.textBaseline = 'middle';
       let k = 0;
       for(let y = step * 0.5; y < H + step; y += step) for(let x = (Math.floor(y / step) % 2) * step / 2; x < W + step; x += step){
@@ -116,20 +122,21 @@ Solo.register({
     function drawQuestion(c){
       const s = S(), y = L.qy, size = s * 0.1;
       if(Q.type === 'count'){
-        const w = Math.min(api.W * 0.8, s * 0.75), h = size * 1.35;
+        const w = Math.min(api.W * 0.9, s * 0.9), h = size * 1.35, str = howMany(Q.th);
         rr(c, api.W / 2 - w / 2, y - h / 2, w, h, h / 2, '#fff7e8');
-        api.text(c, 'كم ' + Q.th.w + '؟', api.W / 2 + size * 0.5, y, size * 0.7, OUT, 800);
-        api.emoji(c, Q.th.e, api.W / 2 - w / 2 + h * 0.65, y, size * 0.75);
+        const fs = Math.min(size * 0.7, (w - h * 1.3) / Math.max(1, str.length) * 1.85);   // shrink long English/Turkish questions
+        api.text(c, str, api.W / 2 + (RTL ? 1 : -1) * h * 0.4, y, fs, OUT, 800);
+        api.emoji(c, Q.th.e, RTL ? api.W / 2 - w / 2 + h * 0.65 : api.W / 2 + w / 2 - h * 0.65, y, size * 0.75);
         return;
       }
-      // tokens laid out right-to-left: a  op  b  =  ?
+      // tokens laid out in reading order (right-to-left in Arabic, left-to-right otherwise): a  op  b  =  ?
       const solved = nextT >= 0;
-      const toks = [api.AR(Q.a), Q.type === 'add' ? '+' : '−', api.AR(Q.b), '=', solved ? api.AR(Q.ans) : '؟'];
+      const toks = [api.AR(Q.a), Q.type === 'add' ? '+' : '−', api.AR(Q.b), '=', solved ? api.AR(Q.ans) : api.L('؟', '?', '?')];
       const tw = size * 0.95, total = tw * toks.length;
       const w = total + size * 0.6, h = size * 1.35;
       rr(c, api.W / 2 - w / 2, y - h / 2, w, h, h / 2, '#fff7e8');
       toks.forEach((tk, i) => {
-        const x = api.W / 2 + total / 2 - tw * (i + 0.5);
+        const x = RTL ? api.W / 2 + total / 2 - tw * (i + 0.5) : api.W / 2 - total / 2 + tw * (i + 0.5);
         if(i === 4){
           const bs = solved ? 1 + Math.sin(Math.min(1, nextT * 3) * Math.PI) * 0.25 : 1 + Math.sin(t * 5) * 0.06;
           c.save(); c.translate(x, y); c.scale(bs, bs);

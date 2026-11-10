@@ -1,7 +1,7 @@
 /* Pong / table tennis seen from above. Red paddle at the bottom, blue at the top. First to 3 points wins the round. */
 Duel.register({
-  id: 'pong', title: 'تنس الطاولة', emoji: '🏓', bg: '#2fb36d',
-  help: 'حرّك المضرب يمين وشمال بإصبعك ورجّع الطابة. أول واحد بيجيب ٣ نقاط بيربح',
+  id: 'pong', title: L('تنس الطاولة', 'Ping Pong', 'Masa Tenisi'), emoji: '🏓', bg: '#2fb36d',
+  help: L('حرّك المضرب يمين وشمال بإصبعك ورجّع الطابة. أول واحد بيجيب ٣ نقاط بيربح', 'Move your paddle and hit the ball back. First to 3 points wins!', 'Raketini kaydır, topu geri gönder. İlk 3 sayıyı yapan kazanır!'),
   create(api){
     const OUT = '#1c1838', TARGET = 3, LIMIT = 75;
     const pts = [0, 0];
@@ -33,8 +33,8 @@ Duel.register({
     function point(p){
       pts[p]++; api.sfx.point();
       serveTo = 1 - p; trail.length = 0;
-      if(pts[p] >= TARGET){ over = true; setTimeout(() => api.win(p), 600); api.say('نقطة! 🎉', p, 900); return; }
-      api.say('نقطة! 🎉', p, 900);
+      if(pts[p] >= TARGET){ over = true; setTimeout(() => api.win(p), 600); api.say(api.L('نقطة! 🎉', 'Point! 🎉', 'Sayı! 🎉'), p, 900); return; }
+      api.say(api.L('نقطة! 🎉', 'Point! 🎉', 'Sayı! 🎉'), p, 900);
       serveT = 1.1;
       const g = geo(); ball.x = g.W / 2; ball.y = g.H / 2; ball.vx = ball.vy = 0;
     }
@@ -127,8 +127,8 @@ Duel.register({
             c.fillStyle = k < pts[i] ? '#ffcd4d' : 'rgba(255,255,255,.35)'; c.strokeStyle = OUT; c.lineWidth = 3;
             c.beginPath(); c.arc(px, py, 10, 0, Math.PI * 2); c.fill(); c.stroke();
           }
-          api.text(c, 'نقاط: ' + api.AR(pts[i]), W / 2 - s * 50, ey, 22, '#fff7e8', i);
-          if(api.time < 2.5 && !over) api.text(c, 'حرّك ↔', W / 2, g.py[i] - s * (g.ph + 26), 20, '#fff7e8', i);
+          api.text(c, api.L('نقاط: ' + api.AR(pts[i]), 'Points: ' + pts[i], 'Sayı: ' + pts[i]), W / 2 - s * 50, ey, 22, '#fff7e8', i);
+          if(api.time < 2.5 && !over) api.text(c, api.L('حرّك ↔', 'Move ↔', 'Kaydır ↔'), W / 2, g.py[i] - s * (g.ph + 26), 20, '#fff7e8', i);
           const left = LIMIT - api.time;
           if(left < 10 && !over) api.text(c, '⏱ ' + api.AR(Math.ceil(left)), W / 2, mid + s * 40, 24, '#fff7e8', i);
         }

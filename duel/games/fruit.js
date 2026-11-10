@@ -1,7 +1,7 @@
 /* Fruit slicing, split screen. Each kid has their own half; the same fruit sequence is tossed in both halves. */
 Duel.register({
-  id: 'fruit', title: 'تقطيع الفواكه', emoji: '🍉', bg: '#8e5cf7',
-  help: 'مرّق إصبعك على الفواكه لتقطّعها، وانتبه من القنبلة 💣',
+  id: 'fruit', title: L('تقطيع الفواكه', 'Fruit Slice', 'Meyve Kesme'), emoji: '🍉', bg: '#8e5cf7',
+  help: L('مرّق إصبعك على الفواكه لتقطّعها، وانتبه من القنبلة 💣', 'Swipe your finger over the fruit to cut it. Watch out for the bomb 💣', 'Meyveleri kesmek için parmağını üstlerinden kaydır, bombaya dikkat et 💣'),
   create(api){
     const DUR = 25, OUT = '#1c1838';
     const KINDS = [
@@ -44,12 +44,12 @@ Duel.register({
       const st = P[pl], r = R();
       if(f.kind < 0){
         st.score = Math.max(0, st.score - 3); st.flash = 0.5; api.sfx.buzz(); api.sfx.hit();
-        st.pops.push({ x: f.x, y: f.y, s: '-٣', t: 0, bad: true });
+        st.pops.push({ x: f.x, y: f.y, s: '-' + api.AR(3), t: 0, bad: true });
         for(let i = 0; i < 22; i++){ const a = Math.random() * 6.28, v = r * (3 + Math.random() * 6); st.drops.push({ x: f.x, y: f.y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, col: i % 2 ? '#ffcd4d' : '#ff6b3d', life: 0.6, max: 0.6, sz: r * (0.12 + Math.random() * 0.12) }); }
         return;
       }
       st.score++; api.sfx.swoosh(); api.sfx.splash();
-      st.pops.push({ x: f.x, y: f.y, s: '+١', t: 0 });
+      st.pops.push({ x: f.x, y: f.y, s: '+' + api.AR(1), t: 0 });
       const ang = Math.atan2(dy, dx) + Math.PI / 2, nx = Math.cos(ang), ny = Math.sin(ang);
       for(const s of [-1, 1]) st.halves.push({ x: f.x + nx * s * r * 0.2, y: f.y + ny * s * r * 0.2, vx: f.vx + nx * s * r * 2.2, vy: Math.min(f.vy, 0) * 0.3 + ny * s * r * 1.5, g: f.g, rot: ang - Math.PI / 2, spin: s * 3, side: s, kind: f.kind, life: 2 });
       const col = KINDS[f.kind].juice;

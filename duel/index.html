@@ -2,8 +2,9 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
+<script src="../i18n.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>تحدّي الاثنين</title>
+<title data-en="Two-Player Challenge" data-tr="İki Kişilik Düello">تحدّي الاثنين</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="ألعاب لاعبين اثنين على نفس الجوال: واحد من تحت وواحد من فوق.">
 <meta name="theme-color" content="#1c1838">
@@ -52,17 +53,17 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 </head>
 <body>
 <section id="menu">
-  <div class="head"><h1>تحدّي الاثنين</h1><a class="back" href="../">⬅ كل الألعاب</a></div>
-  <p class="sub">لاعب من تحت ولاعب من فوق، على نفس الجوال. اللي بيربح ٣ جولات بياخد الكاس. <b id="count"></b></p>
+  <div class="head"><h1 data-en="Two-Player Challenge" data-tr="İki Kişilik Düello">تحدّي الاثنين</h1><a class="back" href="../" data-en="⬅ All games" data-tr="⬅ Tüm oyunlar">⬅ كل الألعاب</a></div>
+  <p class="sub"><span data-en="One player at the bottom, one at the top, on the same phone. Win 3 rounds to get the cup. " data-tr="Bir oyuncu altta, biri üstte, aynı telefonda. 3 tur kazanan kupayı alır. ">لاعب من تحت ولاعب من فوق، على نفس الجوال. اللي بيربح ٣ جولات بياخد الكاس. </span><b id="count"></b></p>
   <div id="grid"></div>
 </section>
 <section id="play" hidden>
-  <canvas id="cv" aria-label="ساحة اللعب"></canvas>
-  <button id="quit" aria-label="رجوع للقائمة">✕</button>
+  <canvas id="cv" aria-label="ساحة اللعب" data-en-aria="Play area" data-tr-aria="Oyun alanı"></canvas>
+  <button id="quit" aria-label="رجوع للقائمة" data-en-aria="Back to menu" data-tr-aria="Menüye dön">✕</button>
 </section>
 <div id="champ" hidden><div class="card">
   <div class="cup">🏆</div><h2></h2><div class="sc"></div><div class="coins" style="color:var(--gold);font-weight:700"></div>
-  <button class="big-btn" id="again">مرة كمان</button><button class="ghost-btn" id="toMenu">كل الألعاب</button>
+  <button class="big-btn" id="again" data-en="Play again" data-tr="Tekrar oyna">مرة كمان</button><button class="ghost-btn" id="toMenu" data-en="All games" data-tr="Tüm oyunlar">كل الألعاب</button>
 </div></div>
 <script src="../world.js"></script>
 <script src="engine.js"></script>

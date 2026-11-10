@@ -2,11 +2,13 @@
    Right hole = snaps in with sparkles; wrong hole = bounces back. 6 levels (more shapes, rotated, similar colours).
    Score = levels done ×10 − mistakes (min 0). */
 Solo.register({
-  id: 'shapes', title: 'الأشكال', emoji: '🔺', bg: '#9b6bff',
-  help: 'اسحب كل شكل وحطّه بالجورة اللي بتشبهه!',
+  id: 'shapes', title: L('الأشكال','Shapes','Şekiller'), emoji: '🔺', bg: '#9b6bff',
+  help: L('اسحب كل شكل وحطّه بالجورة اللي بتشبهه!','Drag each shape into the hole that matches it!','Her şekli kendi deliğine sürükle!'),
   create(api){
     const OUT = '#1c1838';
-    const NAMES = { circle: 'دائرة', square: 'مربع', triangle: 'مثلث', star: 'نجمة', heart: 'قلب' };
+    const NAMES = api.lang === 'ar' ? { circle: 'دائرة', square: 'مربع', triangle: 'مثلث', star: 'نجمة', heart: 'قلب' }
+      : api.lang === 'tr' ? { circle: 'Daire', square: 'Kare', triangle: 'Üçgen', star: 'Yıldız', heart: 'Kalp' }
+      : { circle: 'Circle', square: 'Square', triangle: 'Triangle', star: 'Star', heart: 'Heart' };
     const BRIGHT = ['#ff4f6d', '#3d8bff', '#ffcc2e', '#3fd45a', '#ff9a1f'];
     const SIMILAR = [['#3d8bff', '#4fa0ff', '#3577e6', '#5a8cff'], ['#ff5f8f', '#ff6f6f', '#ff7aa8', '#f2557a']];
     const LEVELS = [
@@ -99,12 +101,12 @@ Solo.register({
         if(holes.every(h => h.filled)){ state = 'done'; stateT = 0; api.sfx.coin(); const g2 = layout(); sparkle(api.W / 2, g2.board.y + g2.board.h / 2, '#ffe066', 30); }
       } else {
         mistakes++; best.shake = 0.4; p.home = true; api.sfx.bad(); mood = 'sad'; moodT = 0.8;
-        api.toast(best.filled ? 'هيدي مليانة!' : 'مش هون! 🙈', 900);
+        api.toast(best.filled ? api.L('هيدي مليانة!','That one is full!','Orası dolu!') : api.L('مش هون! 🙈','Not here! 🙈','Burası değil! 🙈'), 900);
       }
     }
 
     setup();
-    api.say('حطّ كل شكل بمكانه');
+    api.say(api.L('حطّ كل شكل بمكانه','Put each shape in its place','Her şekli yerine koy'));
 
     return {
       _dbg: { get holes(){ return holes.map(h => Object.assign({ kind: h.kind, filled: h.filled }, holePos(h))); }, get pieces(){ return pieces.map(p => ({ kind: p.kind, x: p.x, y: p.y, placed: p.placed })); }, get level(){ return level; }, get mistakes(){ return mistakes; }, get state(){ return state; } },
@@ -121,8 +123,8 @@ Solo.register({
           const k = Math.min(1, dt * (p.placed ? 16 : 10)); p.x += (tx - p.x) * k; p.y += (ty - p.y) * k; p.rot += (tr - p.rot) * k;
         }
         if(state === 'done' && stateT > 1.6){
-          if(level < LEVELS.length - 1){ level++; setup(); api.sfx.jump(); api.toast('المرحلة ' + api.AR(level + 1), 1200); }
-          else { state = 'end'; const score = Math.max(0, LEVELS.length * 10 - mistakes); api.end({ score, win: true, msg: mistakes === 0 ? 'ولا غلطة! برافو' : 'برافو! خلصت كل الأشكال' }); }
+          if(level < LEVELS.length - 1){ level++; setup(); api.sfx.jump(); api.toast(api.L('المرحلة ','Level ','Seviye ') + api.AR(level + 1), 1200); }
+          else { state = 'end'; const score = Math.max(0, LEVELS.length * 10 - mistakes); api.end({ score, win: true, msg: mistakes === 0 ? api.L('ولا غلطة! برافو','No mistakes! Well done','Hiç hata yok! Aferin') : api.L('برافو! خلصت كل الأشكال','Well done! You did all the shapes','Aferin! Bütün şekilleri bitirdin') }); }
         }
         for(const q of parts){ q.age += dt; q.x += q.vx * dt; q.y += q.vy * dt; q.vy += S() * 1.1 * dt; }
         for(let i = parts.length - 1; i >= 0; i--) if(parts[i].age > parts[i].life) parts.splice(i, 1);
@@ -162,7 +164,7 @@ Solo.register({
         const ph = 42, dw = 22 * LEVELS.length + 22;
         c.fillStyle = '#fff7e8'; c.strokeStyle = OUT; c.lineWidth = 3; c.beginPath(); c.roundRect(W / 2 - dw / 2, 12, dw, ph, ph / 2); c.fill(); c.stroke();
         for(let i = 0; i < LEVELS.length; i++){
-          const x = W / 2 + dw / 2 - 22 - i * 22, done = i < level || (i === level && state !== 'play');   // RTL: first level on the right
+          const x = api.dir === 'rtl' ? W / 2 + dw / 2 - 22 - i * 22 : W / 2 - dw / 2 + 22 + i * 22, done = i < level || (i === level && state !== 'play');   // first level on the right in RTL, on the left in LTR
           c.fillStyle = done ? '#ffcd2a' : i === level ? '#b394ff' : '#e4dcf7'; c.strokeStyle = OUT; c.lineWidth = 2;
           c.beginPath(); c.arc(x, 12 + ph / 2, i === level ? 8 : 6.5, 0, Math.PI * 2); c.fill(); c.stroke();
         }
@@ -171,7 +173,7 @@ Solo.register({
         if(state === 'done'){
           const z = Math.min(1, stateT * 4);
           c.save(); c.translate(W / 2, g.board.y + g.board.h / 2); c.scale(0.5 + z * 0.5, 0.5 + z * 0.5);
-          api.text(c, level === LEVELS.length - 1 ? 'خلصتها كلها! 🏆' : (mistakes === levelStartMistakes ? 'ولا غلطة! ⭐' : 'برافو! ⭐'), 0, 0, s * 0.1, '#fff7e8'); c.restore();
+          api.text(c, level === LEVELS.length - 1 ? api.L('خلصتها كلها! 🏆','All done! 🏆','Hepsi bitti! 🏆') : (mistakes === levelStartMistakes ? api.L('ولا غلطة! ⭐','No mistakes! ⭐','Hiç hata yok! ⭐') : api.L('برافو! ⭐','Well done! ⭐','Aferin! ⭐')), 0, 0, Math.min(s * 0.1, W * 0.085), '#fff7e8'); c.restore();
         }
       },
       resize(){}

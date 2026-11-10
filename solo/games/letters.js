@@ -1,10 +1,10 @@
 /* Letter hunt: Bobo holds a sign with a letter + a word that starts with it. Pop the bubble with the same letter. 10 questions. */
 Solo.register({
-  id: 'letters', title: 'صيد الحروف', emoji: '🔤', bg: '#4fb3ff',
-  help: 'شوف الحرف اللي مع بوبو وفقّع الفقاعة اللي فيها نفس الحرف',
+  id: 'letters', title: L('صيد الحروف','Letter Catch','Harf Avı'), emoji: '🔤', bg: '#4fb3ff',
+  help: L('شوف الحرف اللي مع بوبو وفقّع الفقاعة اللي فيها نفس الحرف','Look at Bobo\'s letter and pop the bubble with the same letter','Bobo\'nun harfine bak, aynı harfli baloncuğu patlat'),
   create(api){
     const OUT = '#1c1838', N = 10;
-    const LET = [
+    const LET_AR = [
       ['أ','ألف','أرنب','🐰'], ['ب','باء','بطة','🦆'], ['ت','تاء','تفاحة','🍎'], ['ث','ثاء','ثعلب','🦊'],
       ['ج','جيم','جمل','🐫'], ['ح','حاء','حصان','🐴'], ['خ','خاء','خروف','🐑'], ['د','دال','دب','🐻'],
       ['ذ','ذال','ذرة','🌽'], ['ر','راء','ريشة','🪶'], ['ز','زاي','زرافة','🦒'], ['س','سين','سمكة','🐟'],
@@ -12,8 +12,28 @@ Solo.register({
       ['ع','عين','عنب','🍇'], ['غ','غين','غيمة','☁️'], ['ف','فاء','فيل','🐘'], ['ق','قاف','قطة','🐱'],
       ['ك','كاف','كلب','🐶'], ['ل','لام','ليمون','🍋'], ['م','ميم','موز','🍌'], ['ن','نون','نحلة','🐝'],
       ['هـ','هاء','هدية','🎁'], ['و','واو','وردة','🌹'], ['ي','ياء','يد','✋']
-    ].map(a => ({ ch: a[0], name: a[1], word: a[2], e: a[3] }));
-    const SIBS = ['بتث', 'جحخ', 'دذ', 'رز', 'سش', 'صض', 'عغ', 'فق'];
+    ];
+    // [letter, how the letter is said, word, picture]
+    const LET_EN = [
+      ['A','A','Apple','🍎'], ['B','B','Ball','⚽'], ['C','C','Cat','🐱'], ['D','D','Dog','🐶'], ['E','E','Elephant','🐘'],
+      ['F','F','Fish','🐟'], ['G','G','Grapes','🍇'], ['H','H','Horse','🐴'], ['I','I','Ice cream','🍦'], ['J','J','Juice','🧃'],
+      ['K','K','Kite','🪁'], ['L','L','Lemon','🍋'], ['M','M','Moon','🌙'], ['N','N','Nest','🪺'], ['O','O','Orange','🍊'],
+      ['P','P','Pig','🐷'], ['Q','Q','Queen','👸'], ['R','R','Rabbit','🐰'], ['S','S','Sun','☀️'], ['T','T','Tree','🌳'],
+      ['U','U','Umbrella','☂️'], ['V','V','Violin','🎻'], ['W','W','Whale','🐳'], ['Y','Y','Yo-yo','🪀'], ['Z','Z','Zebra','🦓']
+    ];
+    const LET_TR = [
+      ['A','a','Arı','🐝'], ['B','be','Balık','🐟'], ['C','ce','Ceviz','🌰'], ['Ç','çe','Çiçek','🌸'], ['D','de','Deniz','🌊'],
+      ['E','e','Elma','🍎'], ['F','fe','Fil','🐘'], ['G','ge','Güneş','☀️'], ['H','he','Havuç','🥕'], ['İ','i','İnek','🐄'],
+      ['J','je','Jöle','🍮'], ['K','ke','Kedi','🐱'], ['L','le','Limon','🍋'], ['M','me','Muz','🍌'], ['N','ne','Nane','🌿'],
+      ['O','o','Okul','🏫'], ['Ö','ö','Ördek','🦆'], ['P','pe','Pasta','🎂'], ['R','re','Roket','🚀'], ['S','se','Saat','⏰'],
+      ['Ş','şe','Şemsiye','☂️'], ['T','te','Tavşan','🐰'], ['U','u','Uçak','✈️'], ['Ü','ü','Üzüm','🍇'], ['V','ve','Vazo','🏺'],
+      ['Y','ye','Yıldız','⭐'], ['Z','ze','Zürafa','🦒']
+    ];
+    const LET = (api.lang === 'ar' ? LET_AR : api.lang === 'tr' ? LET_TR : LET_EN).map(a => ({ ch: a[0], name: a[1], word: a[2], e: a[3] }));
+    // letters that look alike, used as tricky wrong answers
+    const SIBS = api.lang === 'ar' ? ['بتث', 'جحخ', 'دذ', 'رز', 'سش', 'صض', 'عغ', 'فق']
+      : api.lang === 'tr' ? ['CÇG', 'OÖ', 'UÜV', 'SŞ', 'EF', 'PR', 'MN', 'İL', 'BD']
+      : ['EF', 'OQC', 'MN', 'PRB', 'UV', 'IJL', 'VW', 'KX', 'ST'];
     const BCOL = ['#ff5d8f', '#ffd23f', '#7ed957', '#b48cff', '#ff9f1c', '#5fe0d3'];
     const order = api.shuffle(LET).slice(0, N);
     const CLOUDS = Array.from({ length: 5 }, () => ({ x: Math.random(), y: 0.08 + Math.random() * 0.9, s: 0.7 + Math.random() * 0.6, v: 0.01 + Math.random() * 0.015 }));
@@ -32,7 +52,7 @@ Solo.register({
     }
     function next(){
       q++; first = true; nextT = -1;
-      if(q >= N){ api.end({ score, win: true, msg: 'شاطر بالحروف! 🔤' }); return; }
+      if(q >= N){ api.end({ score, win: true, msg: api.L('شاطر بالحروف! 🔤','Letter star! 🔤','Harf ustası! 🔤') }); return; }
       cur = order[q];
       const opts = [cur.ch], sib = SIBS.find(g => g.includes(cur.ch));
       if(sib && Math.random() < 0.75){ const o = api.pick(sib.split('').filter(c => c !== cur.ch)); opts.push(o); }
@@ -43,7 +63,7 @@ Solo.register({
       signPop = 1; api.sfx.swoosh();
       say();
     }
-    function say(){ api.say(cur.name + '... ' + cur.word); }
+    function say(){ api.say(api.lang === 'en' ? cur.name + '... ' + cur.name + ' is for ' + cur.word : cur.name + '... ' + cur.word); }
     function bx(b){ const m = L.br * 1.35; return m + (api.W - 2 * m) * b.col / 3 + Math.sin(t * 1.3 + b.ph) * L.br * 0.15; }
     function burst(x, y, col){
       for(let i = 0; i < 18; i++){
@@ -63,7 +83,7 @@ Solo.register({
         b.gone = true; api.sfx.pop(); api.sfx.good(); burst(bx(b), b.y, b.color);
         if(first) score += 10;
         mood = 'happy'; moodT = 1.3; nextT = 0; signPop = 1;
-        api.toast(first ? api.pick(['برافو! ⭐', 'شاطر! 🌟', 'يا سلام! ✨']) : 'صح! 👍', 900);
+        api.toast(first ? api.pick(api.lang === 'ar' ? ['برافو! ⭐', 'شاطر! 🌟', 'يا سلام! ✨'] : api.lang === 'tr' ? ['Aferin! ⭐', 'Süper! 🌟', 'Harika! ✨'] : ['Well done! ⭐', 'Super! 🌟', 'Wow! ✨']) : api.L('صح! 👍','Yes! 👍','Doğru! 👍'), 900);
       } else {
         b.wob = 1; b.tried = true; first = false; api.sfx.bad(); mood = 'sad'; moodT = 0.6;
       }
@@ -89,16 +109,17 @@ Solo.register({
       c.fillStyle = '#ffe9a8'; c.strokeStyle = OUT; c.lineWidth = lw(); c.beginPath(); c.roundRect(x, y, w, h, h * 0.18); c.fill(); c.stroke();
       c.strokeStyle = '#f2c96b'; c.lineWidth = 2; for(let k = 1; k < 4; k++){ c.beginPath(); c.moveTo(x + h * 0.15, y + h * k / 4); c.lineTo(x + w - h * 0.15, y + h * k / 4); c.stroke(); }
       if(cur){
-        // the letter (right side, RTL)
-        const lx = x + w - h * 0.6, ly = y + h / 2, lr = h * 0.4;
+        // the letter (right side in RTL, left side in LTR)
+        const rtl = api.dir === 'rtl';
+        const lx = rtl ? x + w - h * 0.6 : x + h * 0.6, ly = y + h / 2, lr = h * 0.4;
         c.fillStyle = '#fff7e8'; c.beginPath(); c.arc(lx, ly, lr, 0, Math.PI * 2); c.fill(); c.strokeStyle = OUT; c.lineWidth = lw(); c.stroke();
         api.text(c, cur.ch, lx, ly + lr * 0.05, lr * 1.35, '#ff4d6d');
         // emoji + word
-        const ex = x + (w - h * 1.2) / 2;
+        const ex = rtl ? x + (w - h * 1.2) / 2 : x + h * 1.2 + (w - h * 1.2) / 2, spx = rtl ? x + h * 0.22 : x + w - h * 0.22;
         api.emoji(c, cur.e, ex, y + h * 0.36, h * 0.44, Math.sin(t * 2) * 0.08);
-        api.text(c, cur.word, ex, y + h * 0.78, h * 0.24, '#1c1838', 800);
-        c.fillStyle = '#4fb3ff'; c.beginPath(); c.arc(x + h * 0.22, y + h * 0.22, h * 0.12, 0, Math.PI * 2); c.fill(); c.strokeStyle = OUT; c.lineWidth = 2; c.stroke();
-        api.emoji(c, '🔊', x + h * 0.22, y + h * 0.22, h * 0.14);
+        api.text(c, cur.word, ex, y + h * 0.78, Math.min(h * 0.24, (w - h * 1.3) / Math.max(4, cur.word.length) * 1.7), '#1c1838', 800);
+        c.fillStyle = '#4fb3ff'; c.beginPath(); c.arc(spx, y + h * 0.22, h * 0.12, 0, Math.PI * 2); c.fill(); c.strokeStyle = OUT; c.lineWidth = 2; c.stroke();
+        api.emoji(c, '🔊', spx, y + h * 0.22, h * 0.14);
       }
       c.restore();
       // Bobo's paws on the sign edge

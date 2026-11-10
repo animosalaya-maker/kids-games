@@ -2,10 +2,11 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
+<script src="../i18n.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>بيت بوبو</title>
+<title data-en="Bobo's House" data-tr="Bobo'nun Evi">بيت بوبو</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="لعبة أطفال: اجمع المفاتيح، تخبّى من بوبو الوحش اللطيف، واهرب من البيت.">
+<meta name="description" content="لعبة أطفال: اجمع المفاتيح، تخبّى من بوبو الوحش اللطيف، واهرب من البيت." data-en="A kids' game: get the keys, hide from Bobo the friendly monster, and get out of the house." data-tr="Çocuk oyunu: anahtarları topla, sevimli canavar Bobo'dan saklan ve evden kaç.">
 <meta name="theme-color" content="#1c1838">
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../icon-192.png">
@@ -97,28 +98,28 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <body>
 <div class="app">
   <header class="hud">
-    <button class="icon-btn" id="btnHome" aria-label="القائمة">🏠</button>
+    <button class="icon-btn" id="btnHome" aria-label="القائمة" data-en-aria="Menu" data-tr-aria="Menü">🏠</button>
     <div class="hud-mid">
-      <span class="hud-level" id="hudLevel">بيت بوبو</span>
-      <span class="hud-sub" id="hudSub">اجمع المفاتيح واهرب</span>
+      <span class="hud-level" id="hudLevel" data-en="Bobo's House" data-tr="Bobo'nun Evi">بيت بوبو</span>
+      <span class="hud-sub" id="hudSub" data-en="Get the keys and run" data-tr="Anahtarları topla ve kaç">اجمع المفاتيح واهرب</span>
     </div>
     <div class="chips">
-      <span class="chip" id="hudKeys">🔑 ٠ من ٣</span>
+      <span class="chip" id="hudKeys" data-en="🔑 0/3" data-tr="🔑 0/3">🔑 ٠ من ٣</span>
       <span class="chip" id="hudHearts">❤️❤️❤️</span>
     </div>
-    <button class="icon-btn" id="btnSound" aria-label="الصوت">🔊</button>
+    <button class="icon-btn" id="btnSound" aria-label="الصوت" data-en-aria="Sound" data-tr-aria="Ses">🔊</button>
   </header>
 
   <main class="stage" id="stage">
-    <canvas id="cv" aria-label="خريطة البيت"></canvas>
+    <canvas id="cv" aria-label="خريطة البيت" data-en-aria="House map" data-tr-aria="Ev haritası"></canvas>
     <div class="toast" id="toast" hidden></div>
   </main>
 
   <div class="pad" id="pad">
-    <button class="up" data-dir="up" aria-label="فوق"><svg viewBox="0 0 24 24"><path d="M12 4l8 10h-5v6H9v-6H4z"/></svg></button>
-    <button class="left" data-dir="left" aria-label="يسار"><svg viewBox="0 0 24 24"><path d="M4 12l10-8v5h6v6h-6v5z"/></svg></button>
-    <button class="down" data-dir="down" aria-label="تحت"><svg viewBox="0 0 24 24"><path d="M12 20L4 10h5V4h6v6h5z"/></svg></button>
-    <button class="right" data-dir="right" aria-label="يمين"><svg viewBox="0 0 24 24"><path d="M20 12l-10 8v-5H4V9h6V4z"/></svg></button>
+    <button class="up" data-dir="up" aria-label="فوق" data-en-aria="Up" data-tr-aria="Yukarı"><svg viewBox="0 0 24 24"><path d="M12 4l8 10h-5v6H9v-6H4z"/></svg></button>
+    <button class="left" data-dir="left" aria-label="يسار" data-en-aria="Left" data-tr-aria="Sol"><svg viewBox="0 0 24 24"><path d="M4 12l10-8v5h6v6h-6v5z"/></svg></button>
+    <button class="down" data-dir="down" aria-label="تحت" data-en-aria="Down" data-tr-aria="Aşağı"><svg viewBox="0 0 24 24"><path d="M12 20L4 10h5V4h6v6h5z"/></svg></button>
+    <button class="right" data-dir="right" aria-label="يمين" data-en-aria="Right" data-tr-aria="Sağ"><svg viewBox="0 0 24 24"><path d="M20 12l-10 8v-5H4V9h6V4z"/></svg></button>
   </div>
 </div>
 
@@ -131,7 +132,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 (function(){
 'use strict';
 const $ = s => document.querySelector(s);
-const AR = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+{ const md = document.querySelector('meta[name="description"]'), dl = window.I18N && md && md.getAttribute('data-' + I18N.lang); if(dl) md.setAttribute('content', dl); }
+const AR = n => window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]); // digits for the current language
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('bobo_' + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem('bobo_' + k, JSON.stringify(v)); }catch(e){} }
@@ -141,7 +143,7 @@ const store = {
  # wall   . floor   B box (hide inside)   s sofa  b bed  t plant (blocked)
  P kid start   M monster start   K key   T teddy   E exit door */
 const LEVELS = [
-  { name:'البيت الصغير', patrol:2.0, chase:3.0, vision:4.5, map:[
+  { name:L('البيت الصغير', 'The Little House', 'Küçük Ev'), patrol:2.0, chase:3.0, vision:4.5, map:[
     '#############',
     '#P....#...K.#',
     '#.....#.....#',
@@ -161,7 +163,7 @@ const LEVELS = [
     '#.....#..B..#',
     '#..b........#',
     '######E######'] },
-  { name:'البيت الكبير', patrol:2.3, chase:3.4, vision:5, map:[
+  { name:L('البيت الكبير', 'The Big House', 'Büyük Ev'), patrol:2.3, chase:3.4, vision:5, map:[
     '#############',
     '#P..#.....#K#',
     '#...#..b..#.#',
@@ -181,7 +183,7 @@ const LEVELS = [
     '#...B.......#',
     '#.#.t...#...#',
     '#####E#######'] },
-  { name:'بوبو وأخوه بيبو', patrol:2.3, chase:3.3, vision:5, map:[
+  { name:L('بوبو وأخوه بيبو', 'Bobo and Brother Bibo', 'Bobo ve Kardeşi Bibo'), patrol:2.3, chase:3.3, vision:5, map:[
     '#############',
     '#K....#....K#',
     '#.B...#...B.#',
@@ -202,7 +204,7 @@ const LEVELS = [
     '#P..........#',
     '######E######'] }
   ,
-  { name:'المطبخ', patrol:2.4, chase:3.5, vision:5, map:[
+  { name:L('المطبخ', 'The Kitchen', 'Mutfak'), patrol:2.4, chase:3.5, vision:5, map:[
     '#############',
     '#P....t#....#',
     '#.....##..K.#',
@@ -222,7 +224,7 @@ const LEVELS = [
     '#..K....B...#',
     '#...........#',
     '#####E#######'] },
-  { name:'الحديقة', patrol:2.2, chase:3.2, vision:4.5, map:[
+  { name:L('الحديقة', 'The Garden', 'Bahçe'), patrol:2.2, chase:3.2, vision:4.5, map:[
     '#############',
     '#P....#....K#',
     '#.B.t...t.B.#',
@@ -242,7 +244,7 @@ const LEVELS = [
     '#.B.......B.#',
     '#K.........K#',
     '######E######'] },
-  { name:'القبو المعتم', dark:true, patrol:2.2, chase:3.3, vision:4.2, map:[
+  { name:L('القبو المعتم', 'The Dark Basement', 'Karanlık Bodrum'), dark:true, patrol:2.2, chase:3.3, vision:4.2, map:[
     '#############',
     '#P..#...#..K#',
     '#...#.B.#...#',
@@ -267,8 +269,8 @@ const COLS = 13, ROWS = 19;
 const BLOCK = new Set(['#','s','b','t']);
 const FURN = { s:'🛋️', b:'🛏️', t:'🪴' };
 const MONSTERS = [
-  { name:'بوبو', color:'#9b6bff', light:'#d2bcff', belly:'#b993ff' },
-  { name:'بيبو', color:'#21b8a8', light:'#9ff0e6', belly:'#4fd6c6' }
+  { name:L('بوبو', 'Bobo', 'Bobo'), color:'#9b6bff', light:'#d2bcff', belly:'#b993ff' },
+  { name:L('بيبو', 'Bibo', 'Bibo'), color:'#21b8a8', light:'#9ff0e6', belly:'#4fd6c6' }
 ];
 const DIRS = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
 
@@ -305,7 +307,7 @@ function say(text){
   try{
     if(!('speechSynthesis' in window)) return;
     speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'ar-SA'; u.rate = 0.95; u.pitch = 1.2;
+    const u = new SpeechSynthesisUtterance(text); u.lang = (window.I18N && I18N.speech) || 'ar-SA'; u.rate = 0.95; u.pitch = 1.2;
     speechSynthesis.speak(u);
   }catch(e){}
 }
@@ -417,9 +419,9 @@ function stepEnt(e, dt){
 }
 
 function loadLevel(i){
-  const L = LEVELS[i];
-  const grid = L.map.map(r => r.split(''));
-  const g = { i, L, grid, keys:[], teddy:null, got:0, gotTeddy:false, hearts:3, caught:0, exit:null, open:false,
+  const lv = LEVELS[i];
+  const grid = lv.map.map(r => r.split(''));
+  const g = { i, L:lv, grid, keys:[], teddy:null, got:0, gotTeddy:false, hearts:3, caught:0, exit:null, open:false,
               player:null, start:null, monsters:[], t:0, invuln:0, freeze:0, afterFreeze:null, floor:[] };
   for(let y = 0; y < ROWS; y++) for(let x = 0; x < COLS; x++){
     const c = grid[y][x];
@@ -432,10 +434,12 @@ function loadLevel(i){
   }
   G = g; held = null;
   updateHud();
-  toast(L.dark ? 'القبو معتم! 🔦 دوّر على ' + AR(g.keys.length) + ' مفاتيح' : 'اجمع ' + AR(g.keys.length) + ' مفاتيح 🔑 واهرب من الباب!', 2600);
-  say('اجمع المفاتيح، واهرب من ' + (g.monsters.length > 1 ? 'بوبو وبيبو' : 'بوبو'));
+  const nk = AR(g.keys.length), two = g.monsters.length > 1;
+  toast(lv.dark ? L('القبو معتم! 🔦 دوّر على ' + nk + ' مفاتيح', 'The basement is dark! 🔦 Find ' + nk + ' keys', 'Bodrum karanlık! 🔦 ' + nk + ' anahtar bul')
+               : L('اجمع ' + nk + ' مفاتيح 🔑 واهرب من الباب!', 'Get ' + nk + ' keys 🔑 and run out the door!', nk + ' anahtar topla 🔑 ve kapıdan kaç!'), 2600);
+  say(L('اجمع المفاتيح، واهرب من ' + (two ? 'بوبو وبيبو' : 'بوبو'), 'Get the keys, and run from ' + (two ? 'Bobo and Bibo' : 'Bobo'), 'Anahtarları topla, ' + (two ? 'Bobo ve Bibo' : 'Bobo') + '\'dan kaç'));
 }
-function boboPal(){ return window.World ? Object.assign({ name:'بوبو' }, World.palette()) : MONSTERS[0]; }
+function boboPal(){ return window.World ? Object.assign({}, World.palette(), { name:MONSTERS[0].name }) : MONSTERS[0]; }
 function makeMonster(x, y, idx){
   const m = ent(x, y, 2);
   return Object.assign(m, { idx, home:{ x, y }, pal: idx === 0 ? boboPal() : MONSTERS[idx % MONSTERS.length], state:'nap', timer: 2.2 + idx * 1.8,
@@ -487,7 +491,7 @@ function updateMonster(m, dt){
   m.timer -= dt;
   const p = G.player, sees = m.state !== 'nap' && canSee(m);
   if(sees){
-    if(m.state !== 'chase'){ m.state = 'chase'; SFX.spot(); toast(m.pal.name + ' شافك! اركض وتخبّى 📦', 1600); }
+    if(m.state !== 'chase'){ m.state = 'chase'; SFX.spot(); toast(L(m.pal.name + ' شافك! اركض وتخبّى 📦', m.pal.name + ' sees you! Run and hide 📦', m.pal.name + ' seni gördü! Koş ve saklan 📦'), 1600); }
     m.last = playerTile();
   }
   const dx = p.px - m.px, dy = p.py - m.py, dl = Math.hypot(dx, dy) || 1;
@@ -522,15 +526,15 @@ function updateMonster(m, dt){
 
   // touching
   if(Math.hypot(m.px - p.px, m.py - p.py) < 0.65 && !p.hidden && G.invuln <= 0){
-    if(m.state === 'nap'){ m.state = 'chase'; m.last = playerTile(); SFX.spot(); toast('أوبس! صحّيت ' + m.pal.name + ' 😮', 1500); }
+    if(m.state === 'nap'){ m.state = 'chase'; m.last = playerTile(); SFX.spot(); toast(L('أوبس! صحّيت ' + m.pal.name + ' 😮', 'Oops! You woke up ' + m.pal.name + ' 😮', 'Hoppala! ' + m.pal.name + '\'yu uyandırdın 😮'), 1500); }
     else caught(m);
   }
 }
 
 function caught(m){
-  G.hearts--; G.caught++; SFX.tickle(); say('هههه، دغدغة!');
+  G.hearts--; G.caught++; SFX.tickle(); say(L('هههه، دغدغة!', 'Ha ha, tickle tickle!', 'Hi hi, gıdı gıdı!'));
   m.state = 'tickle'; G.freeze = 1.3;
-  toast('هههه! ' + m.pal.name + ' دغدغك 🤭', 1500);
+  toast(L('هههه! ' + m.pal.name + ' دغدغك 🤭', 'Ha ha! ' + m.pal.name + ' tickled you 🤭', 'Hi hi! ' + m.pal.name + ' seni gıdıkladı 🤭'), 1500);
   updateHud();
   G.afterFreeze = () => {
     if(G.hearts <= 0){ SFX.lose(); showLose(); return; }
@@ -545,12 +549,12 @@ function onPlayerArrive(){
   for(const k of G.keys){
     if(!k.got && k.x === p.x && k.y === p.y){
       k.got = true; G.got++; SFX.key(); updateHud();
-      if(G.got === G.keys.length){ G.open = true; SFX.door(); toast('الباب انفتح! اركض لبرّا 🚪', 2200); say('الباب انفتح! اركض'); }
-      else toast('لقيت مفتاح! ' + AR(G.got) + ' من ' + AR(G.keys.length) + ' 🔑', 1400);
+      if(G.got === G.keys.length){ G.open = true; SFX.door(); toast(L('الباب انفتح! اركض لبرّا 🚪', 'The door is open! Run out 🚪', 'Kapı açıldı! Dışarı koş 🚪'), 2200); say(L('الباب انفتح! اركض', 'The door is open! Run', 'Kapı açıldı! Koş')); }
+      else toast(L('لقيت مفتاح! ' + AR(G.got) + ' من ' + AR(G.keys.length) + ' 🔑', 'You found a key! ' + G.got + ' of ' + G.keys.length + ' 🔑', 'Anahtar buldun! ' + G.got + '/' + G.keys.length + ' 🔑'), 1400);
     }
   }
   if(G.teddy && !G.teddy.got && G.teddy.x === p.x && G.teddy.y === p.y){
-    G.teddy.got = true; G.gotTeddy = true; SFX.teddy(); toast('لقيت الدبدوب! نجمة زيادة 🧸', 1600);
+    G.teddy.got = true; G.gotTeddy = true; SFX.teddy(); toast(L('لقيت الدبدوب! نجمة زيادة 🧸', 'You found the teddy! One more star 🧸', 'Ayıcığı buldun! Bir yıldız daha 🧸'), 1600);
   }
   if(G.exit && p.x === G.exit.x && p.y === G.exit.y) winLevel();
 }
@@ -568,7 +572,7 @@ function update(dt){
   if(!p.moving && held){
     const [dx, dy] = DIRS[held], nx = p.x + dx, ny = p.y + dy;
     if(canPlayer(nx, ny)) startMove(p, dx, dy);
-    else { if(dx) p.face = dx; if(!p.bumped){ p.bumped = true; if(G.exit && nx === G.exit.x && ny === G.exit.y && !G.open){ toast('الباب مقفول 🔒 لازم كل المفاتيح', 1400); SFX.bump(); } } }
+    else { if(dx) p.face = dx; if(!p.bumped){ p.bumped = true; if(G.exit && nx === G.exit.x && ny === G.exit.y && !G.open){ toast(L('الباب مقفول 🔒 لازم كل المفاتيح', 'The door is locked 🔒 Get all the keys', 'Kapı kilitli 🔒 Bütün anahtarlar lazım'), 1400); SFX.bump(); } } }
   }
   if(p.moving) p.bumped = false;
   if(stepEnt(p, dt)) onPlayerArrive();
@@ -654,24 +658,26 @@ function drawMonster(m, t){
   // bubble
   let txt = null, bg = '#fff7e8', fg = '#1c1838';
   if(m.state === 'chase'){ txt = '!'; bg = '#ff6b6b'; fg = '#fff'; }
-  else if(m.state === 'search') txt = '؟';
+  else if(m.state === 'search') txt = L('؟', '?', '?');
   else if(m.state === 'nap') txt = 'z' + (Math.floor(t * 2) % 2 ? 'z' : '');
-  else if(m.state === 'tickle') txt = 'هههه';
+  else if(m.state === 'tickle') txt = L('هههه', 'haha', 'hihi');
   if(txt){
     ctx.font = '800 ' + Math.round(T * 0.5) + 'px ' + getComputedStyle(document.body).getPropertyValue('--display');
     const w = Math.max(T * 0.6, ctx.measureText(txt).width + T * 0.3), h = T * 0.58;
     const bx = cx - w / 2, by = cy - T * 1.15 + Math.sin(t * 5) * 2;
     ctx.fillStyle = bg; rr(bx, by, w, h, h / 2); ctx.fill();
-    ctx.fillStyle = fg; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, cx, by + h / 2 + 1);
+    ctx.fillStyle = fg; ctx.direction = (window.I18N && I18N.dir) || 'rtl'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(txt, cx, by + h / 2 + 1);
   }
 }
 
 /* ---------- HUD + toast ---------- */
 function updateHud(){
   if(!G) return;
-  $('#hudLevel').textContent = 'المرحلة ' + AR(G.i + 1);
+  // these start with static text; drop its translations so I18N.apply() can't put it back over the live values
+  ['#hudLevel','#hudSub','#hudKeys'].forEach(s => { $(s).removeAttribute('data-en'); $(s).removeAttribute('data-tr'); });
+  $('#hudLevel').textContent = L('المرحلة ' + AR(G.i + 1), 'Level ' + (G.i + 1), 'Bölüm ' + (G.i + 1));
   $('#hudSub').textContent = G.L.name;
-  $('#hudKeys').textContent = '🔑 ' + AR(G.got) + ' من ' + AR(G.keys.length);
+  $('#hudKeys').textContent = L('🔑 ' + AR(G.got) + ' من ' + AR(G.keys.length), '🔑 ' + G.got + '/' + G.keys.length, '🔑 ' + G.got + '/' + G.keys.length);
   $('#hudHearts').textContent = '❤️'.repeat(Math.max(0, G.hearts)) + '🤍'.repeat(3 - Math.max(0, G.hearts));
 }
 function toast(text, ms){
@@ -688,26 +694,26 @@ function closeOverlay(){ overlay.hidden = true; paused = false; }
 function starsHtml(n){ let s = ''; for(let i = 0; i < 3; i++) s += '<i class="' + (i < n ? '' : 'off') + '" style="animation-delay:' + (i * .18) + 's">⭐</i>'; return s; }
 
 function showHome(){
-  const lv = LEVELS.map((L, i) => {
+  const lv = LEVELS.map((lvl, i) => {
     const locked = i + 1 > unlocked, b = best[i] || 0;
     return '<button class="lvl" data-lvl="' + i + '"' + (locked ? ' disabled' : '') + '>' +
-      '<b>' + (locked ? '🔒' : AR(i + 1)) + '</b><small>' + L.name + '</small>' +
+      '<b>' + (locked ? '🔒' : AR(i + 1)) + '</b><small>' + lvl.name + '</small>' +
       '<span class="st">' + '⭐'.repeat(b) + '<span style="opacity:.3">' + '⭐'.repeat(3 - b) + '</span></span></button>';
   }).join('');
   openOverlay(
     '<canvas id="boboCv" width="340" height="300"></canvas>' +
-    '<h1>بيت بوبو</h1>' +
-    '<p>إنت بالبيت مع بوبو، الوحش البنفسجي النعسان. اجمع المفاتيح واطلع من الباب قبل ما يمسكك ويدغدغك!</p>' +
-    '<button class="big-btn" id="btnPlay">العب</button>' +
+    '<h1>' + L('بيت بوبو', 'Bobo\'s House', 'Bobo\'nun Evi') + '</h1>' +
+    '<p>' + L('إنت بالبيت مع بوبو، الوحش البنفسجي النعسان. اجمع المفاتيح واطلع من الباب قبل ما يمسكك ويدغدغك!', 'You are at home with Bobo, the sleepy purple monster. Get the keys and go out the door before he catches you and tickles you!', 'Uykucu mor canavar Bobo ile evdesin. Seni yakalayıp gıdıklamadan anahtarları topla ve kapıdan çık!') + '</p>' +
+    '<button class="big-btn" id="btnPlay">' + L('العب', 'Play', 'Oyna') + '</button>' +
     '<div class="levels">' + lv + '</div>' +
     '<ul class="how">' +
-      '<li><span>🔑</span><span>اجمع كل المفاتيح لينفتح الباب</span></li>' +
-      '<li><span>📦</span><span>ادخل جوّا الصندوق لتتخبّى، بوبو ما بيشوفك</span></li>' +
-      '<li><span>💤</span><span>لما بوبو نايم مرّ جنبه بهدوء</span></li>' +
-      '<li><span>🧸</span><span>الدبدوب بيعطيك نجمة زيادة</span></li>' +
+      '<li><span>🔑</span><span>' + L('اجمع كل المفاتيح لينفتح الباب', 'Get all the keys to open the door', 'Kapı açılsın diye bütün anahtarları topla') + '</span></li>' +
+      '<li><span>📦</span><span>' + L('ادخل جوّا الصندوق لتتخبّى، بوبو ما بيشوفك', 'Go in a box to hide. Bobo can\'t see you there', 'Saklanmak için kutuya gir, Bobo seni göremez') + '</span></li>' +
+      '<li><span>💤</span><span>' + L('لما بوبو نايم مرّ جنبه بهدوء', 'When Bobo is asleep, walk past him quietly', 'Bobo uyurken yanından sessizce geç') + '</span></li>' +
+      '<li><span>🧸</span><span>' + L('الدبدوب بيعطيك نجمة زيادة', 'The teddy bear gives you one more star', 'Oyuncak ayı sana bir yıldız daha verir') + '</span></li>' +
     '</ul>' +
-    '<span class="note">حرّك الولد بالأسهم أو اسحب إصبعك عالخريطة</span>' +
-    '<a class="ghost-btn" href="../" style="text-decoration:none">⬅ كل الألعاب</a>'
+    '<span class="note">' + L('حرّك الولد بالأسهم أو اسحب إصبعك عالخريطة', 'Move with the arrows, or slide your finger on the map', 'Oklarla yürü ya da parmağını haritada kaydır') + '</span>' +
+    '<a class="ghost-btn" href="../" style="text-decoration:none">' + L('⬅ كل الألعاب', '⬅ All games', '⬅ Bütün oyunlar') + '</a>'
   );
   $('#btnPlay').onclick = () => play(Math.min(unlocked, LEVELS.length) - 1);
   card.querySelectorAll('[data-lvl]').forEach(b => b.onclick = () => play(+b.dataset.lvl));
@@ -717,20 +723,20 @@ function winLevel(){
   const stars = 1 + (G.caught === 0 ? 1 : 0) + (G.gotTeddy ? 1 : 0);
   best[G.i] = Math.max(best[G.i] || 0, stars); store.set('best', best);
   if(G.i + 2 > unlocked){ unlocked = Math.min(LEVELS.length, G.i + 2); store.set('unlocked', unlocked); }
-  SFX.win(); say('برافو! هربت');
+  SFX.win(); say(L('برافو! هربت', 'Well done! You got out', 'Aferin! Kaçtın'));
   const coins = stars * 4 + (G.caught === 0 ? 2 : 0);
-  if(window.World){ World.addCoins(coins, 'لخزانة بوبو'); World.track('win', 'bobo'); }
+  if(window.World){ World.addCoins(coins, 'لخزانة بوبو'); /* fixed key: world.js shows it in the right language */ World.track('win', 'bobo'); }
   const last = G.i === LEVELS.length - 1, i = G.i;
   const tips = [];
-  if(G.caught > 0) tips.push('اهرب بدون ما ينمسك');
-  if(!G.gotTeddy) tips.push('جيب الدبدوب 🧸');
+  if(G.caught > 0) tips.push(L('اهرب بدون ما ينمسك', 'get out without being caught', 'yakalanmadan kaç'));
+  if(!G.gotTeddy) tips.push(L('جيب الدبدوب 🧸', 'get the teddy bear 🧸', 'oyuncak ayıyı al 🧸'));
   openOverlay(
     '<div class="stars">' + starsHtml(stars) + '</div>' +
-    '<h2>' + (last ? 'إنت بطل! خلصت كل البيوت 🏆' : 'برافو! هربت من البيت 🎉') + '</h2>' +
-    '<p style="color:var(--gold);font-weight:700">ربحت ' + AR(coins) + ' 🪙 عملة</p>' +
-    (tips.length ? '<p>لتاخد نجوم أكتر: ' + tips.join(' و') + '</p>' : '<p>ثلاث نجوم! ما حدا متلك 😎</p>') +
-    '<div class="row">' + (last ? '' : '<button class="big-btn" id="bNext">المرحلة الجاية</button>') + '</div>' +
-    '<div class="row"><button class="ghost-btn" id="bAgain">عيدها</button><button class="ghost-btn" id="bHome">القائمة</button></div>'
+    '<h2>' + (last ? L('إنت بطل! خلصت كل البيوت 🏆', 'You are a hero! You did all the houses 🏆', 'Sen bir kahramansın! Bütün evleri bitirdin 🏆') : L('برافو! هربت من البيت 🎉', 'Well done! You got out of the house 🎉', 'Aferin! Evden kaçtın 🎉')) + '</h2>' +
+    '<p style="color:var(--gold);font-weight:700">' + L('ربحت ' + AR(coins) + ' 🪙 عملة', 'You got ' + coins + ' 🪙 coins', coins + ' 🪙 altın kazandın') + '</p>' +
+    (tips.length ? '<p>' + L('لتاخد نجوم أكتر: ' + tips.join(' و'), 'For more stars: ' + tips.join(' and '), 'Daha çok yıldız için: ' + tips.join(' ve ')) + '</p>' : '<p>' + L('ثلاث نجوم! ما حدا متلك 😎', 'Three stars! You are the best 😎', 'Üç yıldız! Senin gibisi yok 😎') + '</p>') +
+    '<div class="row">' + (last ? '' : '<button class="big-btn" id="bNext">' + L('المرحلة الجاية', 'Next level', 'Sonraki bölüm') + '</button>') + '</div>' +
+    '<div class="row"><button class="ghost-btn" id="bAgain">' + L('عيدها', 'Play again', 'Tekrar oyna') + '</button><button class="ghost-btn" id="bHome">' + L('القائمة', 'Menu', 'Menü') + '</button></div>'
   );
   if(!last) $('#bNext').onclick = () => play(i + 1);
   $('#bAgain').onclick = () => play(i);
@@ -740,10 +746,10 @@ function showLose(){
   const i = G.i;
   openOverlay(
     '<canvas id="boboCv" width="340" height="300"></canvas>' +
-    '<h2>' + G.monsters[0].pal.name + ' مسكك ٣ مرات! 🤭</h2>' +
-    '<p>ولا يهمك، تخبّى بالصناديق 📦 لما تشوف الضو الأحمر.</p>' +
-    '<button class="big-btn" id="bAgain">جرّب كمان مرة</button>' +
-    '<button class="ghost-btn" id="bHome">القائمة</button>'
+    '<h2>' + L(G.monsters[0].pal.name + ' مسكك ٣ مرات! 🤭', G.monsters[0].pal.name + ' caught you 3 times! 🤭', G.monsters[0].pal.name + ' seni 3 kez yakaladı! 🤭') + '</h2>' +
+    '<p>' + L('ولا يهمك، تخبّى بالصناديق 📦 لما تشوف الضو الأحمر.', 'That\'s OK! Hide in the boxes 📦 when you see the red light.', 'Üzülme! Kırmızı ışığı görünce kutulara saklan 📦') + '</p>' +
+    '<button class="big-btn" id="bAgain">' + L('جرّب كمان مرة', 'Try again', 'Tekrar dene') + '</button>' +
+    '<button class="ghost-btn" id="bHome">' + L('القائمة', 'Menu', 'Menü') + '</button>'
   );
   $('#bAgain').onclick = () => play(i);
   $('#bHome').onclick = showHome;

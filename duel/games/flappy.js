@@ -1,7 +1,7 @@
 /* Flappy bird, split screen. Each kid flies their own bird through the same pipes. Last bird flying wins. */
 Duel.register({
-  id: 'flappy', title: 'العصفور الطاير', emoji: '🐤', bg: '#54c7ec',
-  help: 'اكبس على نصّك ليطير العصفور، وفوت من بين الأنابيب',
+  id: 'flappy', title: L('العصفور الطاير', 'Flying Bird', 'Uçan Kuş'), emoji: '🐤', bg: '#54c7ec',
+  help: L('اكبس على نصّك ليطير العصفور، وفوت من بين الأنابيب', 'Tap your side to make the bird fly. Go between the pipes', 'Kuşu uçurmak için kendi tarafına dokun, boruların arasından geç'),
   create(api){
     const OUT = '#1c1838', CAP = 60;
     let seed = (Math.random() * 1e9) | 0;
@@ -110,10 +110,10 @@ Duel.register({
       c.fillStyle = 'rgba(28,24,56,.75)'; c.beginPath(); c.roundRect(W / 2 - S() * 0.13, H - g.ground * 0.5 - S() * 0.045, S() * 0.26, S() * 0.09, S() * 0.045); c.fill();
       c.strokeStyle = col.color; c.lineWidth = 4; c.stroke();
       api.text(c, '🏁 ' + api.AR(b.passed), W / 2, H - g.ground * 0.5, S() * 0.06, '#fff7e8', 0);
-      if(!b.started && b.alive) api.text(c, 'اكبس ليطير! 👆', W / 2, g.top + g.ph * 0.78, S() * 0.07, col.dark, 0);
+      if(!b.started && b.alive) api.text(c, L('اكبس ليطير! 👆', 'Tap to fly! 👆', 'Uçmak için dokun! 👆'), W / 2, g.top + g.ph * 0.78, S() * 0.07, col.dark, 0);
       if(!b.alive){
         const other = B[1 - pl];
-        api.text(c, other.alive ? 'وقع العصفور! 💥' : 'وقعوا التنين!', W / 2, g.top + g.ph * 0.5, S() * 0.075, '#ff5a5f', 0);
+        api.text(c, other.alive ? L('وقع العصفور! 💥', 'The bird fell! 💥', 'Kuş düştü! 💥') : L('وقعوا التنين!', 'Both birds fell!', 'İkisi de düştü!'), W / 2, g.top + g.ph * 0.5, S() * 0.075, '#ff5a5f', 0);
       }
       c.restore();
     }

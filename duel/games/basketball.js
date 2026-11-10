@@ -1,8 +1,8 @@
 /* Basketball flick duel. Each player has a sliding hoop near the centre line and a ball at their edge.
    Both halves are simulated in the same "bottom half" frame; player 1's half is drawn rotated 180° so it is an exact mirror. */
 Duel.register({
-  id: 'basketball', title: 'السلة', emoji: '🏀', bg: '#ff8a3d',
-  help: 'اسحب الطابة لفوق بسرعة لتفوت بالسلة. أول واحد بيجيب ٥ سلّات بيربح',
+  id: 'basketball', title: L('السلة', 'Basketball', 'Basketbol'), emoji: '🏀', bg: '#ff8a3d',
+  help: L('اسحب الطابة لفوق بسرعة لتفوت بالسلة. أول واحد بيجيب ٥ سلّات بيربح', 'Swipe the ball up fast to get it in the hoop. First to 5 baskets wins!', 'Topu hızlıca yukarı kaydır, potaya sok. İlk 5 basketi atan kazanır!'),
   create(api){
     const OUT = '#1c1838', TARGET = 5, LIMIT = 40;
     const P = [0, 1].map(() => ({
@@ -70,7 +70,7 @@ Duel.register({
     function basket(i){
       const pl = P[i], g = geo();
       pl.score++; pl.scored = true; pl.flash = 0.6; pl.swish = 0.4; api.sfx.coin();
-      api.say('سلّة! 🏀', i, 800);
+      api.say(api.L('سلّة! 🏀', 'Basket! 🏀', 'Basket! 🏀'), i, 800);
       const hx = hoopX(g);
       for(let k = 0; k < 30; k++) pl.parts.push({ x: hx, y: g.hy, vx: api.rand(-1, 1) * g.S * 0.8, vy: api.rand(-1.2, 0.3) * g.S * 0.8, life: api.rand(0.6, 1.1), col: ['#ffcd4d', '#fff', api.players[i].color, '#3fd47a'][k % 4] });
       if(pl.score >= TARGET && !over){ over = true; api.sfx.point(); setTimeout(() => api.win(i), 800); }
@@ -157,13 +157,13 @@ Duel.register({
         const bob = Math.sin(t * 5) * 6;
         c.strokeStyle = col.color; c.lineWidth = 4; c.setLineDash([6, 8]);
         c.beginPath(); c.arc(pl.x, pl.y, g.r * 1.5, 0, Math.PI * 2); c.stroke(); c.setLineDash([]);
-        if(pl.score === 0 && api.time < 6) api.text(c, '👆 اسحب لفوق', W / 2, pl.y - g.r * 2.4 + bob, 20, '#fff7e8', 0);
+        if(pl.score === 0 && api.time < 6) api.text(c, api.L('👆 اسحب لفوق', '👆 Swipe up', '👆 Yukarı kaydır'), W / 2, pl.y - g.r * 2.4 + bob, 20, '#fff7e8', 0);
       }
       for(const q of pl.parts){ c.fillStyle = q.col; c.globalAlpha = Math.min(1, q.life * 2); c.fillRect(q.x - 4, q.y - 4, 8, 8); }
       c.globalAlpha = 1;
       // HUD
       const fs = Math.min(22, W * 0.056), ey = H - (H - g.spawnY) * 0.35;
-      api.text(c, 'سلّات: ' + api.AR(pl.score), W * 0.8, ey, fs, '#fff7e8', 0);
+      api.text(c, api.L('سلّات: ' + api.AR(pl.score), 'Baskets: ' + pl.score, 'Basket: ' + pl.score), W * 0.8, ey, api.lang === 'ar' ? fs : fs * 0.85, '#fff7e8', 0);
       const left = Math.max(0, Math.ceil(LIMIT - api.time));
       api.text(c, '⏱ ' + api.AR(left), W * 0.2, ey, fs, left <= 10 ? '#ffe14d' : '#fff7e8', 0);
     }

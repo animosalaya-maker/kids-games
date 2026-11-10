@@ -2,8 +2,8 @@
    Attacker taps to slap. Defender taps to pull the hand away before the slap lands.
    Pull away when no slap is coming (a flinch) → attacker gets the point. First to 3. */
 Duel.register({
-  id: 'slap', title: 'ضربة الكف', emoji: '👋', bg: '#2ec4b6',
-  help: 'اللي بيهجم بيكبس ليضرب الإيد، واللي بيدافع بيكبس ليسحب إيده بسرعة',
+  id: 'slap', title: L('ضربة الكف', 'Hand Slap', 'Şaplak'), emoji: '👋', bg: '#2ec4b6',
+  help: L('اللي بيهجم بيكبس ليضرب الإيد، واللي بيدافع بيكبس ليسحب إيده بسرعة', 'The attacker taps to slap the hand. The defender taps to pull away fast!', 'Saldıran ele vurmak için dokunur, savunan elini hızlıca çekmek için dokunur!'),
   create(api){
     const OUT = '#1c1838', GOAL = 3, LAND = 0.23, LIMIT = 45, IDLE_MAX = 5;
     let attacker = Math.random() < 0.5 ? 0 : 1, t = 0, turnT = 0;
@@ -84,11 +84,11 @@ Duel.register({
         for(let i = 0; i < 16; i++){ const an = api.rand(0, Math.PI * 2), sp = api.rand(0.5, 1.2) * S(); stars.push({ x: pow.x, y: pow.y, vx: Math.cos(an) * sp, vy: Math.sin(an) * sp, life: 1 }); }
         api.sfx.hit(); api.tone(160, 0.25, 'square', 0.12, 0, 60); api.tone(1200, 0.08, 'triangle', 0.08, 0.03);
       } else if(kind === 'dodge'){
-        api.sfx.swoosh(); api.say('هربت! 😎', d, 900);
+        api.sfx.swoosh(); api.say(L('هربت! 😎', 'You got away! 😎', 'Kaçtın! 😎'), d, 900);
       } else if(kind === 'flinch'){
-        pts[a]++; api.sfx.buzz(); api.say('خفت؟ نقطة إلو! 😜', d, 1000);
+        pts[a]++; api.sfx.buzz(); api.say(L('خفت؟ نقطة إلو! 😜', 'Scared? Their point! 😜', 'Korktun mu? Puan onun! 😜'), d, 1000);
       } else if(kind === 'slow'){
-        api.sfx.tick(); api.say('تأخرت! دور غيرك', a, 900);
+        api.sfx.tick(); api.say(L('تأخرت! دور غيرك', 'Too slow! Switch turns', 'Geç kaldın! Sıra değişti'), a, 900);
       }
       if(pts[a] >= GOAL && !ending){ ending = { w: a, t: afterT }; }
     }
@@ -158,7 +158,7 @@ Duel.register({
         // labels and score pips (on top of the sleeves)
         for(const pl of [0, 1]) side(c, pl, () => {
           const atk = pl === a, col = api.players[pl];
-          const lbl = atk ? 'إنت بتهجم! اكبس لتضرب 👋' : 'إنت بتدافع! اكبس لتهرب 🏃';
+          const lbl = atk ? L('إنت بتهجم! اكبس لتضرب 👋', 'You attack! Tap to slap 👋', 'Saldır! Vurmak için dokun 👋') : L('إنت بتدافع! اكبس لتهرب 🏃', 'You defend! Tap to escape 🏃', 'Savun! Kaçmak için dokun 🏃');
           const y = H / 2 - s * 0.1;
           c.fillStyle = atk ? col.color : '#fff7e8'; c.strokeStyle = OUT; c.lineWidth = Math.max(3, s * 0.01);
           c.beginPath(); c.roundRect(-W * 0.44, y - s * 0.05, W * 0.88, s * 0.1, s * 0.05); c.fill(); c.stroke();
@@ -174,8 +174,8 @@ Duel.register({
           const k = Math.min(1, pow.t / 0.12), r = s * 0.17 * (0.6 + k * 0.5) * (1 - Math.max(0, pow.t - 0.6) * 2);
           if(r > 0){
             burst(c, pow.x, pow.y, r, pow.t);
-            api.text(c, 'طاخ!', pow.x, pow.y + r * 1.25, Math.min(46, s * 0.12), '#ffcd4d', 0, 900);
-            api.text(c, 'طاخ!', pow.x, pow.y - r * 1.25, Math.min(46, s * 0.12), '#ffcd4d', 1, 900);
+            api.text(c, L('طاخ!', 'Smack!', 'Şap!'), pow.x, pow.y + r * 1.25, Math.min(46, s * 0.12), '#ffcd4d', 0, 900);
+            api.text(c, L('طاخ!', 'Smack!', 'Şap!'), pow.x, pow.y - r * 1.25, Math.min(46, s * 0.12), '#ffcd4d', 1, 900);
           }
         }
         for(const st of stars){ c.globalAlpha = Math.max(0, st.life); api.emoji(c, '⭐', st.x, st.y, s * 0.05, st.life * 4); }

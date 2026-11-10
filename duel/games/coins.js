@@ -1,8 +1,8 @@
 /* Money grab: coins and bills pop up on both halves (always in mirrored pairs, so it's fair).
    Tap the ones in YOUR half to drop them in your piggy bank. Golden coin = +3. Bee = −2! 25 seconds. */
 Duel.register({
-  id: 'coins', title: 'جمع المصاري', emoji: '💰', bg: '#ff6f61',
-  help: 'اكبس على المصاري اللي بنصّك بسرعة، بس لا تكبس على النحلة!',
+  id: 'coins', title: L('جمع المصاري', 'Coin Grab', 'Para Topla'), emoji: '💰', bg: '#ff6f61',
+  help: L('اكبس على المصاري اللي بنصّك بسرعة، بس لا تكبس على النحلة!', 'Tap the coins on your side fast, but don\'t tap the bee!', 'Kendi tarafındaki paralara hızlıca dokun, ama arıya dokunma!'),
   create(api){
     const OUT = '#1c1838', LIMIT = 25, LIFE = 1.4;
     const VAL = { coin: 1, bill: 1, gold: 3, bee: -2 };
@@ -139,7 +139,7 @@ Duel.register({
         score[pl] = Math.max(0, score[pl] + v);
         const tgt = toScreen(pl, 0, piggyY());
         if(best.type === 'bee'){
-          api.sfx.buzz(); api.say('قرصتك النحلة! 🐝', pl, 900);
+          api.sfx.buzz(); api.say(L('قرصتك النحلة! 🐝', 'The bee got you! 🐝', 'Arı seni soktu! 🐝'), pl, 900);
           flyers.push({ pl, type: 'bee', x0: best.x, y0: best.y, x1: best.x + (Math.random() < 0.5 ? -1 : 1) * api.W, y1: best.y + api.rand(-1, 1) * S() * 0.3, k: 0 });
         } else {
           api.sfx.coin();

@@ -2,8 +2,8 @@
    Left / right buttons change lane. Obstacles make the car spin and slow down; coins push it forward.
    Both roads use the SAME track layout so it's fair. First to 100% wins; after 50 s the further car wins. */
 Duel.register({
-  id: 'cars', title: 'سباق السيارات', emoji: '🏎️', bg: '#5b6475',
-  help: 'كبس يمين ويسار لتغيّر الطريق، اهرب من الحواجز ولمّ المصاري، أوّل واحد بيوصل بيربح',
+  id: 'cars', title: L('سباق السيارات', 'Car Race', 'Araba Yarışı'), emoji: '🏎️', bg: '#5b6475',
+  help: L('كبس يمين ويسار لتغيّر الطريق، اهرب من الحواجز ولمّ المصاري، أوّل واحد بيوصل بيربح', 'Tap left or right to dodge blocks and grab coins. First to the finish wins!', 'Sağa sola dokun, engellerden kaç, paraları topla. İlk varan kazanır!'),
   create(api){
     const OUT = '#1c1838', TRACK = 25, LIMIT = 50, SPIN = 1.0;
     let t = 0, over = false, overT = 0, winner = null;
@@ -58,7 +58,7 @@ Duel.register({
         over = true;
         const d = cars[0].P - cars[1].P;
         winner = Math.abs(d) < 0.05 ? null : (d > 0 ? 0 : 1);
-        api.say('خلص الوقت! ⏰');
+        api.say(api.L('خلص الوقت! ⏰', 'Time\'s up! ⏰', 'Süre bitti! ⏰'));
       }
     }
 
@@ -176,7 +176,7 @@ Duel.register({
       api.text(c, api.AR(Math.ceil(left)), tx, ty + 16, 24, left < 10 ? '#ffcd4d' : '#fff7e8', 0);
       const py = ty + 100, pc = Math.floor(api.clamp(car.P / TRACK, 0, 1) * 100);
       c.fillStyle = 'rgba(28,24,56,.55)'; c.beginPath(); c.roundRect(tx - 36, py - 22, 72, 44, 18); c.fill();
-      api.text(c, api.AR(pc) + '٪', tx, py, 24, P.light, 0);
+      api.text(c, api.L(api.AR(pc) + '٪', pc + '%', '%' + pc), tx, py, 24, P.light, 0);
     }
 
     return {

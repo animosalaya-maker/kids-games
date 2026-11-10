@@ -1,7 +1,8 @@
 /* Solo engine: one kid, full screen, Bobo is the hero. A game file calls Solo.register({...}). See solo/GAME_API.md. */
 (function(){
 'use strict';
-const AR = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+const AR = n => (window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]));
+const L = window.L || ((a) => a);
 if(!CanvasRenderingContext2D.prototype.roundRect){
   CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r){ r = Math.min(typeof r === 'number' ? r : (r && r[0]) || 0, w / 2, h / 2); this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r); this.arcTo(x, y + h, x, y, r); this.arcTo(x, y, x + w, y, r); this.closePath(); };
 }
@@ -23,12 +24,12 @@ const SFX = {
   win(){ [523,659,784,1046,784,1046,1318].forEach((f,i)=>tone(f,.2,'triangle',.14,i*.11)); },
   over(){ [440,370,311,262].forEach((f,i)=>tone(f,.22,'sine',.12,i*.13)); }
 };
-function say(str){ try{ if(!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(str); u.lang = 'ar-SA'; u.rate = 0.9; u.pitch = 1.15; speechSynthesis.speak(u); }catch(e){} }
+function say(str){ try{ if(!('speechSynthesis' in window)) return; speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(str); u.lang = window.I18N ? I18N.speech : 'ar-SA'; u.rate = 0.9; u.pitch = 1.15; speechSynthesis.speak(u); }catch(e){} }
 
 const FONT = '"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif';
 const EMOJI_FONT = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
 function text(c, str, x, y, size, color, weight){
-  c.save(); c.font = (weight || 800) + ' ' + Math.round(size) + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.direction = 'rtl'; c.lineJoin = 'round';
+  c.save(); c.font = (weight || 800) + ' ' + Math.round(size) + 'px ' + FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.direction = (window.I18N ? I18N.dir : 'rtl'); c.lineJoin = 'round';
   c.strokeStyle = 'rgba(0,0,0,.35)'; c.lineWidth = Math.max(2, size * 0.12); c.strokeText(str, x, y); c.fillStyle = color || '#fff7e8'; c.fillText(str, x, y); c.restore();
 }
 function emoji(c, ch, x, y, size, rot){ c.save(); c.translate(x, y); if(rot) c.rotate(rot); c.font = Math.round(size) + 'px ' + EMOJI_FONT; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#000'; c.globalAlpha = c.globalAlpha; c.fillText(ch, 0, size * 0.05); c.restore(); }
@@ -64,7 +65,7 @@ let cv, ctx, W = 0, H = 0, dpr = 1, cur = null, inst = null, phase = 'menu', run
 const pointers = new Map();
 const api = {
   get W(){ return W; }, get H(){ return H; }, get time(){ return runT; },
-  sfx: SFX, tone, say, text, emoji, bobo, AR, FONT,
+  sfx: SFX, tone, say, text, emoji, bobo, AR, FONT, L, get lang(){ return window.I18N ? I18N.lang : 'ar'; }, get dir(){ return window.I18N ? I18N.dir : 'rtl'; },
   rand: (a, b) => a + Math.random() * (b - a), clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
   pick: arr => arr[Math.floor(Math.random() * arr.length)],
   shuffle: arr => { const a = arr.slice(); for(let i = a.length - 1; i > 0; i--){ const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; },
@@ -83,9 +84,9 @@ function finish(r){
   (r.win || isBest ? SFX.win : SFX.over)();
   const el = document.getElementById('result');
   el.querySelector('.r-emo').textContent = r.win ? '🏆' : isBest ? '🌟' : '👏';
-  el.querySelector('h2').textContent = r.msg || (r.win ? 'برافو! خلصتها' : isBest ? 'رقم جديد!' : 'حلو كتير!');
+  el.querySelector('h2').textContent = r.msg || (r.win ? L('برافو! خلصتها','Well done! You finished!','Bravo! Bitirdin!') : isBest ? L('رقم جديد!','New record!','Yeni rekor!') : L('حلو كتير!','Great job!','Harika!'));
   el.querySelector('.r-score').textContent = AR(score);
-  el.querySelector('.r-best').textContent = 'أحسن نتيجة: ' + AR(result.best);
+  el.querySelector('.r-best').textContent = L('أحسن نتيجة: ','Best: ','En iyi: ') + AR(result.best);
   el.querySelector('.r-coins').textContent = '+' + AR(coins) + ' 🪙';
   setTimeout(() => { if(phase === 'result') el.hidden = false; }, 700);
 }
@@ -94,7 +95,7 @@ function openGame(def){
   document.getElementById('menu').hidden = true; document.getElementById('play').hidden = false; document.getElementById('result').hidden = true;
   const it = document.getElementById('intro'); it.hidden = false;
   it.querySelector('.i-emo').textContent = def.emoji; it.querySelector('h2').textContent = def.title; it.querySelector('p').textContent = def.help;
-  it.querySelector('.i-best').textContent = 'أحسن نتيجة: ' + AR(store.get('best_' + def.id, 0));
+  it.querySelector('.i-best').textContent = L('أحسن نتيجة: ','Best: ','En iyi: ') + AR(store.get('best_' + def.id, 0));
   it.style.setProperty('--bg', def.bg || '#9b6bff');
 }
 function start(){

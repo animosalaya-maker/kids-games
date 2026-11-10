@@ -2,10 +2,11 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="utf-8">
+<script src="../i18n.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>حفلة الأصحاب</title>
+<title data-en="Friends Party" data-tr="Arkadaş Partisi">حفلة الأصحاب</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<meta name="description" content="ألعاب صغيرة لـ ٢ لـ ٤ أولاد على نفس الجوال.">
+<meta name="description" content="ألعاب صغيرة لـ ٢ لـ ٤ أولاد على نفس الجوال." data-en="Little games for 2 to 4 kids on one phone." data-tr="Tek telefonda 2-4 çocuk için mini oyunlar.">
 <meta name="theme-color" content="#1c1838">
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../icon-192.png">
@@ -88,11 +89,11 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 </style>
 </head>
 <body>
-<canvas id="cv" aria-label="ساحة اللعب"></canvas>
+<canvas id="cv" aria-label="ساحة اللعب" data-en-aria="Play area" data-tr-aria="Oyun alanı"></canvas>
 <div class="msg" id="msgA"></div>
 <div class="msg" id="msgB"></div>
 <div id="buttons"></div>
-<button class="quit" id="btnQuit" aria-label="القائمة">✕</button>
+<button class="quit" id="btnQuit" aria-label="القائمة" data-en-aria="Menu" data-tr-aria="Menü">✕</button>
 
 <div class="overlay" id="overlay"><div class="card" id="card"></div></div>
 
@@ -101,16 +102,18 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 (function(){
 'use strict';
 const $ = s => document.querySelector(s);
-const AR = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
+const AR = n => window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]); // digits for the current language
+const LTR = !!(window.I18N && I18N.dir === 'ltr');
+{ const md = document.querySelector('meta[name="description"]'), dl = window.I18N && md && md.getAttribute('data-' + I18N.lang); if(dl) md.setAttribute('content', dl); }
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('party_' + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem('party_' + k, JSON.stringify(v)); }catch(e){} }
 };
 const PLAYERS = [
-  { name:'الأحمر', color:'#ff5a5f', dark:'#c23a40' },
-  { name:'الأزرق', color:'#3fa9ff', dark:'#2276c4' },
-  { name:'الأخضر', color:'#3fd47a', dark:'#249c55' },
-  { name:'الأصفر', color:'#ffc233', dark:'#c48f12' }
+  { name:L('الأحمر', 'Red', 'Kırmızı'), color:'#ff5a5f', dark:'#c23a40' },
+  { name:L('الأزرق', 'Blue', 'Mavi'), color:'#3fa9ff', dark:'#2276c4' },
+  { name:L('الأخضر', 'Green', 'Yeşil'), color:'#3fd47a', dark:'#249c55' },
+  { name:L('الأصفر', 'Yellow', 'Sarı'), color:'#ffc233', dark:'#c48f12' }
 ];
 
 /* ---------- Sound ---------- */
@@ -141,7 +144,7 @@ const SFX = {
 };
 function say(text){
   try{ if(muted || !('speechSynthesis' in window)) return; speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text); u.lang = 'ar-SA'; u.rate = 1; u.pitch = 1.2; speechSynthesis.speak(u); }catch(e){}
+    const u = new SpeechSynthesisUtterance(text); u.lang = (window.I18N && I18N.speech) || 'ar-SA'; u.rate = 1; u.pitch = 1.2; speechSynthesis.speak(u); }catch(e){}
 }
 
 /* ---------- Canvas ---------- */
@@ -193,7 +196,7 @@ function buildButtons(){
   const box = $('#buttons'); box.innerHTML = '';
   players.forEach((p, i) => {
     const b = document.createElement('button');
-    b.className = 'pbtn pos' + i; b.style.setProperty('--c', p.color); b.setAttribute('aria-label', 'زر ' + p.name);
+    b.className = 'pbtn pos' + i; b.style.setProperty('--c', p.color); b.setAttribute('aria-label', L('زر ' + p.name, p.name + ' button', p.name + ' düğmesi'));
     b.innerHTML = '<span class="face"></span><b class="sc">' + AR(p.score) + '</b><span class="lbl">' + p.name + '</span>';
     b.addEventListener('pointerdown', e => { e.preventDefault(); ac(); b.classList.add('on'); press(i); });
     ['pointerup','pointercancel','pointerleave'].forEach(ev => b.addEventListener(ev, () => b.classList.remove('on')));
@@ -210,15 +213,15 @@ function centerRect(){
 
 const GAMES = {
   reaction: {
-    title:'مين الأسرع ⚡', help:'لما تصير الدائرة خضرا، اكبس قبل الكل! إذا كبست بكير بتطلع',
-    start(){ this.state = 'wait'; this.timer = 1.8 + Math.random() * 2.7; players.forEach(p => p.out = false); refreshButtons(); setMsg('استنى…', 'لا تكبس هلّق'); },
+    title:L('مين الأسرع ⚡', 'Who is fastest? ⚡', 'En hızlı kim? ⚡'), help:L('لما تصير الدائرة خضرا، اكبس قبل الكل! إذا كبست بكير بتطلع', 'When the circle turns green, press first! Press too soon and you are out', 'Daire yeşil olunca herkesten önce bas! Erken basan elenir'),
+    start(){ this.state = 'wait'; this.timer = 1.8 + Math.random() * 2.7; players.forEach(p => p.out = false); refreshButtons(); setMsg(L('استنى…', 'Wait…', 'Bekle…'), L('لا تكبس هلّق', 'Don\'t press yet', 'Daha basma')); },
     update(dt){
-      if(this.state === 'wait'){ this.timer -= dt; if(this.timer <= 0){ this.state = 'go'; SFX.go(); setMsg('هلّق! اكبس!'); } }
+      if(this.state === 'wait'){ this.timer -= dt; if(this.timer <= 0){ this.state = 'go'; SFX.go(); setMsg(L('هلّق! اكبس!', 'Now! Press!', 'Şimdi! Bas!')); } }
     },
     press(i){
       const p = players[i]; if(p.out) return;
       if(this.state === 'wait'){
-        p.out = true; SFX.buzz(); refreshButtons(); setMsg(p.name + ' كبس بكير 😅', 'استنوا الأخضر');
+        p.out = true; SFX.buzz(); refreshButtons(); setMsg(L(p.name + ' كبس بكير 😅', p.name + ' pressed too soon 😅', p.name + ' erken bastı 😅'), L('استنوا الأخضر', 'Wait for green', 'Yeşili bekleyin'));
         if(players.every(q => q.out)){ this.start(); }
       } else if(this.state === 'go'){ finish(i); }
     },
@@ -233,14 +236,14 @@ const GAMES = {
   },
 
   race: {
-    title:'سباق الكبس 🏁', help:'اكبس زرك بسرعة بسرعة! أول واحد بيوصل العلم بيربح',
+    title:L('سباق الكبس 🏁', 'Tap Race 🏁', 'Basma Yarışı 🏁'), help:L('اكبس زرك بسرعة بسرعة! أول واحد بيوصل العلم بيربح', 'Press your button fast, fast! First to the flag wins', 'Düğmene hızlı hızlı bas! Bayrağa ilk varan kazanır'),
     goal: 28,
     start(){ this.prog = players.map(() => 0); setMsg(''); },
     update(){},
     press(i){ this.prog[i]++; SFX.tap(i, this.prog[i]); if(this.prog[i] >= this.goal) finish(i); },
     draw(t){
       const r = centerRect(), n = players.length, lane = Math.min(r.h / n, 90), top = H / 2 - lane * n / 2;
-      const x0 = r.x + r.w - 30, x1 = r.x + 40;
+      const x0 = LTR ? r.x + 30 : r.x + r.w - 30, x1 = LTR ? r.x + r.w - 40 : r.x + 40, fx = LTR ? 18 : -18;
       ctx.font = Math.round(lane * 0.5) + 'px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
       ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
       players.forEach((p, i) => {
@@ -248,15 +251,15 @@ const GAMES = {
         ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.beginPath(); ctx.roundRect ? ctx.roundRect(r.x, y - lane * 0.38, r.w, lane * 0.76, lane * 0.38) : ctx.rect(r.x, y - lane * 0.38, r.w, lane * 0.76); ctx.fill();
         ctx.strokeStyle = 'rgba(255,255,255,.15)'; ctx.setLineDash([6, 8]); ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(x0, y); ctx.lineTo(x1, y); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillText('🏁', x1 - 18, y);
+        ctx.fillText('🏁', x1 + fx, y);
         const k = Math.min(1, this.prog[i] / this.goal), x = x0 + (x1 - x0) * k;
-        drawBuddy(ctx, x, y, lane * 0.28, p, t + i, k > 0.8 ? 'happy' : 'idle', { x:-1, y:0 });
+        drawBuddy(ctx, x, y, lane * 0.28, p, t + i, k > 0.8 ? 'happy' : 'idle', { x:LTR ? 1 : -1, y:0 });
       });
     }
   },
 
   lava: {
-    title:'أرض الحمم 🌋', help:'الأرض عم تصير حمم! كل كبسة بتلفّك. اللي بيضل واقف آخر شي بيربح',
+    title:L('أرض الحمم 🌋', 'Lava Floor 🌋', 'Lav Zemini 🌋'), help:L('الأرض عم تصير حمم! كل كبسة بتلفّك. اللي بيضل واقف آخر شي بيربح', 'The floor is turning into lava! Each press turns you. The last one standing wins', 'Yer lava dönüşüyor! Her basış seni döndürür. En son ayakta kalan kazanır'),
     N: 7,
     start(){
       const N = this.N;
@@ -297,7 +300,7 @@ const GAMES = {
       this.bots.forEach((b, i) => {
         if(!b.alive) return;
         const tx = Math.round(b.px), ty = Math.round(b.py);
-        if(this.tile(tx, ty).s === 2){ b.alive = false; players[i].out = true; refreshButtons(); SFX.splash(); setMsg(players[i].name + ' وقع بالحمم! 🔥'); }
+        if(this.tile(tx, ty).s === 2){ b.alive = false; players[i].out = true; refreshButtons(); SFX.splash(); setMsg(L(players[i].name + ' وقع بالحمم! 🔥', players[i].name + ' fell in the lava! 🔥', players[i].name + ' lava düştü! 🔥')); }
       });
       const alive = this.bots.map((b, i) => b.alive ? i : -1).filter(i => i >= 0);
       if(alive.length <= 1){ this.done = true; setTimeout(() => finish(alive.length ? alive[0] : null), 600); }
@@ -336,7 +339,7 @@ const GAMES = {
     }
   },
   tug: {
-    title:'شد الحبل 🪢', help:'اللي تحت ضد اللي فوق! اكبسوا بسرعة لتسحبوا الحبل لعندكم',
+    title:L('شد الحبل 🪢', 'Tug of War 🪢', 'Halat Çekme 🪢'), help:L('اللي تحت ضد اللي فوق! اكبسوا بسرعة لتسحبوا الحبل لعندكم', 'Bottom side against top side! Press fast to pull the rope to you', 'Alttakiler üsttekilere karşı! İpi kendinize çekmek için hızlı basın'),
     start(){
       this.pos = 0;
       this.teams = [players.map((p, i) => i).filter(i => i % 2 === 0), players.map((p, i) => i).filter(i => i % 2 === 1)];
@@ -376,20 +379,20 @@ function nextGame(){
   if(!queue.length){ queue = ORDER.slice().sort(() => Math.random() - 0.5); if(queue[0] === lastGame) queue.push(queue.shift()); }
   lastGame = queue.shift(); game = GAMES[lastGame];
   players.forEach(p => p.out = false); refreshButtons();
-  phase = 'intro'; phaseTime = 2.8; setMsg(game.title, game.help); say(game.title.replace(/[^؀-ۿ ]/g, ''));
+  phase = 'intro'; phaseTime = 2.8; setMsg(game.title, game.help); say(game.title.replace(/[^\p{L}\p{M}\p{N} ]/gu, '').trim());
   if(game.start && lastGame !== 'reaction') game.start(); // show the board during intro
 }
 function press(i){ if(phase === 'play' && game) game.press(i); }
 function finish(winner){
   if(phase !== 'play') return;
   phase = 'result'; phaseTime = 2.4;
-  if(winner == null || (Array.isArray(winner) && !winner.length)){ setMsg('تعادل! 🤝', 'ما حدا ربح هالجولة'); return; }
+  if(winner == null || (Array.isArray(winner) && !winner.length)){ setMsg(L('تعادل! 🤝', 'A tie! 🤝', 'Berabere! 🤝'), L('ما حدا ربح هالجولة', 'Nobody won this round', 'Bu turu kimse kazanmadı')); return; }
   const list = Array.isArray(winner) ? winner : [winner];
   list.forEach(i => players[i].score++); refreshButtons(); SFX.point();
-  const names = list.map(i => players[i].name).join(' و');
-  if(list.length === 1) setMsg(names + ' ربح! 🎉', 'صار معه ' + AR(players[list[0]].score) + ' من ' + AR(target));
-  else setMsg(names + ' ربحوا! 🎉', 'نقطة لكل واحد');
-  say(names + (list.length > 1 ? ' ربحوا' : ' ربح'));
+  const names = list.map(i => players[i].name).join(L(' و', ' and ', ' ve '));
+  if(list.length === 1){ const sc = players[list[0]].score; setMsg(L(names + ' ربح! 🎉', names + ' wins! 🎉', names + ' kazandı! 🎉'), L('صار معه ' + AR(sc) + ' من ' + AR(target), 'Now ' + sc + ' of ' + target + ' points', 'Puanı: ' + sc + '/' + target)); }
+  else setMsg(L(names + ' ربحوا! 🎉', names + ' win! 🎉', names + ' kazandı! 🎉'), L('نقطة لكل واحد', 'One point each', 'Herkese bir puan'));
+  say(L(names + (list.length > 1 ? ' ربحوا' : ' ربح'), names + (list.length > 1 ? ' win' : ' wins'), names + ' kazandı'));
 }
 function update(dt){
   if(phase === 'intro'){
@@ -400,7 +403,7 @@ function update(dt){
     if(phaseTime <= 0){
       countdown--;
       if(countdown > 0){ phaseTime = 0.7; setMsg(AR(countdown)); SFX.tick(); }
-      else { phase = 'play'; game.start(); if(lastGame !== 'reaction') { setMsg('يلا!'); setTimeout(() => { if(phase === 'play' && lastGame !== 'reaction') setMsg(''); }, 700); SFX.go(); } }
+      else { phase = 'play'; game.start(); if(lastGame !== 'reaction') { setMsg(L('يلا!', 'Go!', 'Başla!')); setTimeout(() => { if(phase === 'play' && lastGame !== 'reaction') setMsg(''); }, 700); SFX.go(); } }
     }
   } else if(phase === 'play'){
     game.update(dt);
@@ -430,20 +433,20 @@ function showMenu(){
   overlay.hidden = false;
   card.innerHTML =
     '<canvas id="menuCv" width="440" height="240"></canvas>' +
-    '<h1>حفلة الأصحاب</h1>' +
-    '<p>حطّوا الجوال عالطاولة بالنص، وكل واحد ياخد زاوية وزرّ. أول واحد بيجمع النقاط بياخد الكاس 🏆</p>' +
-    '<span class="label">كم ولد رح يلعب؟</span>' +
-    '<div class="choice" id="chN">' + [2,3,4].map(n => '<button data-n="' + n + '" aria-pressed="' + (n === nPlayers) + '">' + AR(n) + '<small>لاعبين</small></button>').join('') + '</div>' +
-    '<span class="label">كم نقطة للفوز؟</span>' +
-    '<div class="choice" id="chT">' + [3,5,7].map(n => '<button data-t="' + n + '" aria-pressed="' + (n === target) + '">' + AR(n) + '<small>نقاط</small></button>').join('') + '</div>' +
-    '<button class="big-btn" id="btnStart">يلا نلعب</button>' +
+    '<h1>' + L('حفلة الأصحاب', 'Friends Party', 'Arkadaş Partisi') + '</h1>' +
+    '<p>' + L('حطّوا الجوال عالطاولة بالنص، وكل واحد ياخد زاوية وزرّ. أول واحد بيجمع النقاط بياخد الكاس 🏆', 'Put the phone flat in the middle of the table. Each kid takes a corner and a button. The first to get the points wins the cup 🏆', 'Telefonu masanın ortasına koyun, herkes bir köşe ve bir düğme alsın. Puanları ilk toplayan kupayı kazanır 🏆') + '</p>' +
+    '<span class="label">' + L('كم ولد رح يلعب؟', 'How many kids will play?', 'Kaç çocuk oynayacak?') + '</span>' +
+    '<div class="choice" id="chN">' + [2,3,4].map(n => '<button data-n="' + n + '" aria-pressed="' + (n === nPlayers) + '">' + AR(n) + '<small>' + L('لاعبين', 'players', 'oyuncu') + '</small></button>').join('') + '</div>' +
+    '<span class="label">' + L('كم نقطة للفوز؟', 'How many points to win?', 'Kazanmak için kaç puan?') + '</span>' +
+    '<div class="choice" id="chT">' + [3,5,7].map(n => '<button data-t="' + n + '" aria-pressed="' + (n === target) + '">' + AR(n) + '<small>' + L('نقاط', 'points', 'puan') + '</small></button>').join('') + '</div>' +
+    '<button class="big-btn" id="btnStart">' + L('يلا نلعب', 'Let\'s play', 'Hadi oynayalım') + '</button>' +
     '<ul class="games">' +
-      '<li><span>⚡</span><span><b>مين الأسرع:</b> اكبس أول ما تصير الدائرة خضرا</span></li>' +
-      '<li><span>🏁</span><span><b>سباق الكبس:</b> اكبس بسرعة لتوصل العلم</span></li>' +
-      '<li><span>🌋</span><span><b>أرض الحمم:</b> كل كبسة بتلفّك، لا توقع بالحمم</span></li>' +
-      '<li><span>🪢</span><span><b>شد الحبل:</b> اللي تحت ضد اللي فوق</span></li>' +
+      '<li><span>⚡</span><span>' + L('<b>مين الأسرع:</b> اكبس أول ما تصير الدائرة خضرا', '<b>Who is fastest:</b> press when the circle turns green', '<b>En hızlı kim:</b> daire yeşil olunca bas') + '</span></li>' +
+      '<li><span>🏁</span><span>' + L('<b>سباق الكبس:</b> اكبس بسرعة لتوصل العلم', '<b>Tap Race:</b> press fast to get to the flag', '<b>Basma Yarışı:</b> bayrağa varmak için hızlı bas') + '</span></li>' +
+      '<li><span>🌋</span><span>' + L('<b>أرض الحمم:</b> كل كبسة بتلفّك، لا توقع بالحمم', '<b>Lava Floor:</b> each press turns you, don\'t fall in the lava', '<b>Lav Zemini:</b> her basış seni döndürür, lava düşme') + '</span></li>' +
+      '<li><span>🪢</span><span>' + L('<b>شد الحبل:</b> اللي تحت ضد اللي فوق', '<b>Tug of War:</b> bottom side against top side', '<b>Halat Çekme:</b> alttakiler üsttekilere karşı') + '</span></li>' +
     '</ul>' +
-    '<a class="ghost-btn" href="../">⬅ كل الألعاب</a>';
+    '<a class="ghost-btn" href="../">' + L('⬅ كل الألعاب', '⬅ All games', '⬅ Bütün oyunlar') + '</a>';
   card.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { nPlayers = +b.dataset.n; store.set('n', nPlayers); card.querySelectorAll('[data-n]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
   card.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { target = +b.dataset.t; store.set('target', target); card.querySelectorAll('[data-t]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
   $('#btnStart').onclick = startMatch;
@@ -454,17 +457,17 @@ function startMatch(){
   buildButtons(); overlay.hidden = true; queue = []; lastGame = null; nextGame();
 }
 function showChampion(p){
-  phase = 'menu'; SFX.win(); say(p.name + ' هو البطل');
-  const coins = 6 + players.length * 2; if(window.World){ World.addCoins(coins, 'لخزانة بوبو'); World.track('play', 'party'); }
+  phase = 'menu'; SFX.win(); say(L(p.name + ' هو البطل', p.name + ' is the champion', p.name + ' şampiyon'));
+  const coins = 6 + players.length * 2; if(window.World){ World.addCoins(coins, 'لخزانة بوبو'); /* fixed key: world.js shows it in the right language */ World.track('play', 'party'); }
   overlay.hidden = false;
   const sorted = players.slice().sort((a, b) => b.score - a.score);
   card.innerHTML =
     '<canvas id="champCv" width="440" height="240" data-color="' + PLAYERS.findIndex(q => q.name === p.name) + '"></canvas>' +
-    '<h2>' + p.name + ' هو البطل! 🏆</h2>' +
-    '<p style="color:var(--gold);font-weight:700">ربحتوا ' + AR(coins) + ' 🪙 عملة</p>' +
-    '<div class="board">' + sorted.map(q => '<div><span><i style="background:' + q.color + '"></i>' + q.name + '</span><span>' + AR(q.score) + ' نقاط</span></div>').join('') + '</div>' +
-    '<button class="big-btn" id="btnAgain">كمان حفلة</button>' +
-    '<button class="ghost-btn" id="btnMenu">القائمة</button>';
+    '<h2>' + L(p.name + ' هو البطل! 🏆', p.name + ' is the champion! 🏆', p.name + ' şampiyon! 🏆') + '</h2>' +
+    '<p style="color:var(--gold);font-weight:700">' + L('ربحتوا ' + AR(coins) + ' 🪙 عملة', 'You all got ' + coins + ' 🪙 coins', coins + ' 🪙 altın kazandınız') + '</p>' +
+    '<div class="board">' + sorted.map(q => '<div><span><i style="background:' + q.color + '"></i>' + q.name + '</span><span>' + L(AR(q.score) + ' نقاط', q.score + (q.score === 1 ? ' point' : ' points'), q.score + ' puan') + '</span></div>').join('') + '</div>' +
+    '<button class="big-btn" id="btnAgain">' + L('كمان حفلة', 'Party again', 'Bir parti daha') + '</button>' +
+    '<button class="ghost-btn" id="btnMenu">' + L('القائمة', 'Menu', 'Menü') + '</button>';
   $('#btnAgain').onclick = startMatch; $('#btnMenu').onclick = showMenu;
 }
 $('#btnQuit').onclick = () => { if(phase !== 'menu') showMenu(); };

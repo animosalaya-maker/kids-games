@@ -2,8 +2,8 @@
    Tap anywhere in your half to dash that way (short cooldown). Bump the other one out of the ring!
    After 30 s the one closer to the centre wins. */
 Duel.register({
-  id: 'sumo', title: 'دفّش برّا', emoji: '🥊', bg: '#ffb347',
-  help: 'كبس بنصّك لتنطّ لقدّام عاتجاه السهم، ودفّش رفيقك برّا الحلبة',
+  id: 'sumo', title: L('دفّش برّا', 'Push Out', 'Dışarı İt'), emoji: '🥊', bg: '#ffb347',
+  help: L('كبس بنصّك لتنطّ لقدّام عاتجاه السهم، ودفّش رفيقك برّا الحلبة', 'Tap your half to jump where the arrow points. Push your friend out!', 'Kendi yarına dokun, okun yönüne zıpla. Arkadaşını halkanın dışına it!'),
   create(api){
     const OUT = '#1c1838', LIMIT = 30, COOL = 0.45, SPINW = 2.4, FRICTION = 2.2;
     let t = 0, over = false, overT = 0, winner = null, shake = 0;
@@ -80,14 +80,14 @@ Duel.register({
         if(outs[0] || outs[1]){
           bods.forEach((b, i) => { if(outs[i]){ b.out = true; } });
           api.sfx.splash();
-          if(outs[0] && outs[1]) { endWith(null); api.say('طلعتوا التنين! 😅'); }
-          else { const w = outs[0] ? 1 : 0; endWith(w); api.say('طلعت برّا! 😵', 1 - w); }
+          if(outs[0] && outs[1]) { endWith(null); api.say(api.L('طلعتوا التنين! 😅', 'You both fell out! 😅', 'İkiniz de düştünüz! 😅')); }
+          else { const w = outs[0] ? 1 : 0; endWith(w); api.say(api.L('طلعت برّا! 😵', 'You\'re out! 😵', 'Dışarı çıktın! 😵'), 1 - w); }
           return;
         }
         if(t >= LIMIT){
           const d0 = Math.hypot(bods[0].x, bods[0].y), d1 = Math.hypot(bods[1].x, bods[1].y);
           endWith(Math.abs(d0 - d1) < 0.01 ? null : (d0 < d1 ? 0 : 1));
-          api.say('خلص الوقت! الأقرب للنص بيربح');
+          api.say(api.L('خلص الوقت! الأقرب للنص بيربح', 'Closest to middle wins! ⏰', 'Ortaya yakın kazanır! ⏰'));
         }
       },
       pointerDown(p){ dash(p.player); },
@@ -158,7 +158,7 @@ Duel.register({
           const y = H - Math.max(40, (H / 2 - R * 1.25) * 0.45);
           api.emoji(c, '⏰', W / 2 - fs * 0.7, y - fs * 1.1, fs * 0.85);
           api.text(c, api.AR(Math.ceil(left)), W / 2 + fs * 0.6, y - fs * 1.1, fs, left < 6 ? '#ff5a5f' : '#fff7e8', 0);
-          api.text(c, 'كبس لتنطّ 👆', W / 2, y + fs * 0.3, fs * 0.8, api.players[pl].dark, 0);
+          api.text(c, api.L('كبس لتنطّ 👆', 'Tap to jump 👆', 'Dokun ve zıpla 👆'), W / 2, y + fs * 0.3, fs * 0.8, api.players[pl].dark, 0);
           c.restore();
         }
       }

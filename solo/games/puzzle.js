@@ -1,8 +1,8 @@
 /* Sliding puzzle: a cheerful picture of Bobo cut into tiles. Tap a tile next to the empty spot (or in its row/column)
    to slide it. 3 boards: 3×3 easy, 3×3, then 4×4. Score per board = max(10, 60 − moves/2). */
 Solo.register({
-  id: 'puzzle', title: 'البازل', emoji: '🧩', bg: '#3fd47a',
-  help: 'اكبس على قطعة جنب المربع الفاضي لتزحطها، ورجّع صورة بوبو متل ما كانت!',
+  id: 'puzzle', title: L('البازل','Puzzle','Yapboz'), emoji: '🧩', bg: '#3fd47a',
+  help: L('اكبس على قطعة جنب المربع الفاضي لتزحطها، ورجّع صورة بوبو متل ما كانت!','Tap a piece next to the empty square to slide it. Fix Bobo\'s picture!','Boş karenin yanındaki parçaya dokun, kaysın. Bobo\'nun resmini düzelt!'),
   create(api){
     const OUT = '#1c1838', PIC = 640;
     const BOARDS = [{ n: 3, mix: 12 }, { n: 3, mix: 30 }, { n: 4, mix: 40 }];
@@ -95,11 +95,11 @@ Solo.register({
     function win(){
       state = 'solved'; stateT = 0; boardScore = Math.max(10, Math.round(60 - moves / 2)); total += boardScore;
       api.sfx.good(); api.sfx.coin(); mood = 'happy'; moodT = 3; const g = geo(); confetti(g.x + g.B / 2, g.y + g.B / 2, 60);
-      api.say(level < 2 ? 'برافو! رتّبت الصورة' : 'يا سلام! خلصت كل البازل');
+      api.say(level < 2 ? api.L('برافو! رتّبت الصورة','Well done! You fixed the picture','Aferin! Resmi düzelttin') : api.L('يا سلام! خلصت كل البازل','Wow! You finished all the puzzles','Harika! Bütün yapbozları bitirdin'));
     }
 
     setup();
-    api.say('رتّب صورة بوبو');
+    api.say(api.L('رتّب صورة بوبو',"Fix Bobo's picture",'Bobo\'nun resmini düzelt'));
 
     return {
       _dbg: { get path(){ return path.slice(); }, get n(){ return n; }, get level(){ return level; }, get state(){ return state; },
@@ -110,8 +110,8 @@ Solo.register({
         if(state === 'solved'){
           flash = Math.min(1, flash + dt * 2);
           if(stateT > 2.6){
-            if(level < BOARDS.length - 1){ level++; setup(); api.toast('اللوح ' + api.AR(level + 1) + ' 🧩', 1400); api.sfx.jump(); }
-            else { state = 'end'; api.end({ score: total, win: true, msg: 'برافو! خلصت كل البازل' }); }
+            if(level < BOARDS.length - 1){ level++; setup(); api.toast(api.L('اللوح ','Puzzle ','Yapboz ') + api.AR(level + 1) + ' 🧩', 1400); api.sfx.jump(); }
+            else { state = 'end'; api.end({ score: total, win: true, msg: api.L('برافو! خلصت كل البازل','Well done! You finished all the puzzles','Aferin! Bütün yapbozları bitirdin') }); }
           }
         }
         for(const p of parts){ p.age += dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vy += S() * 1.4 * dt; p.vx *= 1 - 1.2 * dt; p.rot += p.vr * dt; }
@@ -164,14 +164,14 @@ Solo.register({
         const T = thumbRect();
         c.fillStyle = '#fff7e8'; c.strokeStyle = OUT; c.lineWidth = 4; c.beginPath(); c.roundRect(T.x - 6, T.y - 6, T.w + 12, T.h + 12, 14); c.fill(); c.stroke();
         c.drawImage(pic, T.x, T.y, T.w, T.h); c.strokeStyle = OUT; c.lineWidth = 2; c.strokeRect(T.x, T.y, T.w, T.h);
-        api.text(c, '👀 شوف الصورة', T.x + T.w / 2, T.y + T.h + 22, Math.max(15, Math.min(20, s * 0.05)), '#1f6b3e');
+        api.text(c, api.L('👀 شوف الصورة','👀 Look','👀 Resme bak'), T.x + T.w / 2, T.y + T.h + 22, Math.max(15, Math.min(20, s * 0.05)), '#1f6b3e');
         const br = T.h * 0.36, bx = T.x + T.w + T.w * 0.45, by = T.y + T.h * 0.5;
         api.bobo(c, bx, by - (mood === 'happy' ? Math.abs(Math.sin(t * 9)) * br * 0.3 : 0), br, mood === 'idle' ? 'idle' : mood, { x: -0.6, y: -0.6 }, t);
 
         // HUD
         const ph = 42;
         c.fillStyle = '#fff7e8'; c.strokeStyle = OUT; c.lineWidth = 3; c.beginPath(); c.roundRect(W / 2 - 60, 12, 120, ph, ph / 2); c.fill(); c.stroke();
-        api.text(c, '🧩 ' + api.AR(level + 1) + ' من ' + api.AR(BOARDS.length), W / 2, 12 + ph / 2 + 1, 21, OUT);
+        api.text(c, '🧩 ' + api.AR(level + 1) + api.L(' من ', ' of ', ' / ') + api.AR(BOARDS.length), W / 2, 12 + ph / 2 + 1, 21, OUT);
         c.fillStyle = '#ffcd4d'; c.beginPath(); c.roundRect(W - 12 - 96, 12, 96, ph, ph / 2); c.fill(); c.stroke();
         api.text(c, '👆 ' + api.AR(moves), W - 12 - 48, 12 + ph / 2 + 1, 22, OUT);
 
@@ -179,7 +179,7 @@ Solo.register({
         if(state === 'solved'){
           const k = Math.min(1, stateT * 3), z = 0.6 + 0.4 * k + Math.sin(Math.min(1, stateT * 2) * Math.PI) * 0.15;
           c.save(); c.translate(W / 2, g.y + g.B / 2); c.scale(z, z);
-          api.text(c, 'برافو! 🎉', 0, -s * 0.05, s * 0.12, '#fff7e8');
+          api.text(c, api.L('برافو! 🎉','Well done! 🎉','Aferin! 🎉'), 0, -s * 0.05, s * 0.12, '#fff7e8');
           api.text(c, '+' + api.AR(boardScore) + ' ⭐', 0, s * 0.07, s * 0.08, '#ffdc3b');
           c.restore();
         }

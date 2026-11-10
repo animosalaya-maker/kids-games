@@ -1,8 +1,8 @@
 /* Snake duel: two snakes share one grid. Each player turns their snake left / right (relative to its heading).
    Red starts at the bottom heading up, blue at the top heading down. Crash = lose; after 45 s the longer snake wins. */
 Duel.register({
-  id: 'snake', title: 'الأفعى', emoji: '🐍', bg: '#7c5cff',
-  help: 'كبس عالأسهم لتلفّ الأفعى، كول التفاح وما تخبط بالحيط ولا بالأفعى التانية',
+  id: 'snake', title: L('الأفعى', 'Snake', 'Yılan'), emoji: '🐍', bg: '#7c5cff',
+  help: L('كبس عالأسهم لتلفّ الأفعى، كول التفاح وما تخبط بالحيط ولا بالأفعى التانية', 'Tap the arrows to turn. Eat apples, don\'t hit the wall or the other snake!', 'Oklara dokunup dön. Elmaları ye, duvara ve öbür yılana çarpma!'),
   create(api){
     const OUT = '#1c1838', COLS = 13, STEP = 0.16, LIMIT = 45;
     let ROWS = 21, t = 0, acc = 0, over = false, overT = 0, winner = null, flash = 0;
@@ -66,7 +66,7 @@ Duel.register({
       if(d0 || d1){
         over = true; overT = 0; winner = d0 && d1 ? null : (d0 ? 1 : 0);
         api.sfx.hit(); api.sfx.buzz();
-        if(d0 && !d1) api.say('أوف! خبطت 💥', 0); else if(d1 && !d0) api.say('أوف! خبطت 💥', 1); else api.say('خبطتوا التنين! 💥');
+        if(d0 && !d1) api.say(api.L('أوف! خبطت 💥', 'Oops! You crashed 💥', 'Eyvah! Çarptın 💥'), 0); else if(d1 && !d0) api.say(api.L('أوف! خبطت 💥', 'Oops! You crashed 💥', 'Eyvah! Çarptın 💥'), 1); else api.say(api.L('خبطتوا التنين! 💥', 'You both crashed! 💥', 'İkiniz de çarptınız! 💥'));
       }
       while(apples.length < 4) spawnApple();
     }
@@ -150,7 +150,7 @@ Duel.register({
           over = true; overT = 0.3;
           const a = snakes[0].body.length, b = snakes[1].body.length;
           winner = a === b ? null : (a > b ? 0 : 1);
-          api.say(winner === null ? 'نفس الطول!' : 'خلص الوقت! ⏰');
+          api.say(winner === null ? api.L('نفس الطول!', 'Same size!', 'Aynı boy!') : api.L('خلص الوقت! ⏰', 'Time\'s up! ⏰', 'Süre bitti! ⏰'));
         }
       },
       pointerDown(p){

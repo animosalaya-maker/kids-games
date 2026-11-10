@@ -2,8 +2,8 @@
    the direction from the middle of your half to your finger is where the roller goes (like a joystick).
    Let go and it keeps rolling straight. Cells under a roller take its colour. After 30 s the most painted floor wins. */
 Duel.register({
-  id: 'paint', title: 'حرب الألوان', emoji: '🎨', bg: '#ff7aa8',
-  help: 'حطّ إصبعك بنصّك وحرّكه لتوجّه الرولّو، لوّن أكتر شي من الأرض بلونك',
+  id: 'paint', title: L('حرب الألوان', 'Paint War', 'Boya Savaşı'), emoji: '🎨', bg: '#ff7aa8',
+  help: L('حطّ إصبعك بنصّك وحرّكه لتوجّه الرولّو، لوّن أكتر شي من الأرض بلونك', 'Move your finger on your half to steer the roller. Paint the most floor!', 'Kendi yarında parmağını kaydır, rulonu yönlendir. En çok yeri boya!'),
   create(api){
     const OUT = '#1c1838', COLS = 14, ROWS = 22, LIMIT = 30, SPEED = 3.6, TURN = 6, BRUSH = 0.95;
     const grid = new Int8Array(COLS * ROWS).fill(-1);
@@ -104,7 +104,7 @@ Duel.register({
         if(t >= LIMIT){
           over = true; const d0 = pct(0) - pct(1);
           winner = Math.abs(d0) <= 0.5 ? null : (d0 > 0 ? 0 : 1);
-          api.sfx.splash(); api.say('خلص الوقت! ⏰');
+          api.sfx.splash(); api.say(api.L('خلص الوقت! ⏰', 'Time\'s up! ⏰', 'Süre bitti! ⏰'));
         }
       },
       pointerDown(p){
@@ -149,8 +149,8 @@ Duel.register({
           c.restore();
           c.fillStyle = OUT; c.fillRect(W / 2 - 1.5, by - 6, 3, bh + 12);
           const fs = api.clamp(sh * 0.3, 16, 30);
-          api.text(c, api.AR(Math.round(me)) + '٪', bx + fs * 1.2, by - fs * 0.75, fs, api.players[pl].color, 0);
-          api.text(c, api.AR(Math.round(op)) + '٪', bx + bw - fs * 1.2, by - fs * 0.75, fs * 0.8, api.players[1 - pl].color, 0);
+          api.text(c, api.L(api.AR(Math.round(me)) + '٪', Math.round(me) + '%', '%' + Math.round(me)), bx + fs * 1.2, by - fs * 0.75, fs, api.players[pl].color, 0);
+          api.text(c, api.L(api.AR(Math.round(op)) + '٪', Math.round(op) + '%', '%' + Math.round(op)), bx + bw - fs * 1.2, by - fs * 0.75, fs * 0.8, api.players[1 - pl].color, 0);
           api.emoji(c, '⏰', W / 2 - fs * 0.6, by - fs * 0.75, fs * 0.8);
           api.text(c, api.AR(Math.ceil(left)), W / 2 + fs * 0.6, by - fs * 0.75, fs * 0.9, left < 6 ? '#ffcd4d' : '#fff7e8', 0);
           c.restore();

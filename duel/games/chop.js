@@ -1,7 +1,7 @@
 /* Lumberjack (Timberman style), split screen. Both trees have the same branches. First to 40 chops wins. */
 Duel.register({
-  id: 'chop', title: 'الحطّاب', emoji: '🪓', bg: '#5fbf4a',
-  help: 'اكبس يمين أو شمال لتقطع الشجرة، وانتبه من الغصون فوق راسك',
+  id: 'chop', title: L('الحطّاب', 'Woodcutter', 'Oduncu'), emoji: '🪓', bg: '#5fbf4a',
+  help: L('اكبس يمين أو شمال لتقطع الشجرة، وانتبه من الغصون فوق راسك', 'Tap right or left to chop the tree. Watch out for branches over your head', 'Ağacı kesmek için sağa ya da sola dokun, başının üstündeki dallara dikkat et'),
   create(api){
     const OUT = '#1c1838', GOAL = 40;
     let seed = (Math.random() * 1e9) | 0;
@@ -118,8 +118,8 @@ Duel.register({
       api.text(c, '⚡', ex - S() * 0.0, ey, S() * 0.05, '#fff', 0);
       c.fillStyle = 'rgba(28,24,56,.75)'; c.beginPath(); c.roundRect(W * 0.58, ey - S() * 0.04, W * 0.32, S() * 0.08, S() * 0.04); c.fill();
       c.strokeStyle = col.color; c.lineWidth = 4; c.stroke();
-      api.text(c, '🪵 ' + api.AR(st.chops) + ' من ' + api.AR(GOAL), W * 0.74, ey, S() * 0.05, '#fff7e8', 0);
-      if(st.dead) api.text(c, st.deadWhy === 'branch' ? 'بونك! الغصن ضربك 🌳' : 'خلصت الطاقة! 😴', W / 2, mid + g.half * 0.22, S() * 0.065, '#ff5a5f', 0);
+      api.text(c, L('🪵 ' + api.AR(st.chops) + ' من ' + api.AR(GOAL), '🪵 ' + st.chops + ' / ' + GOAL, '🪵 ' + st.chops + ' / ' + GOAL), W * 0.74, ey, S() * 0.05, '#fff7e8', 0);
+      if(st.dead) api.text(c, st.deadWhy === 'branch' ? L('بونك! الغصن ضربك 🌳', 'Bonk! The branch hit you 🌳', 'Bonk! Dal sana çarptı 🌳') : L('خلصت الطاقة! 😴', 'Out of energy! 😴', 'Enerjin bitti! 😴'), W / 2, mid + g.half * 0.22, S() * 0.065, '#ff5a5f', 0);
       c.restore();
     }
     function drawBranch(c, g, side, y){
