@@ -103,7 +103,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <span class="hud-sub" id="hudSub">اجمع المفاتيح واهرب</span>
     </div>
     <div class="chips">
-      <span class="chip" id="hudKeys">🔑 ٠/٣</span>
+      <span class="chip" id="hudKeys">🔑 ٠ من ٣</span>
       <span class="chip" id="hudHearts">❤️❤️❤️</span>
     </div>
     <button class="icon-btn" id="btnSound" aria-label="الصوت">🔊</button>
@@ -598,7 +598,7 @@ function updateHud(){
   if(!G) return;
   $('#hudLevel').textContent = 'المرحلة ' + AR(G.i + 1);
   $('#hudSub').textContent = G.L.name;
-  $('#hudKeys').textContent = '🔑 ' + AR(G.got) + '/' + AR(G.keys.length);
+  $('#hudKeys').textContent = '🔑 ' + AR(G.got) + ' من ' + AR(G.keys.length);
   $('#hudHearts').textContent = '❤️'.repeat(Math.max(0, G.hearts)) + '🤍'.repeat(3 - Math.max(0, G.hearts));
 }
 function toast(text, ms){
