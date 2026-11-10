@@ -5,7 +5,6 @@
 <script src="../i18n.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Friends Party" data-tr="Arkadaş Partisi">حفلة الأصحاب</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <meta name="description" content="ألعاب صغيرة لـ ٢ لـ ٤ أولاد على نفس الجوال." data-en="Little games for 2 to 4 kids on one phone." data-tr="Tek telefonda 2-4 çocuk için mini oyunlar.">
 <meta name="theme-color" content="#1c1838">
 <link rel="manifest" href="../manifest.webmanifest">
@@ -495,7 +494,7 @@ function start(){
   fit(); showMenu(); requestAnimationFrame(frame);
   if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').catch(() => {});
 }
-if(window.claude && window.claude.hot && window.claude.hot.ready) window.claude.hot.ready(start); else start();
+start();
 })();
 </script>
 </body>
