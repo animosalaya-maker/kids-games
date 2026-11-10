@@ -455,7 +455,7 @@ function startMatch(){
 }
 function showChampion(p){
   phase = 'menu'; SFX.win(); say(p.name + ' هو البطل');
-  const coins = 6 + players.length * 2; if(window.World) World.addCoins(coins, 'لخزانة بوبو');
+  const coins = 6 + players.length * 2; if(window.World){ World.addCoins(coins, 'لخزانة بوبو'); World.track('play', 'party'); }
   overlay.hidden = false;
   const sorted = players.slice().sort((a, b) => b.score - a.score);
   card.innerHTML =

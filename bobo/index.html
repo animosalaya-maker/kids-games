@@ -719,7 +719,7 @@ function winLevel(){
   if(G.i + 2 > unlocked){ unlocked = Math.min(LEVELS.length, G.i + 2); store.set('unlocked', unlocked); }
   SFX.win(); say('برافو! هربت');
   const coins = stars * 4 + (G.caught === 0 ? 2 : 0);
-  if(window.World) World.addCoins(coins, 'لخزانة بوبو');
+  if(window.World){ World.addCoins(coins, 'لخزانة بوبو'); World.track('win', 'bobo'); }
   const last = G.i === LEVELS.length - 1, i = G.i;
   const tips = [];
   if(G.caught > 0) tips.push('اهرب بدون ما ينمسك');
