@@ -1,4 +1,4 @@
-/* Bobo World: coins, wardrobe and daily gift shared by every game (saved on this device only). */
+/* Bobo Land: coins, wardrobe and daily gift shared by every game (saved on this device only). */
 (function(){
 'use strict';
 const KEY = 'bobo_world';
