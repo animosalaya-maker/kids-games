@@ -29,5 +29,33 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "id": "/kids-games/",
+  "categories": [
+    "games",
+    "kids",
+    "education",
+    "entertainment"
+  ],
+  "prefer_related_applications": false,
+  "screenshots": [
+    {
+      "src": "store/en/screen-1-home.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "store/en/screen-2-bobo.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "store/en/screen-5-soccer.png",
+      "sizes": "1080x1920",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
   ]
 }
