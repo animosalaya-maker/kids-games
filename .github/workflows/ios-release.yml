@@ -14,6 +14,10 @@ on:
         description: "Send to TestFlight"
         type: boolean
         default: true
+      test_only:
+        description: "Test build only, without Apple keys (not signed, not uploaded)"
+        type: boolean
+        default: false
 
 concurrency: { group: ios-release, cancel-in-progress: true }
 
@@ -31,7 +35,8 @@ jobs:
           if [ -z "$X" ]; then echo "::error::No Xcode 26 on this runner"; ls /Applications | grep -i xcode; exit 1; fi
           sudo xcode-select -s "$X/Contents/Developer"
           xcodebuild -version
-      - name: Check Apple secrets
+      - if: ${{ !inputs.test_only }}
+        name: Check Apple secrets
         env:
           ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
           KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
@@ -68,7 +73,8 @@ jobs:
           JS
           npx cap add ios
           npx cap sync ios
-      - name: Distribution certificate + App Store profile (App Store Connect API, no device needed)
+      - if: ${{ !inputs.test_only }}
+        name: Distribution certificate + App Store profile (App Store Connect API, no device needed)
         env:
           KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
           ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
@@ -76,7 +82,8 @@ jobs:
           python3 -m venv "$RUNNER_TEMP/venv"
           "$RUNNER_TEMP/venv/bin/pip" install -q pyjwt cryptography
           "$RUNNER_TEMP/venv/bin/python" scripts/ios/ios-signing.py create
-      - name: Keychain with the distribution certificate
+      - if: ${{ !inputs.test_only }}
+        name: Keychain with the distribution certificate
         run: |
           KC="$RUNNER_TEMP/bobo.keychain-db"; KP=$(uuidgen)
           security create-keychain -p "$KP" "$KC"
@@ -87,13 +94,15 @@ jobs:
           security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
           security find-identity -v -p codesigning "$KC"
           rm -f "$P12_PATH"
-      - name: Name, signing, version, icon
+      - if: ${{ !inputs.test_only }}
+        name: Name, signing, version, icon
         env:
           TEAM: ${{ secrets.APPLE_TEAM_ID }}
           APP_VERSION: ${{ inputs.version }}
           BUILD_NUMBER: ${{ github.run_number }}
         run: scripts/ios/prepare.sh "$RUNNER_TEMP/app/ios/App"
-      - name: Archive
+      - if: ${{ !inputs.test_only }}
+        name: Archive
         env:
           KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
           ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
@@ -104,7 +113,8 @@ jobs:
             -allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER" \
             -quiet
           test -d "$RUNNER_TEMP/App.xcarchive"
-      - name: Export and send to TestFlight
+      - if: ${{ !inputs.test_only }}
+        name: Export and send to TestFlight
         env:
           KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
           ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
@@ -130,14 +140,21 @@ jobs:
             -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
             -allowProvisioningUpdates -authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$KEY_ID" -authenticationKeyIssuerID "$ISSUER"
           ls -la "$RUNNER_TEMP/ipa" || true
+      - name: Test build (unsigned)
+        if: ${{ inputs.test_only }}
+        run: |
+          cd "$RUNNER_TEMP/app/ios/App"
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos \
+            -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO -quiet build
+          echo "Unsigned iPhone build OK"
       - uses: actions/upload-artifact@v4
-        if: ${{ !inputs.upload }}
+        if: ${{ !inputs.upload && !inputs.test_only }}
         with:
           name: bobo-land-ios
           path: ${{ runner.temp }}/ipa
           retention-days: 14
       - name: Revoke this run's certificate (its key is thrown away with the keychain)
-        if: always() && env.CERT_ID != ''
+        if: always() && env.CERT_ID != '' && !inputs.test_only
         env:
           KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
           ISSUER: ${{ secrets.APPSTORE_ISSUER_ID }}
