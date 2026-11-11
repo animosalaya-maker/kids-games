@@ -41,6 +41,14 @@
 5. سياسة الخصوصية: `privacy.html`.
 6. PWABuilder بيعطيك ملف `assetlinks.json`: حطه بمجلد `.well-known/` بهالمستودع لحتى يختفي شريط المتصفح من التطبيق.
 
+## النشر على آبل (App Store) بدون ماك 🍎
+البناء بيصير على ماك عند GitHub (ملف `.github/workflows/ios-release.yml`)، متل تطبيق سهل.
+1. **App Store Connect** ← التطبيقات ← **+** ← تطبيق جديد: الاسم `Bobo Land`، اللغة عربي، Bundle ID: `com.boboland.kids`، SKU: `boboland`.
+2. **مفاتيح آبل** بهالمستودع: Settings ← Secrets and variables ← Actions ← New repository secret، وحط الأربعة (نفس قيم مستودع سهل):
+   `APPSTORE_ISSUER_ID`، `APPSTORE_KEY_ID`، `APPSTORE_KEY_P8`، `APPLE_TEAM_ID`.
+3. **Actions** ← ios-release ← Run workflow. بعد حوالي ١٥ دقيقة بتوصل النسخة على **TestFlight**.
+4. من App Store Connect: الصور والوصف (نفس ملفات `store/`)، والخصوصية، والفئة العمرية، وبعدين **إرسال للمراجعة**.
+
 ## ملاحظات للتطوير
 - كل لعبة ملف HTML واحد بدون مكتبات.
 - ألعاب لاعب واحد: `solo/games/`، وطريقة كتابة لعبة جديدة بـ `solo/GAME_API.md`.

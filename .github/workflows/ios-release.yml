@@ -142,7 +142,10 @@ jobs:
           ls -la "$RUNNER_TEMP/ipa" || true
       - name: Test build (unsigned)
         if: ${{ inputs.test_only }}
+        env: { PROFILE_NAME: "test", TEAM: "TESTTEAM00", APP_VERSION: "${{ inputs.version }}", BUILD_NUMBER: "${{ github.run_number }}" }
         run: |
+          scripts/ios/prepare.sh "$RUNNER_TEMP/app/ios/App"
+          /usr/libexec/PlistBuddy -c "Print :CFBundleDisplayName" "$RUNNER_TEMP/app/ios/App/App/Info.plist"
           cd "$RUNNER_TEMP/app/ios/App"
           xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos \
             -destination 'generic/platform=iOS' CODE_SIGNING_ALLOWED=NO -quiet build
