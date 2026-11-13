@@ -5,7 +5,7 @@
 <script src="i18n.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title data-en="Bobo Land" data-tr="Bobo Land">بوبو لاند</title>
-<meta name="description" content="بوبو لاند: ٤٩ لعبة للأطفال، عملات وخزانة لبوبو وهدية كل يوم. بدون إعلانات.">
+<meta name="description" content="بوبو لاند: ٥٠ لعبة للأطفال، عملات وخزانة لبوبو وهدية كل يوم. بدون إعلانات.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -284,6 +284,7 @@ const $id = id => document.getElementById(id);
 const SOLO_BY = Object.fromEntries(SOLO.map(g => [g.id, g]));
 tile($id('advTiles'), 'bobo/', { title:L('بيت بوبو',"Bobo's House","Bobo'nun Evi"), emoji:'🏠', bg:'#7b52e6' }, L('٦ مراحل','6 levels','6 bölüm'));
 tile($id('advTiles'), 'prank/', { title:L('مقالب بوبو',"Bobo's Pranks","Bobo'nun Şakaları"), emoji:'🎭', bg:'#ff7a59' }, L('٤ مراحل','4 levels','4 bölüm'));
+tile($id('advTiles'), 'adventure3d/', { title:L('مغامرة بوبو ٣D',"Bobo's Adventure 3D","Bobo'nun Macerası 3D"), emoji:'🏝️', bg:'#1fa2d6' }, L('جديد ✨','New ✨','Yeni ✨'));
 tile($id('advTiles'), 'adventure/', { title:L('مغامرة بوبو',"Bobo's Adventure","Bobo'nun Macerası"), emoji:'🏔️', bg:'#2fb36d' }, L('١٢ مرحلة','12 levels','12 bölüm'));
 ['letters','math','colors','shapes','memory','puzzle'].forEach(id => SOLO_BY[id] && tile($id('learnTiles'), 'solo/#' + id, SOLO_BY[id]));
 ['jumper','runner','stack','fishing','catch','peek'].forEach(id => SOLO_BY[id] && tile($id('quickTiles'), 'solo/#' + id, SOLO_BY[id]));
@@ -380,7 +381,7 @@ function stickers(){
     ['👕',L('أول لبسة','First outfit','İlk kıyafet'), W.owned.length > 1, L('اشتري شي من الخزانة','Buy something in the wardrobe','Dolaptan bir şey al')],
     ['🎩',L('خزانة مليانة','Full wardrobe','Dolu dolap'), W.owned.length >= 8, L('اشتري ٧ أغراض','Buy 7 items','7 eşya al')],
     ['🎮',L('١٠ ألعاب','10 games','10 oyun'), st.plays >= 10, L('العب ١٠ مرات','Play 10 times','10 kez oyna')],
-    ['🕹️',L('٤٩ لعبة','50 games','50 oyun'), st.plays >= 50, L('العب ٥٠ مرة','Play 50 times','50 kez oyna')],
+    ['🕹️',L('٥٠ لعبة','50 games','50 oyun'), st.plays >= 50, L('العب ٥٠ مرة','Play 50 times','50 kez oyna')],
     ['🌈',L('جرّب ١٠','Try 10','10 dene'), kinds.length >= 10, L('العب ١٠ ألعاب مختلفة','Play 10 different games','10 farklı oyun oyna')],
     ['🌍',L('جرّب الكل','Try them all','Hepsini dene'), kinds.length >= 30, L('العب ٣٠ لعبة مختلفة','Play 30 different games','30 farklı oyun oyna')],
     ['🏠',L('هربت!','Escaped!','Kaçtın!'), (g.bobo || 0) >= 1, L('اهرب من بيت بوبو',"Escape Bobo's House","Bobo'nun Evi'nden kaç")],
