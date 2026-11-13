@@ -161,7 +161,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .pod b{font-family:var(--display);font-weight:800;font-size:17px;color:var(--c);line-height:1.2}
 .pod span{font-weight:700;font-size:17px}
 .pod .blk{width:100%;border-radius:14px 14px 6px 6px;background:var(--c);display:grid;place-items:center;font-size:30px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
-.pod.me img{box-shadow:0 0 0 3px var(--c),0 0 0 7px var(--ink)}
+.pod.me img{box-shadow:0 0 0 3px var(--c),0 0 0 6px var(--ink);margin-bottom:4px}
 .rest{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;direction:ltr}
 .spin{display:inline-block;animation:spinL 1.2s linear infinite}
 @keyframes spinL{to{transform:rotate(360deg)}}
@@ -1704,7 +1704,9 @@ function heroIcon(id){
   poseHero(h, { t:.5, dt:0, run:0, grounded:true, vy:0, sq:0, flip:0 });
   pv.sh.scale.set(1.2, 1, 1.2); pv.sc.background = pv.bg[id];
   renderer.setScissorTest(true); renderer.setViewport(0, 0, css, css); renderer.setScissor(0, 0, css, css);
-  renderer.render(pv.sc, pv.cam);
+  const ic = heroIcon.cam || (heroIcon.cam = new THREE.PerspectiveCamera(34, 1, .1, 50));
+  ic.position.set(.15, .95, 2.35); ic.lookAt(0, .62, 0);
+  renderer.render(pv.sc, ic);
   const c = document.createElement('canvas'); c.width = c.height = 96;
   c.getContext('2d').drawImage(canvas, 0, bh - px, px, px, 0, 0, 96, 96);
   renderer.setScissorTest(false); renderer.setViewport(0, 0, SW, SH);
@@ -2023,7 +2025,7 @@ function mpRenderEnd(){
   const rest = rows.slice(3).map(r => `<span class="chip ps${r.id === MP.id ? ' me' : ''}" style="--c:${MP_COLORS[r.c]}">${heroImg(r.hero)}<span>${N(r.place)} · ⭐ ${N(r.s)}</span></span>`).join('');
   card.innerHTML = `<h2>🏁 ${L('خلص السباق!', 'Race over!', 'Yarış bitti!')}</h2>
     <div class="podium">${top.map(pod).join('')}</div>${rest ? `<div class="rest">${rest}</div>` : ''}
-    ${me ? `<div class="tally"><span>${MEDAL[me.place - 1] || N(me.place)} ⭐ ${N(me.s)} · 🍯 ${N(me.h)}</span><span>+${N(E.coins)} 🪙</span></div>` : ''}
+    ${me ? `<div class="tally"><span>${MEDAL[me.place - 1] || N(me.place)}</span><span>⭐ ${N(me.s)}</span><span>🍯 ${N(me.h)}</span><span>+${N(E.coins)} 🪙</span></div>` : ''}
     <div class="row">${MP.isHost ? `<button class="big-btn" id="bAgain"${MP.players.length < 2 ? ' disabled' : ''}>🔁 ${L('كمان مرة', 'Play again', 'Tekrar oyna')}</button>` : `<p>${L('استنّى صاحب الغرفة يبلّش ⏳', 'Waiting for the room owner to start ⏳', 'Oda sahibinin başlatmasını bekle ⏳')}</p>`}
     <button class="ghost-btn" id="bLeave">🚪 ${L('اطلع', 'Leave', 'Ayrıl')}</button></div>`;
   if(MP.isHost) $('#bAgain').onclick = () => { SFX.tap(); mpStart(); };
