@@ -33,11 +33,17 @@ body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:v
 [hidden]{display:none!important}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
-#touch{position:fixed;inset:0;z-index:2;touch-action:none}
+/* #stage holds the whole game. The app is locked to portrait, so when the viewport is portrait the stage is
+   rotated 90° clockwise (game top = right edge of the phone) and sized to the landscape size. JS sets size/transform. */
+#stage{position:fixed;left:0;top:0;width:100%;height:100%;overflow:hidden;transform-origin:0 0;
+  --sa-t:env(safe-area-inset-top,0px);--sa-r:env(safe-area-inset-right,0px);--sa-b:env(safe-area-inset-bottom,0px);--sa-l:env(safe-area-inset-left,0px);--sw:100vw;--sh:100vh}
+#stage.rot{--sa-t:env(safe-area-inset-right,0px);--sa-r:env(safe-area-inset-bottom,0px);--sa-b:env(safe-area-inset-left,0px);--sa-l:env(safe-area-inset-top,0px)}
+#saProbe{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;width:var(--sa-l);height:var(--sa-b)}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#touch{position:absolute;inset:0;z-index:2;touch-action:none}
 
-.hud{position:fixed;left:0;right:0;top:0;z-index:5;display:flex;align-items:flex-start;gap:8px;pointer-events:none;
-  padding:calc(8px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px))}
+.hud{position:absolute;left:0;right:0;top:0;z-index:5;display:flex;align-items:flex-start;gap:8px;pointer-events:none;
+  padding:calc(8px + var(--sa-t)) max(12px,var(--sa-r)) 0 max(12px,var(--sa-l))}
 .hud > *{pointer-events:auto}
 .icon-btn{width:46px;height:46px;flex:none;border:0;border-radius:15px;background:rgba(28,24,56,.78);font-size:22px;display:grid;place-items:center;box-shadow:0 4px 0 rgba(0,0,0,.25)}
 .icon-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
@@ -46,35 +52,35 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .compass svg{width:40px;height:40px;fill:var(--gold);stroke:#7a5200;stroke-width:1.5;transition:transform .08s linear}
 .compass b{position:absolute;bottom:-6px;font-size:16px;line-height:1}
 .timer{font-family:var(--display);font-size:22px!important;background:#ff5d73!important;color:#fff;padding:4px 14px!important}
-.chips{display:flex;gap:6px;flex:none;direction:ltr;flex-wrap:wrap;justify-content:flex-end;max-width:62vw}
+.chips{display:flex;gap:6px;flex:none;direction:ltr;flex-wrap:wrap;justify-content:flex-end;max-width:calc(var(--sw) * .62)}
 .chip{background:rgba(28,24,56,.78);border-radius:999px;padding:6px 10px;font-weight:700;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:3px}
-@media (max-width:420px){ .chip{font-size:15px;padding:5px 8px} }
 
-.joy{position:fixed;z-index:4;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:rgba(255,247,232,.16);border:3px solid rgba(255,247,232,.45);pointer-events:none;
+.joy{position:absolute;z-index:4;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:rgba(255,247,232,.16);border:3px solid rgba(255,247,232,.45);pointer-events:none;
   box-shadow:0 5px 0 rgba(0,0,0,.2)}
 .joy.on{background:rgba(255,247,232,.24)}
 .knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:rgba(255,247,232,.8);box-shadow:0 4px 0 rgba(0,0,0,.25)}
-.jump{position:fixed;z-index:4;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));--s:min(27vw,108px);width:var(--s);height:var(--s);
+.jump{position:absolute;z-index:4;right:max(18px,calc(var(--sa-r) + 8px));bottom:calc(22px + var(--sa-b));--s:min(calc(var(--sw) * .27),108px);width:var(--s);height:var(--s);
   border-radius:50%;border:3px solid rgba(255,224,140,.85);background:rgba(255,205,77,.5);display:grid;place-items:center;box-shadow:0 6px 0 rgba(0,0,0,.25);touch-action:none}
 .jump svg{width:46%;height:46%;fill:#fff7e8}
 .jump.on{transform:translateY(4px) scale(.96);background:rgba(255,205,77,.8);box-shadow:0 1px 0 rgba(0,0,0,.25)}
-@media (orientation:landscape) and (max-height:500px){ .jump{--s:min(22vh,96px)} .joy{width:110px;height:110px;margin:-55px 0 0 -55px} }
+#stage.short .jump{--s:min(calc(var(--sh) * .24),100px)}
+#stage.short .joy{width:110px;height:110px;margin:-55px 0 0 -55px}
 
-.toast{position:fixed;left:50%;top:calc(126px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:6;background:var(--ink);color:var(--night);
+.toast{position:absolute;left:50%;top:calc(126px + var(--sa-t));transform:translateX(-50%);z-index:6;background:var(--ink);color:var(--night);
   font-family:var(--display);font-weight:800;font-size:19px;padding:8px 18px;border-radius:999px;max-width:calc(100% - 32px);text-align:center;
   box-shadow:0 8px 20px rgba(0,0,0,.35);animation:pop .25s ease-out;pointer-events:none}
-@media (orientation:landscape) and (max-height:500px){ .toast{top:calc(70px + env(safe-area-inset-top,0px))} }
+#stage.short .toast{top:calc(70px + var(--sa-t))}
 @keyframes pop{from{transform:translateX(-50%) scale(.7);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
 
-.overlay{position:fixed;inset:0;z-index:20;display:flex;background:rgba(18,14,40,.55);overflow-y:auto;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
+.overlay{position:absolute;inset:0;z-index:20;display:flex;background:rgba(18,14,40,.55);overflow-y:auto;
+  padding-left:max(16px,var(--sa-l));padding-right:max(16px,var(--sa-r));
+  padding-block:calc(16px + var(--sa-t)) calc(16px + var(--sa-b))}
 .overlay.dim{background:rgba(18,14,40,.8)}
-.overlay.title{background:linear-gradient(180deg,rgba(18,14,40,0) 30%,rgba(18,14,40,.6))}
-.overlay.title .card{margin:auto auto 0}
-@media (orientation:landscape){ .overlay.title{background:linear-gradient(90deg,rgba(18,14,40,.5),rgba(18,14,40,0) 60%)} .overlay.title .card{margin:auto auto auto 0} }
+.overlay.title{background:linear-gradient(90deg,rgba(18,14,40,.5),rgba(18,14,40,0) 60%)}
+.overlay.title .card{margin:auto auto auto 0}
 .card{width:100%;max-width:440px;margin:auto;background:rgba(42,36,82,.94);border-radius:28px;padding:22px 18px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
   box-shadow:0 0 0 3px var(--night-3),0 24px 60px rgba(0,0,0,.5);animation:cardIn .3s ease-out}
+.card.wide{max-width:780px}
 @keyframes cardIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
 .card h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1.1;margin:0;color:var(--gold);text-shadow:0 4px 0 var(--wall-face);text-wrap:balance}
 .card h1 small{display:block;font-size:22px;color:var(--ink);text-shadow:none;margin-top:2px}
@@ -96,12 +102,29 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .how{list-style:none;margin:0;padding:12px 14px;background:var(--night);border-radius:18px;display:grid;gap:8px;text-align:start;width:100%}
 .how li{display:flex;gap:10px;align-items:center;font-size:15px;line-height:1.4}
 .how li span:first-child{font-size:22px;width:30px;text-align:center;flex:none}
-#nogl{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:24px;text-align:center;background:var(--night);font-family:var(--display);font-size:22px}
-@media (max-height:520px){ .card{gap:8px;padding:12px 16px} .card h1{font-size:28px} .card h1 small{font-size:18px} .card h2{font-size:23px} .how{display:none} .bigstar{font-size:50px} .big-btn{font-size:20px;padding:8px 22px} .starrow{font-size:20px} .tally span{padding:5px 12px;font-size:16px} }
+/* "turn your phone" hint (only shown while the game is rotated) */
+.rothint{display:flex;align-items:center;gap:10px;background:var(--gold);color:#3a2a00;border-radius:18px;padding:6px 16px 6px 12px;font-family:var(--display);font-weight:800;font-size:18px;box-shadow:0 4px 0 #c48f12}
+.rothint i{font-style:normal;font-size:30px;line-height:1;display:inline-block;animation:rotphone 2.6s ease-in-out infinite}
+@keyframes rotphone{0%,20%{transform:rotate(-90deg)}55%,85%{transform:rotate(-180deg)}100%{transform:rotate(-90deg)}}
+/* hero picker */
+.heroes{display:flex;gap:10px;justify-content:center;width:100%}
+.hero{flex:1 1 0;min-width:0;max-width:168px;border:0;border-radius:22px;background:var(--night);padding:8px 8px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  box-shadow:0 0 0 3px var(--night-3),0 5px 0 rgba(0,0,0,.3);transition:transform .15s}
+.hero canvas{width:100%;aspect-ratio:1;border-radius:16px;display:block;background:#2a2452}
+.hero b{font-family:var(--display);font-weight:800;font-size:21px;line-height:1.2}
+.hero.on{background:#4a3f8c;box-shadow:0 0 0 4px var(--gold),0 5px 0 rgba(0,0,0,.3);transform:translateY(-4px)}
+.hero.on b{color:var(--gold)}
+#nogl{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:24px;text-align:center;background:var(--night);font-family:var(--display);font-size:22px}
+#stage.short .card{gap:8px;padding:12px 16px} #stage.short .card h1{font-size:28px} #stage.short .card h1 small{font-size:18px} #stage.short .card h2{font-size:23px}
+#stage.short .how{display:none} #stage.short .bigstar{font-size:50px} #stage.short .big-btn{font-size:20px;padding:8px 22px} #stage.short .starrow{font-size:20px}
+#stage.short .tally span{padding:5px 12px;font-size:16px} #stage.short .ghost-btn{padding:8px 14px;font-size:16px} #stage.short .hero b{font-size:18px}
+#stage.short .rothint{font-size:16px;padding:4px 14px 4px 10px} #stage.short .rothint i{font-size:24px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
 <body>
+<div id="stage">
+<div id="saProbe"></div>
 <canvas id="cv" aria-label="مغامرة بوبو ثلاثي الأبعاد" data-en-aria="Bobo's Adventure 3D" data-tr-aria="Bobo'nun Macerası 3D"></canvas>
 <div id="touch"></div>
 
@@ -124,6 +147,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <div class="toast" id="toast" hidden></div>
 <div class="overlay" id="overlay"><div class="card" id="card"></div></div>
 <div id="nogl" hidden><span data-en="Sorry, this phone can't show 3D games 😢" data-tr="Üzgünüz, bu telefon 3D oyunları gösteremiyor 😢">عذراً، هالتلفون ما بيقدر يشغّل ألعاب ثلاثية الأبعاد 😢</span></div>
+</div>
 
 <script src="../world.js"></script>
 <script type="module">
@@ -136,6 +160,29 @@ const store = {
   get(k, d){ try{ const v = localStorage.getItem('adv3d_' + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem('adv3d_' + k, JSON.stringify(v)); }catch(e){} }
 };
+const rawGet = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+const rawSet = (k, v) => { try{ localStorage.setItem(k, v); }catch(e){} };
+
+/* ---------- Always-landscape stage ----------
+   The app is a portrait-locked TWA, so when the viewport is portrait we rotate the whole game layer 90° clockwise
+   (the game's top sits at the right edge of the phone; the kid turns the phone with its left side down).
+   Stage coords: SW × SH (always landscape). toLayer() maps screen (clientX, clientY) into stage coords. */
+const stage = $('#stage'), saProbe = $('#saProbe');
+let ROT = false, VW = innerWidth, SW = innerWidth, SH = innerHeight, SAL = 0, SAB = 0;
+function layout(){
+  VW = innerWidth; const vh = innerHeight; ROT = vh > VW;
+  SW = ROT ? vh : VW; SH = ROT ? VW : vh;
+  const st = stage.style;
+  st.width = SW + 'px'; st.height = SH + 'px';
+  st.transform = ROT ? `translateX(${VW}px) rotate(90deg)` : 'none';
+  st.setProperty('--sw', SW + 'px'); st.setProperty('--sh', SH + 'px');
+  stage.classList.toggle('rot', ROT); stage.classList.toggle('short', SH <= 520);
+  SAL = saProbe.offsetWidth; SAB = saProbe.offsetHeight;
+}
+function toLayer(cx, cy){ return ROT ? { x:cy, y:VW - cx } : { x:cx, y:cy }; }
+function tryLandscapeLock(){ try{ const o = screen.orientation; if(o && o.lock) o.lock('landscape').catch(() => {}); }catch(e){} }
+layout(); tryLandscapeLock();
+
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
 const smooth = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); };
@@ -190,13 +237,15 @@ scene.fog = new THREE.Fog(FOG, 70, 240);
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 700);
 let portrait = false;
 function resize(){
-  const w = innerWidth, h = innerHeight;
+  layout();
+  const w = SW, h = SH;
   renderer.setSize(w, h, false);
   portrait = w < h;
   camera.aspect = w / h; camera.fov = portrait ? 68 : 55; camera.updateProjectionMatrix();
   placeJoyHome();
 }
 addEventListener('resize', resize);
+addEventListener('orientationchange', () => setTimeout(resize, 120));
 
 scene.add(new THREE.HemisphereLight(0xe4f6ff, 0x5f8a3c, 1.9));
 const sun = new THREE.DirectionalLight(0xfff0d0, 2.1);
@@ -724,39 +773,50 @@ const blobMat = new THREE.MeshBasicMaterial({ map:blobTex, transparent:true, dep
 const pShadow = new THREE.Mesh(blobGeo, blobMat); pShadow.renderOrder = 2; scene.add(pShadow);
 const eShadows = new THREE.InstancedMesh(blobGeo, blobMat, 24); eShadows.frustumCulled = false; eShadows.renderOrder = 2; scene.add(eShadows);
 
-/* ---------- Bobo ---------- */
+/* ---------- Heroes: four original characters, all the same size / collision (PR .42, ~1.1 tall) ---------- */
 const PAL = window.World ? World.palette() : { color:'#9b6bff', light:'#d2bcff', belly:'#b993ff' };
 const OUTFIT = window.World ? World.outfit : {};
-const bobo = (() => {
-  const grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
-  const sph = new THREE.SphereGeometry(1, 22, 16), small = new THREE.SphereGeometry(1, 8, 6), M = new Merge();
-  const base = new THREE.Color(PAL.color), light = new THREE.Color(PAL.light);
-  M.add(sph, 0, .55, 0, .5, .5, .5, 0, 0, 0, PAL.color);
-  for(let i = 0; i < 110; i++){
-    const u = rnd() * 2 - 1, a = rnd() * 6.28, r = Math.sqrt(1 - u * u), x = r * Math.cos(a), y = u, z = r * Math.sin(a);
-    if(z > .35 && y > -.55 && y < .65 && Math.abs(x) < .75) continue;
-    const s = .08 + rnd() * .06, c = base.clone().lerp(light, rnd() * .35);
-    M.add(small, x * .47, .55 + y * .47, z * .47, s, s, s, 0, 0, 0, c.getHex());
-  }
-  M.add(sph, 0, .43, .34, .31, .32, .17, 0, 0, 0, PAL.belly);
-  for(const s of [-1, 1]){
-    M.add(G.cone, s * .2, 1.03, .02, .075, .24, .075, 0, 0, -s * .38, PAL.light);
-    M.add(small, s * .5, .45, .08, .11, .11, .11, 0, 0, 0, PAL.color);
-    M.add(small, s * .27, .58, .42, .075, .045, .03, 0, s * .55, 0, 0xff8fb0);
-  }
-  M.add(new THREE.TorusGeometry(.075, .02, 6, 12, Math.PI), 0, .58, .485, 1, 1, 1, 0, 0, Math.PI, 0x3a1d2e);
-  const mat = new THREE.MeshLambertMaterial({ vertexColors:true });
-  body.add(new THREE.Mesh(M.geometry(), mat));
+const mkRng = s => () => (s = (s * 16807) % 2147483647) / 2147483647;
+const HSPH = new THREE.SphereGeometry(1, 22, 16), HSM = new THREE.SphereGeometry(1, 8, 6), HFOOT = new THREE.SphereGeometry(1, 10, 8);
+const vcLam = () => new THREE.MeshLambertMaterial({ vertexColors:true }), vcBasic = () => new THREE.MeshBasicMaterial({ vertexColors:true });
+function cartoonEyes(dx, w, h, pupil){
   const E = new Merge();
   for(const s of [-1, 1]){
-    E.add(sph, s * .16, 0, 0, .13, .155, .1, 0, 0, 0, 0xffffff);
-    E.add(sph, s * .155, -.015, .075, .075, .09, .045, 0, 0, 0, 0x2a1a3a);
-    E.add(small, s * .155 - .03, .03, .115, .028, .028, .02, 0, 0, 0, 0xffffff);
+    E.add(HSPH, s * dx, 0, 0, w, h, w * .75, 0, 0, 0, 0xffffff);
+    E.add(HSPH, s * (dx - .005), -.015, w * .58, w * .58, h * .58, w * .35, 0, 0, 0, pupil || 0x2a1a3a);
+    E.add(HSM, s * (dx - .005) - .03, h * .22, w * .9, .028, .028, .02, 0, 0, 0, 0xffffff);
   }
-  const eyes = new THREE.Mesh(E.geometry(), new THREE.MeshBasicMaterial({ vertexColors:true }));
-  eyes.position.set(0, .73, .4); body.add(eyes);
-  const footGeo = new THREE.SphereGeometry(1, 10, 8), footMat = new THREE.MeshLambertMaterial({ color:new THREE.Color(PAL.color).multiplyScalar(.8) });
-  const feet = [-1, 1].map(s => { const f = new THREE.Mesh(footGeo, footMat); f.scale.set(.14, .08, .19); f.position.set(s * .2, .06, .06); grp.add(f); return f; });
+  return new THREE.Mesh(E.geometry(), vcBasic());
+}
+function footPair(grp, geo, mat, sx, sy, sz, x, y, z){
+  return [-1, 1].map(s => { const f = new THREE.Mesh(geo, mat); f.scale.set(sx, sy, sz); f.position.set(s * x, y, z); f.userData = { y, z }; grp.add(f); return f; });
+}
+function roundRect(w, h, r){
+  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r); s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s;
+}
+// بوبو — the fluffy monster in the player's World colour, with hat / glasses
+function buildBobo(){
+  const r = mkRng(4242), grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
+  const M = new Merge(), base = new THREE.Color(PAL.color), light = new THREE.Color(PAL.light);
+  M.add(HSPH, 0, .55, 0, .5, .5, .5, 0, 0, 0, PAL.color);
+  for(let i = 0; i < 110; i++){
+    const u = r() * 2 - 1, a = r() * 6.28, q = Math.sqrt(1 - u * u), x = q * Math.cos(a), y = u, z = q * Math.sin(a);
+    if(z > .35 && y > -.55 && y < .65 && Math.abs(x) < .75) continue;
+    const s = .08 + r() * .06, c = base.clone().lerp(light, r() * .35);
+    M.add(HSM, x * .47, .55 + y * .47, z * .47, s, s, s, 0, 0, 0, c.getHex());
+  }
+  M.add(HSPH, 0, .43, .34, .31, .32, .17, 0, 0, 0, PAL.belly);
+  for(const s of [-1, 1]){
+    M.add(G.cone, s * .2, 1.03, .02, .075, .24, .075, 0, 0, -s * .38, PAL.light);
+    M.add(HSM, s * .5, .45, .08, .11, .11, .11, 0, 0, 0, PAL.color);
+    M.add(HSM, s * .27, .58, .42, .075, .045, .03, 0, s * .55, 0, 0xff8fb0);
+  }
+  M.add(new THREE.TorusGeometry(.075, .02, 6, 12, Math.PI), 0, .58, .485, 1, 1, 1, 0, 0, Math.PI, 0x3a1d2e);
+  body.add(new THREE.Mesh(M.geometry(), vcLam()));
+  const eyes = cartoonEyes(.16, .13, .155); eyes.position.set(0, .73, .4); body.add(eyes);
+  const feet = footPair(grp, HFOOT, new THREE.MeshLambertMaterial({ color:new THREE.Color(PAL.color).multiplyScalar(.8) }), .14, .08, .19, .2, .06, .06);
   if(OUTFIT.glasses && World.GLASSES[OUTFIT.glasses]){
     const g = new THREE.Mesh(new THREE.PlaneGeometry(.62, .62), new THREE.MeshBasicMaterial({ map:emojiTex(World.GLASSES[OUTFIT.glasses].e), transparent:true, alphaTest:.1 }));
     g.position.set(0, .73, .52); body.add(g);
@@ -765,9 +825,123 @@ const bobo = (() => {
     const h = new THREE.Sprite(new THREE.SpriteMaterial({ map:emojiTex(World.HATS[OUTFIT.hat].e), transparent:true, alphaTest:.1 }));
     h.scale.set(.6, .6, 1); h.position.set(0, 1.2, 0); body.add(h);
   }
-  scene.add(grp);
-  return { grp, body, eyes, feet };
-})();
+  return { type:'bobo', grp, body, eyes, feet, blink:0 };
+}
+// لولو — a round pink bunny with long floppy ears and a cotton tail
+function buildLulu(){
+  const grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
+  const PINK = 0xffa9cb, PALE = 0xffe0ec, INNER = 0xff7aa8, M = new Merge();
+  M.add(HSPH, 0, .55, 0, .5, .49, .5, 0, 0, 0, PINK);
+  M.add(HSPH, 0, .42, .3, .31, .3, .2, 0, 0, 0, PALE);
+  M.add(HSPH, 0, .59, .44, .13, .085, .08, 0, 0, 0, PALE);
+  M.add(HSPH, 0, .635, .51, .045, .034, .03, 0, 0, 0, 0xff4f86);
+  M.add(G.box, -.024, .53, .505, .04, .06, .02, 0, 0, 0, 0xffffff).add(G.box, .024, .53, .505, .04, .06, .02, 0, 0, 0, 0xffffff);
+  for(const s of [-1, 1]){
+    M.add(HSM, s * .29, .55, .4, .075, .045, .03, 0, s * .6, 0, INNER);
+    M.add(HSM, s * .47, .42, .12, .1, .12, .1, 0, 0, 0, PINK);
+    for(const w of [-1, 1]) M.add(G.cyl8, s * .2, .6 + w * .025, .45, .006, .2, .006, 0, 0, Math.PI / 2 + s * w * .15, 0xc97a9a);
+  }
+  [[0, .44, -.5, .15], [.07, .5, -.47, .09], [-.07, .4, -.47, .09], [0, .36, -.47, .08]].forEach(([x, y, z, k]) => M.add(HSM, x, y, z, k, k, k, 0, 0, 0, 0xffffff));
+  body.add(new THREE.Mesh(M.geometry(), vcLam()));
+  const eyes = cartoonEyes(.17, .14, .17); eyes.position.set(0, .74, .38); body.add(eyes);
+  const earGeo = new Merge().add(new THREE.CapsuleGeometry(.1, .42, 4, 10), 0, .3, 0, 1, 1, .65, 0, 0, 0, PINK)
+    .add(new THREE.CapsuleGeometry(.055, .32, 4, 8), 0, .31, .045, 1, 1, .4, 0, 0, 0, INNER).geometry();
+  const earMat = vcLam();
+  const ears = [-1, 1].map(s => { const p = new THREE.Group(); p.position.set(s * .17, .93, -.04); p.userData.s = s; p.add(new THREE.Mesh(earGeo, earMat)); body.add(p); return p; });
+  const feet = footPair(grp, HFOOT, new THREE.MeshLambertMaterial({ color:0xffd0e2 }), .14, .08, .23, .2, .06, .08);
+  return { type:'lulu', grp, body, eyes, feet, ears, earA:0, earV:0, blink:1.1 };
+}
+// روكو — a small boxy robot on wheels with a glowing antenna
+function buildRokko(){
+  const grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
+  const BLUE = 0x6ec6ff, DARK = 0x26345e, TRIM = 0xffb347, M = new Merge();
+  const box = new THREE.ExtrudeGeometry(roundRect(.6, .52, .12), { depth:.44, bevelEnabled:true, bevelThickness:.1, bevelSize:.1, bevelSegments:4, curveSegments:6 }); box.translate(0, 0, -.22);
+  M.add(box, 0, .6, 0, 1, 1, 1, 0, 0, 0, BLUE);
+  M.add(new THREE.ExtrudeGeometry(roundRect(.54, .36, .09), { depth:.03, bevelEnabled:false, curveSegments:6 }), 0, .67, .31, 1, 1, 1, 0, 0, 0, DARK);
+  for(const s of [-1, 1]){
+    M.add(G.cyl8, s * .42, .64, 0, .09, .07, .09, 0, 0, Math.PI / 2, TRIM);
+    M.add(G.cyl8, s * .24, .2, .02, .035, .14, .035, 0, 0, 0, DARK);
+    M.add(HSM, s * .46, .42, .08, .08, .1, .08, 0, 0, 0, BLUE);
+  }
+  M.add(HSM, -.09, .38, .33, .045, .045, .02, 0, 0, 0, 0xff6f91).add(HSM, .02, .38, .33, .045, .045, .02, 0, 0, 0, 0x5fe3b1).add(HSM, .13, .38, .33, .045, .045, .02, 0, 0, 0, 0xffd23f);
+  M.add(G.cyl8, 0, .99, 0, .1, .05, .1, 0, 0, 0, DARK);
+  body.add(new THREE.Mesh(M.geometry(), vcLam()));
+  const E = new Merge();
+  for(const s of [-1, 1]) E.add(HSPH, s * .12, 0, 0, .062, .075, .025, 0, 0, 0, 0x7ff6ff);
+  const eyes = new THREE.Mesh(E.geometry(), vcBasic()); eyes.position.set(0, .7, .345); body.add(eyes);
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(.055, .014, 5, 12, Math.PI), new THREE.MeshBasicMaterial({ color:0x7ff6ff }));
+  mouth.position.set(0, .6, .345); mouth.rotation.z = Math.PI; body.add(mouth);
+  const antenna = new THREE.Group(); antenna.position.set(0, 1.01, 0); body.add(antenna);
+  antenna.add(new THREE.Mesh(new Merge().add(G.cyl8, 0, .14, 0, .022, .28, .022, 0, 0, 0, DARK).geometry(), vcLam()));
+  const ball = new THREE.Mesh(HSPH, new THREE.MeshBasicMaterial({ color:0xffe066 })); ball.scale.setScalar(.075); ball.position.y = .31; antenna.add(ball);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending })); glow.scale.set(.42, .42, 1); glow.position.y = .31; antenna.add(glow);
+  const wheelGeo = new Merge().add(G.cyl, 0, 0, 0, .11, .1, .11, 0, 0, Math.PI / 2, 0x3a3f5a).add(G.cyl8, 0, 0, 0, .05, .112, .05, 0, 0, Math.PI / 2, TRIM)
+    .add(G.box, 0, .085, 0, .114, .03, .03, 0, 0, 0, 0xc9cfe6).geometry(), wheelMat = vcLam();
+  const feet = [-1, 1].map(s => { const w = new THREE.Mesh(wheelGeo, wheelMat); w.position.set(s * .24, .11, .02); grp.add(w); return w; });
+  return { type:'rokko', grp, body, eyes, feet, antenna, ball, roll:0, blink:2.3 };
+}
+// بيبو — a yellow egg-shaped chick with a little orange beak, feet and flappy wings
+function buildPipo(){
+  const grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
+  const YEL = 0xffd84a, PALE = 0xfff0a6, ORA = 0xff9a2a, M = new Merge(), pts = [];
+  for(let i = 0; i <= 16; i++){ const t = i / 16 * Math.PI; pts.push(new THREE.Vector2(Math.max(.0001, .5 * Math.sin(t) * (1 + .1 * Math.cos(t))), .02 + (1 - Math.cos(t)) * .58)); }
+  M.add(new THREE.LatheGeometry(pts, 22), 0, 0, 0, 1, 1, 1, 0, 0, 0, YEL);
+  M.add(HSPH, 0, .44, .3, .31, .3, .2, 0, 0, 0, PALE);
+  for(const dx of [-.07, 0, .07]) M.add(G.cone, dx, 1.22, -.02, .05, .17, .05, -.2, 0, -dx * 3, YEL);
+  M.add(G.cone, 0, .735, .52, .085, .17, .07, Math.PI / 2, 0, 0, ORA).add(G.cone, 0, .7, .5, .06, .1, .05, Math.PI / 2 + .25, 0, 0, 0xf07d12);
+  for(const s of [-1, 1]) M.add(HSM, s * .28, .7, .4, .07, .045, .03, 0, s * .6, 0, 0xffa07a);
+  body.add(new THREE.Mesh(M.geometry(), vcLam()));
+  const eyes = cartoonEyes(.15, .1, .125, 0x1a1020); eyes.position.set(0, .87, .39); body.add(eyes);
+  const wingGeo = new Merge().add(HSPH, 0, -.14, 0, .07, .2, .16, 0, 0, 0, 0xffc928).geometry(), wingMat = vcLam();
+  const wings = [-1, 1].map(s => { const p = new THREE.Group(); p.position.set(s * .46, .66, -.02); p.userData.s = s; p.add(new THREE.Mesh(wingGeo, wingMat)); body.add(p); return p; });
+  const footGeo = new Merge().add(HSM, 0, 0, 0, .07, .035, .08, 0, 0, 0, ORA)
+    .add(HSM, -.055, 0, .08, .03, .025, .07, 0, -.5, 0, ORA).add(HSM, 0, 0, .1, .03, .025, .07, 0, 0, 0, ORA).add(HSM, .055, 0, .08, .03, .025, .07, 0, .5, 0, ORA).geometry();
+  const feet = footPair(grp, footGeo, vcLam(), 1, 1, 1, .17, .04, .06);
+  return { type:'pipo', grp, body, eyes, feet, wings, wt:0, blink:.6 };
+}
+const HERO_IDS = ['bobo', 'lulu', 'rokko', 'pipo'];
+const HERO_BUILD = { bobo:buildBobo, lulu:buildLulu, rokko:buildRokko, pipo:buildPipo };
+const HERO_NAME = { bobo:L('بوبو', 'Bobo', 'Bobo'), lulu:L('لولو', 'Lulu', 'Lulu'), rokko:L('روكو', 'Rokko', 'Rokko'), pipo:L('بيبو', 'Pipo', 'Pipo') };
+// s = { t, dt, run, grounded, vy, sq, flip }
+function poseHero(h, s){
+  const t = s.t, dt = s.dt, run = s.grounded ? s.run : 0;
+  const bounce = s.grounded ? Math.abs(Math.sin(t * 13)) * .08 * run + Math.sin(t * 3) * .02 * (1 - run) : 0;
+  const sy = 1 + s.sq + (s.grounded ? Math.sin(t * 3) * .025 * (1 - run) : 0), sxz = 1 - s.sq * .6;
+  h.body.scale.set(sxz, sy, sxz); h.body.position.y = bounce; h.body.rotation.set(run * .14, 0, 0);
+  if(s.flip > 0) h.body.rotation.x = (1 - s.flip) * Math.PI * 2;
+  const bt = t + h.blink, blink = (bt % 3.7) < .12 || ((bt + 1.3) % 6.1) < .1;
+  h.eyes.scale.y = blink ? .12 : 1;
+  if(h.type === 'rokko'){
+    h.body.position.y += .03 + Math.sin(t * 4) * .025;
+    h.body.rotation.z = Math.sin(t * 2.3) * .045;
+    h.roll += dt * (run * 16 + (s.grounded ? 0 : 5));
+    h.feet.forEach(w => { w.rotation.x = h.roll; w.position.y = .11 + (s.grounded ? 0 : .04); });
+    h.antenna.rotation.z = Math.sin(t * 7) * .13 + Math.sin(t * 19) * .06 * run;
+    h.antenna.rotation.x = clamp(-s.vy * .04, -.55, .55) - run * .25;
+    h.ball.scale.setScalar(.075 * (1 + Math.sin(t * 5) * .15));
+  } else {
+    h.feet.forEach((f, i) => { const k = Math.sin(t * 13 + i * Math.PI) * run; f.position.z = f.userData.z + k * .18; f.position.y = f.userData.y + Math.max(0, k) * .1 + (s.grounded ? 0 : .05); });
+  }
+  if(h.type === 'lulu'){
+    const target = s.grounded ? -run * .35 + Math.sin(t * 2.5) * .05 : clamp(-s.vy * .075, -1.1, .55);
+    h.earV += ((target - h.earA) * 130 - h.earV * 8) * dt; h.earA += h.earV * dt;
+    h.ears.forEach(e => { const k = e.userData.s; e.rotation.x = h.earA; e.rotation.z = -k * (.2 + Math.max(0, -h.earA) * .25 + Math.sin(t * 2 + k) * .03); });
+  }
+  if(h.type === 'pipo'){
+    h.wt += dt * (s.grounded ? 3 + run * 16 : 32);
+    const amp = s.grounded ? .07 + run * .25 : .8, a = .12 + amp * (.5 + .5 * Math.sin(h.wt));
+    h.wings.forEach(w => { w.rotation.z = w.userData.s * a; });
+  }
+}
+const heroes = {};
+HERO_IDS.forEach(id => { heroes[id] = HERO_BUILD[id](); scene.add(heroes[id].grp); });
+let heroId = HERO_IDS.includes(rawGet('adv3d_hero')) ? rawGet('adv3d_hero') : 'bobo', hero = heroes[heroId];
+function setHero(id, save){
+  if(!heroes[id]) return;
+  heroId = id; hero = heroes[id]; if(save) rawSet('adv3d_hero', id);
+  HERO_IDS.forEach(k => { heroes[k].grp.visible = k === id; });
+}
+setHero(heroId, false);
 
 /* ---------- Enemies (cute critters) ---------- */
 const ENEMY_GEO = (() => {
@@ -867,16 +1041,17 @@ let jumpQueued = false;
 const joy = { x:0, y:0, id:null, ox:0, oy:0 }, look = { id:null, x:0, y:0 };
 const joyEl = $('#joy'), knob = $('#knob'), jumpBtn = $('#btnJump');
 let joyHome = [90, 0];
-function placeJoyHome(){ joyHome = [Math.max(84, 20 + 62), innerHeight - Math.max(92, innerHeight * .16)]; if(joy.id == null) setJoy(joyHome[0], joyHome[1]); }
+function placeJoyHome(){ joyHome = [Math.max(84, SAL + 78), SH - Math.max(92, SH * .16) - SAB * .5]; if(joy.id == null) setJoy(joyHome[0], joyHome[1]); }
 function setJoy(x, y){ joyEl.style.left = x + 'px'; joyEl.style.top = y + 'px'; }
 const touch = $('#touch');
 touch.addEventListener('pointerdown', e => {
   if(state !== 'play') return;
   e.preventDefault();
-  if(e.clientX < innerWidth * .45 && joy.id == null){
-    joy.id = e.pointerId; joy.ox = clamp(e.clientX, 70, innerWidth * .45); joy.oy = clamp(e.clientY, 140, innerHeight - 70);
-    setJoy(joy.ox, joy.oy); joyEl.classList.add('on'); moveJoy(e.clientX, e.clientY);
-  } else if(look.id == null){ look.id = e.pointerId; look.x = e.clientX; look.y = e.clientY; }
+  const p = toLayer(e.clientX, e.clientY);
+  if(p.x < SW * .45 && joy.id == null){
+    joy.id = e.pointerId; joy.ox = clamp(p.x, Math.max(70, SAL + 64), SW * .45); joy.oy = clamp(p.y, 140, SH - 70);
+    setJoy(joy.ox, joy.oy); joyEl.classList.add('on'); moveJoy(p.x, p.y);
+  } else if(look.id == null){ look.id = e.pointerId; look.x = p.x; look.y = p.y; }
   try{ touch.setPointerCapture(e.pointerId); }catch(err){}
 });
 function moveJoy(x, y){
@@ -886,10 +1061,11 @@ function moveJoy(x, y){
   joy.x = dx / m; joy.y = dy / m;
 }
 touch.addEventListener('pointermove', e => {
-  if(e.pointerId === joy.id) moveJoy(e.clientX, e.clientY);
+  const p = toLayer(e.clientX, e.clientY);
+  if(e.pointerId === joy.id) moveJoy(p.x, p.y);
   else if(e.pointerId === look.id){
-    cam.yaw -= (e.clientX - look.x) * .0075; cam.pitch = clamp(cam.pitch + (e.clientY - look.y) * .004, .05, 1.15);
-    look.x = e.clientX; look.y = e.clientY; cam.dragT = T;
+    cam.yaw -= (p.x - look.x) * .0075; cam.pitch = clamp(cam.pitch + (p.y - look.y) * .004, .05, 1.15);
+    look.x = p.x; look.y = p.y; cam.dragT = T;
   }
 });
 function endPtr(e){
@@ -1111,18 +1287,12 @@ function updateCamera(dt){
 
 /* ---------- Per-frame visuals ---------- */
 function animate(dt){
-  // Bobo
-  const g = bobo.grp; g.position.set(P.x, P.y, P.z); g.rotation.y = P.face;
+  // the hero
+  hero.grp.position.set(P.x, P.y, P.z); hero.grp.rotation.y = P.face;
   P.sqv += (-P.sq * 180 - P.sqv * 14) * dt; P.sq += P.sqv * dt;
-  const run = P.grounded ? P.move : 0, bounce = P.grounded ? Math.abs(Math.sin(T * 13)) * .08 * run + Math.sin(T * 3) * .02 * (1 - run) : 0;
-  const sy = 1 + P.sq + (P.grounded ? Math.sin(T * 3) * .025 * (1 - run) : 0), sxz = 1 - P.sq * .6;
-  bobo.body.scale.set(sxz, sy, sxz); bobo.body.position.y = bounce;
-  bobo.body.rotation.x = run * .14;
-  if(P.flip > 0){ P.flip = Math.max(0, P.flip - dt * 2.4); bobo.body.rotation.x = (1 - P.flip) * Math.PI * 2; }
-  bobo.feet.forEach((f, i) => { const s = Math.sin(T * 13 + i * Math.PI) * run; f.position.z = .06 + s * .18; f.position.y = .06 + Math.max(0, s) * .1 + (P.grounded ? 0 : .05); });
-  const blink = (T % 3.7) < .12 || ((T + 1.3) % 6.1) < .1;
-  bobo.eyes.scale.y = blink ? .12 : 1;
-  bobo.grp.visible = P.inv <= 0 || Math.floor(P.inv * 12) % 2 === 0;
+  if(P.flip > 0) P.flip = Math.max(0, P.flip - dt * 2.4);
+  poseHero(hero, { t:T, dt, run:P.move, grounded:P.grounded, vy:P.vy, sq:P.sq, flip:P.flip });
+  hero.grp.visible = P.inv <= 0 || Math.floor(P.inv * 12) % 2 === 0;
   const gh = groundInfo(P.x, P.z, P.y + .1, 0).h, hh = P.y - gh, ss = clamp(1.1 - hh * .08, .45, 1.1);
   pShadow.position.set(P.x, gh + .04, P.z); pShadow.scale.set(ss * 1.1, 1, ss * 1.1); pShadow.visible = gh > -.2;
   // honey spin
@@ -1193,24 +1363,24 @@ function hudFrame(){
 
 /* ---------- Menus ---------- */
 const overlay = $('#overlay'), card = $('#card');
-function setPlayUI(on){ overlay.classList.remove('title'); hudEl.hidden = !on; joyEl.hidden = !on; jumpBtn.hidden = !on; overlay.hidden = on; if(!on){ toastEl.hidden = true; } }
+function setPlayUI(on){ overlay.classList.remove('title'); card.classList.remove('wide'); if(pv) pv.cvs = []; hudEl.hidden = !on; joyEl.hidden = !on; jumpBtn.hidden = !on; overlay.hidden = on; if(!on){ toastEl.hidden = true; } }
 function starRow(){ return '<div class="starrow">' + starsGot.map(g => `<i class="${g ? '' : 'off'}">⭐</i>`).join('') + '</div>'; }
 const HOME = `<a class="ghost-btn" href="../">🏠 ${L('الرئيسية', 'Home', 'Ana sayfa')}</a>`;
 function showTitle(){
   state = 'title'; setPlayUI(false); overlay.classList.remove('dim'); overlay.classList.add('title');
-  const any = nStars() > 0 || honeyCount > 0;
-  card.innerHTML = `<h1>${L('مغامرة بوبو', "Bobo's Adventure", "Bobo'nun Macerası")}<small>${L('ثلاثي الأبعاد', '3D', '3D')} 🏝️</small></h1>
+  const any = nStars() > 0 || honeyCount > 0, rotHint = ROT && !rawGet('adv3d_rothint');
+  card.innerHTML = `${rotHint ? `<div class="rothint"><i aria-hidden="true">📱</i><span>${L('لفّ الجوال على جنب 📱↪️', 'Turn your phone sideways 📱↪️', 'Telefonu yan çevir 📱↪️')}</span></div>` : ''}<h1>${L('مغامرة بوبو', "Bobo's Adventure", "Bobo'nun Macerası")}<small>${L('ثلاثي الأبعاد', '3D', '3D')} 🏝️</small></h1>
     <p>${L('لفّ الجزيرة، اجمع العسل ولاقي العشر نجوم!', 'Explore the island, collect honey and find all 10 stars!', 'Adayı gez, bal topla ve 10 yıldızın hepsini bul!')}</p>
     ${any ? starRow() : ''}
     <button class="big-btn" id="bPlay">${any ? '▶️ ' + L('كمّل', 'Continue', 'Devam') : '▶️ ' + L('العب', 'Play', 'Oyna')}</button>
     <ul class="how">
-      <li><span>🕹️</span><span>${L('اسحب عالشمال لتمشّي بوبو', 'Drag on the left to move Bobo', "Bobo'yu yürütmek için solda kaydır")}</span></li>
+      <li><span>🕹️</span><span>${L('اسحب عالشمال لتمشي', 'Drag on the left to walk', 'Yürümek için solda kaydır')}</span></li>
       <li><span>⬆️</span><span>${L('كبسة الزر الأصفر = نطّة، كبستين = نطّة دبل', 'Yellow button = jump, tap twice = double jump', 'Sarı düğme = zıpla, iki kez = çift zıplama')}</span></li>
       <li><span>👆</span><span>${L('اسحب عاليمين لتلفّ الكاميرا', 'Drag on the right to turn the camera', 'Kamerayı döndürmek için sağda kaydır')}</span></li>
       <li><span>🧭</span><span>${L('السهم بيدلّك على أقرب نجمة', 'The arrow points to the nearest star', 'Ok en yakın yıldızı gösterir')}</span></li>
     </ul>
     <div class="row">${any ? `<button class="ghost-btn" id="bNew">🔄 ${L('من الأول', 'New game', 'Yeni oyun')}</button>` : ''}${HOME}</div>`;
-  $('#bPlay').onclick = () => { ac(); SFX.tap(); startPlay(); };
+  $('#bPlay').onclick = () => { ac(); SFX.tap(); tryLandscapeLock(); showSelect('title'); };
   if(any) $('#bNew').onclick = () => {
     SFX.tap();
     card.innerHTML = `<h2>${L('نبلّش من الأول؟', 'Start over?', 'Baştan başlayalım mı?')}</h2><p>${L('النجوم والعسل رح ينمحوا', 'Your stars and honey will be cleared', 'Yıldızların ve balın silinecek')}</p>
@@ -1220,6 +1390,7 @@ function showTitle(){
   };
 }
 function startPlay(){
+  if(ROT) rawSet('adv3d_rothint', '1');
   state = 'play'; setPlayUI(true); toCheckpoint(); P.hearts = 3; hud(); placeJoyHome();
   if(window.World && !startPlay.tracked){ startPlay.tracked = true; }
 }
@@ -1231,10 +1402,71 @@ function showPause(){
     <div class="tally"><span>⭐ ${N(nStars())}/${N(10)}</span><span>🍯 ${N(honeyCount)}</span></div>
     <button class="big-btn" id="bRes">▶️ ${L('كمّل', 'Resume', 'Devam')}</button>
     <div class="row"><button class="ghost-btn" id="bCp">🚩 ${L('رجّعني للعلم', 'Back to checkpoint', 'Kontrol noktasına dön')}</button>
+    <button class="ghost-btn" id="bHero">🦸 ${L('غيّر الشخصية', 'Change hero', 'Kahramanı değiştir')}</button>
     <button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button>${HOME}</div>`;
   $('#bRes').onclick = () => { SFX.tap(); resume(); };
   $('#bCp').onclick = () => { toCheckpoint(); resume(); };
+  $('#bHero').onclick = () => { SFX.tap(); showSelect('pause'); };
   $('#bSnd').onclick = () => { muted = !muted; store.set('muted', muted); $('#bSnd').innerHTML = (muted ? '🔇' : '🔊') + ' ' + L('الصوت', 'Sound', 'Ses'); SFX.tap(); };
+}
+/* Hero picker: 4 cards, each with a live 3D preview rendered by the main renderer into a corner and copied to the card canvas */
+let pv = null, selFrom = 'title', selPick = heroId;
+const PV_BG = { bobo:0x3d3478, lulu:0x5a3166, rokko:0x24497a, pipo:0x5c4a22 };
+function ensurePreview(){
+  if(pv) return pv;
+  const sc = new THREE.Scene();
+  sc.add(new THREE.HemisphereLight(0xeef8ff, 0x7a6cb0, 2.1));
+  const d = new THREE.DirectionalLight(0xfff0d0, 2.0); d.position.set(2, 4, 3.5); sc.add(d);
+  const hs = {}; HERO_IDS.forEach(id => { hs[id] = HERO_BUILD[id](); sc.add(hs[id].grp); });
+  const sh = new THREE.Mesh(blobGeo, blobMat); sh.position.y = .01; sc.add(sh);
+  const cam = new THREE.PerspectiveCamera(38, 1, .1, 50); cam.position.set(0, 1.0, 3.5); cam.lookAt(0, .8, 0);
+  const bg = {}; HERO_IDS.forEach(id => { bg[id] = new THREE.Color(PV_BG[id]); });
+  pv = { sc, cam, hs, sh, bg, cvs:[], css:0 }; return pv;
+}
+function showSelect(from){
+  if(from === 'pause' && state !== 'pause') return;
+  selFrom = from; state = 'select'; setPlayUI(false); overlay.classList.add('dim'); card.classList.add('wide');
+  selPick = heroId; ensurePreview();
+  card.innerHTML = `<h2>🦸 ${L('اختار شخصيتك', 'Pick your hero', 'Kahramanını seç')}</h2>
+    <div class="heroes">${HERO_IDS.map(id => `<button class="hero${id === selPick ? ' on' : ''}" data-id="${id}" aria-pressed="${id === selPick}"><canvas aria-hidden="true"></canvas><b>${HERO_NAME[id]}</b></button>`).join('')}</div>
+    <button class="big-btn" id="bGoHero">▶️ ${from === 'pause' ? L('كمّل', 'Resume', 'Devam') : L('يلّا نلعب', "Let's play", 'Hadi oynayalım')}</button>`;
+  const btns = [...card.querySelectorAll('.hero')];
+  let css = 1e9; btns.forEach(b => { css = Math.min(css, b.querySelector('canvas').offsetWidth || 1e9); });
+  if(!(css < 1e8)) css = 120;
+  css = Math.max(40, Math.min(Math.floor(css), SH - 2, SW - 2));
+  pv.css = css;
+  pv.cvs = btns.map(b => {
+    const c = b.querySelector('canvas'); c.width = c.height = Math.floor(css * dpr);
+    return { id:b.dataset.id, c, ctx:c.getContext('2d'), t:Math.random() * 3, y:0, vy:0, sq:0, sqv:0, wait:.3 };
+  });
+  btns.forEach(b => b.onclick = () => {
+    selPick = b.dataset.id; SFX.jump();
+    btns.forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+    const v = pv.cvs.find(v => v.id === selPick); if(v) v.wait = 0;
+  });
+  $('#bGoHero').onclick = () => { SFX.tap(); setHero(selPick, true); if(selFrom === 'pause') resume(); else startPlay(); };
+}
+function renderPreviews(dt){
+  if(!pv || !pv.cvs.length) return;
+  const css = pv.css, px = Math.floor(css * dpr), bh = canvas.height;
+  renderer.setScissorTest(true); renderer.setViewport(0, 0, css, css); renderer.setScissor(0, 0, css, css);
+  for(const v of pv.cvs){
+    const h = pv.hs[v.id], on = v.id === selPick;
+    HERO_IDS.forEach(k => { pv.hs[k].grp.visible = k === v.id; });
+    v.t += dt;
+    // little hops for the picked hero
+    const grounded = v.y <= 0 && v.vy <= 0;
+    if(grounded){ v.wait -= dt; if(on && v.wait <= 0){ v.vy = 3.3; v.sq = .25; v.sqv = 0; v.wait = .55; } }
+    if(!grounded || v.vy > 0){ v.vy -= 14 * dt; v.y += v.vy * dt; if(v.y <= 0){ v.y = 0; v.vy = 0; v.sq = -.2; v.sqv = 0; } }
+    v.sqv += (-v.sq * 180 - v.sqv * 14) * dt; v.sq += v.sqv * dt;
+    h.grp.position.y = v.y; h.grp.rotation.y = Math.sin(v.t * .9) * .55;
+    poseHero(h, { t:v.t, dt, run:0, grounded:v.y <= 0, vy:v.vy, sq:v.sq, flip:0 });
+    const ss = clamp(1.2 - v.y * .5, .6, 1.2); pv.sh.scale.set(ss, 1, ss);
+    pv.sc.background = pv.bg[v.id];
+    renderer.render(pv.sc, pv.cam);
+    v.ctx.drawImage(canvas, 0, bh - px, px, px, 0, 0, v.c.width, v.c.height);
+  }
+  renderer.setScissorTest(false); renderer.setViewport(0, 0, SW, SH);
 }
 function resume(){ state = 'play'; setPlayUI(true); hud(); }
 $('#btnPause').onclick = () => { SFX.tap(); showPause(); };
@@ -1279,13 +1511,14 @@ function frame(now){
   if(state === 'play'){
     let rest = dt; while(rest > 0){ const h = Math.min(rest, 1 / 60); step(h); rest -= h; }
     updateCamera(dt); hudFrame();
-  } else if(state === 'title'){
+  } else if(state === 'title' || (state === 'select' && selFrom === 'title')){
     T += dt;
     const a = T * .06;
     camera.position.set(Math.sin(a) * 74, 30, Math.cos(a) * 74); camera.lookAt(0, portrait ? -16 : 0, 0);
     updateMovers(T);
   }
   animate(dt);
+  if(state === 'select') renderPreviews(dt);
   sky.position.copy(camera.position);
   sunGlow.position.copy(camera.position).add(_v.set(150, 210, -260));
   renderer.render(scene, camera);
@@ -1293,7 +1526,7 @@ function frame(now){
 
 /* debug / test hook */
 window.__adv3d = {
-  get state(){ return state; }, get fps(){ return fps; }, get dpr(){ return dpr; }, P, cam,
+  get state(){ return state; }, get hero(){ return heroId; }, get rot(){ return ROT; }, get stage(){ return [SW, SH]; }, toLayer, setHero:id => setHero(id, true), get fps(){ return fps; }, get dpr(){ return dpr; }, P, cam,
   get stars(){ return starsGot.slice(); }, get honey(){ return honeyCount; }, starPos:i => STARS[i].at.slice(),
   teleport(x, z, y){ P.x = x; P.z = z; P.y = y != null ? y : groundTop(x, z) + .1; P.vx = P.vz = P.vy = 0; snapCam = true; },
   collectStar(i){ unlocked.rings = unlocked.meadow = unlocked.race = true; collectStar(i); },
