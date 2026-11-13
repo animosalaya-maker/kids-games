@@ -549,7 +549,7 @@ const rings = PL.rings.map((p, i) => {
   for(let i = 0; i < 18; i++){ const a = rnd() * 6.28, r = rnd() * 7; flower(mx + Math.cos(a) * r, mz + Math.sin(a) * r); }
 }
 
-/* Race: red button and a striped goal flag */
+/* Race: red button and a checkered finish flag */
 const raceBtn = new THREE.Mesh(new THREE.CylinderGeometry(1.1, 1.2, .3, 20), new THREE.MeshLambertMaterial({ color:0xff4d6d, emissive:0x400010 }));
 raceBtn.position.set(PL.raceA[0], H(...PL.raceA) + .1, PL.raceA[1]); scene.add(raceBtn);
 W.add(G.cyl, PL.raceA[0], H(...PL.raceA) - .2, PL.raceA[1], 1.5, .5, 1.5, 0, 0, 0, 0xfff2d6);
@@ -559,8 +559,7 @@ W.add(G.cyl, PL.raceA[0], H(...PL.raceA) - .2, PL.raceA[1], 1.5, .5, 1.5, 0, 0, 
   W.add(G.sph, fx, g + 4.25, fz, .2, .2, .2, 0, 0, 0, 0xffcd4d);
 }
 const raceFlag = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.1, 6, 1), new THREE.MeshLambertMaterial({ side:THREE.DoubleSide, map:canvasTex(96, 64, (x) => {
-  const c = ['#ff5d73', '#ffcd4d', '#5fe3b1', '#5fb8ff', '#b28dff']; c.forEach((k, i) => { x.fillStyle = k; x.fillRect(0, i * 12.8, 96, 13); });
-  x.font = '40px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillStyle = '#fff'; x.fillText('★', 48, 34);
+  for(let r = 0; r < 4; r++) for(let q = 0; q < 6; q++){ x.fillStyle = (r + q) % 2 ? '#222' : '#fff'; x.fillRect(q * 16, r * 16, 16, 16); }
 }) }));
 raceFlag.position.set(PL.raceB[0] + .92, H(...PL.raceB) + 3.6, PL.raceB[1]); scene.add(raceFlag);
 

@@ -22,9 +22,9 @@ Solo.register({
       const c = pic.getContext('2d'), P = PIC; c.setTransform(1, 0, 0, 1, 0, 0); c.lineJoin = 'round'; c.lineCap = 'round';
       const skies = [['#6fcfff', '#c9f0ff'], ['#7fb8ff', '#ffe0f0'], ['#ffb36b', '#ffe9a8']][v];
       const g = c.createLinearGradient(0, 0, 0, P); g.addColorStop(0, skies[0]); g.addColorStop(0.7, skies[1]); c.fillStyle = g; c.fillRect(0, 0, P, P);
-      if(v === 1){ // rainbow
-        const rc = ['#ff4646', '#ff9a1f', '#ffdc3b', '#3fd45a', '#3d8bff', '#a75cff'];
-        c.lineWidth = P * 0.035; rc.forEach((col, k) => { c.strokeStyle = col; c.beginPath(); c.arc(P * 0.5, P * 0.78, P * (0.46 - k * 0.035), Math.PI, 0); c.stroke(); });
+      if(v === 1){ // fluffy clouds
+        c.fillStyle = '#fff';
+        [[0.25, 0.3], [0.55, 0.18], [0.45, 0.42]].forEach(([cx, cy]) => { [[0, 0, 0.07], [0.07, 0.01, 0.055], [-0.07, 0.01, 0.055]].forEach(([dx, dy, r]) => { c.beginPath(); c.arc(P * (cx + dx), P * (cy + dy), P * r, 0, Math.PI * 2); c.fill(); }); });
       }
       // sun
       const sx = P * 0.8, sy = P * 0.19, sr = P * 0.09;
