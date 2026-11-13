@@ -1,5 +1,5 @@
 // Keeps the games working offline. Bump VERSION after changing any file.
-const VERSION = 'kids-games-v6';
+const VERSION = 'kids-games-v7';
 const FILES = ['./', './index.html', './manifest.webmanifest', './manifest-en.webmanifest', './manifest-tr.webmanifest', './i18n.js', './icon-192.png', './icon-512.png', './privacy.html', './world.js',
   './bobo/', './bobo/index.html', './party/', './party/index.html',
   './duel/', './duel/index.html', './duel/engine.js', './solo/', './solo/index.html', './solo/engine.js',

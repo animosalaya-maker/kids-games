@@ -214,6 +214,65 @@ function centerRect(){
   return { x: pad, y: btn + 20, w: W - pad * 2, h: H - (btn + 20) * 2 };
 }
 
+/* ---------- Helpers for the newer games ---------- */
+const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
+const INK = '#1c1838', TAU = Math.PI * 2;
+const GREY = { color:'#8a84a8', dark:'#5d5880' };
+const CW = [1, 3, 0, 2]; // corners clockwise on screen: top-left, top-right, bottom-right, bottom-left
+Object.assign(SFX, {
+  boom(){ tone(120, .7, 'sawtooth', .16, 0, 35); tone(70, .9, 'square', .1, .05, 30); },
+  pop(){ tone(1200, .09, 'square', .12, 0, 180); tone(300, .2, 'sawtooth', .06, .02, 60); },
+  flap(i){ tone(520 + i * 60, .07, 'sine', .07, 0, 760 + i * 60); },
+  jump(i){ tone(380 + i * 50, .15, 'triangle', .08, 0, 700); },
+  note(f){ tone(f, .17, 'square', .045); tone(f / 2, .17, 'triangle', .05); }
+});
+const isTop = i => i === 1 || i === 3, isLeft = i => i === 1 || i === 2;
+function alive(){ return players.map((p, i) => i).filter(i => !players[i].out); }
+function seat(i, k){ // a spot inside the play area in front of player i's corner
+  const r = centerRect(), m = Math.min(r.w, r.h) * (k == null ? 0.17 : k);
+  return { x: isLeft(i) ? r.x + m : r.x + r.w - m, y: isTop(i) ? r.y + m : r.y + r.h - m };
+}
+function btnCenter(i){ const b = Math.min(W * 0.27, 112); return { x: isLeft(i) ? 14 + b / 2 : W - 14 - b / 2, y: isTop(i) ? 14 + b / 2 : H - 14 - b / 2, r: b / 2 }; }
+function ctext(s, x, y, size, color, flip){ // text with a dark outline; flip = upside down for the far side
+  ctx.save(); ctx.translate(x, y); if(flip) ctx.rotate(Math.PI);
+  ctx.font = '800 ' + Math.round(size) + 'px "Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.lineJoin = 'round';
+  ctx.lineWidth = Math.max(3, size * 0.16); ctx.strokeStyle = INK; ctx.strokeText(s, 0, 0);
+  ctx.fillStyle = color || '#fff7e8'; ctx.fillText(s, 0, 0); ctx.restore();
+}
+function cemoji(s, x, y, size, rot){
+  ctx.save(); ctx.translate(x, y); if(rot) ctx.rotate(rot);
+  ctx.font = Math.round(size) + 'px ' + EMOJI; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(s, 0, 0); ctx.restore();
+}
+function shape(path, fill, lw){ ctx.beginPath(); path(); ctx.fillStyle = fill; ctx.fill(); ctx.lineWidth = lw || 4; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.stroke(); }
+function rrect(x, y, w, h, r){ if(ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h); }
+function star(x, y, R, fill){ shape(() => { for(let k = 0; k < 10; k++){ const a = -Math.PI / 2 + k * Math.PI / 5, rr = k % 2 ? R * 0.45 : R; ctx.lineTo(x + Math.cos(a) * rr, y + Math.sin(a) * rr); } ctx.closePath(); }, fill, 3); }
+function clock(x, y, R, frac){ // a pie that shrinks as time runs out
+  shape(() => ctx.arc(x, y, R, 0, TAU), '#fff7e8', 4);
+  ctx.fillStyle = frac < 0.25 ? '#ff5a5f' : '#ffcd4d';
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.arc(x, y, R * 0.8, -Math.PI / 2, -Math.PI / 2 + TAU * Math.max(0, Math.min(1, frac))); ctx.closePath(); ctx.fill();
+}
+function glowCorner(i, t, color){
+  const b = btnCenter(i), R = b.r * (1.6 + Math.sin(t * 10) * 0.12);
+  const g = ctx.createRadialGradient(b.x, b.y, b.r * 0.7, b.x, b.y, R);
+  g.addColorStop(0, color); g.addColorStop(1, 'rgba(28,24,56,0)');
+  ctx.fillStyle = g; ctx.beginPath(); ctx.arc(b.x, b.y, R, 0, TAU); ctx.fill();
+}
+function buddyAt(i, x, y, r, t, mood, look, lift){ // a player's buddy, turned to face its own player
+  const top = isTop(i), lk = look && top ? { x:-look.x, y:-look.y } : look;
+  ctx.save(); ctx.translate(x, y); if(top) ctx.rotate(Math.PI);
+  drawBuddy(ctx, 0, -(lift || 0), r, players[i].out ? GREY : players[i], t + i, players[i].out ? 'sad' : mood, lk);
+  ctx.restore();
+}
+function endAfter(g, win, delay){ if(g.done) return; g.done = true; g.win = win; g.endT = delay == null ? 1 : delay; }
+function ending(g, dt){ if(!g.done) return false; g.endT -= dt; if(g.endT <= 0){ g.endT = 1e9; finish(g.win); } return true; }
+function best(vals){ // indexes with the highest value above 0 (null = nobody)
+  let m = -Infinity; vals.forEach(v => { if(v != null && v > m) m = v; });
+  if(!(m > 0)) return null;
+  return vals.map((v, i) => v === m ? i : -1).filter(i => i >= 0);
+}
+const fmt1 = x => AR(x.toFixed(1)).replace('.', L('٫', '.', ','));
+
 const GAMES = {
   reaction: {
     title:L('مين الأسرع ⚡', 'Who is fastest? ⚡', 'En hızlı kim? ⚡'), help:L('لما تصير الدائرة خضرا، اكبس قبل الكل! إذا كبست بكير بتطلع', 'When the circle turns green, press first! Press too soon and you are out', 'Daire yeşil olunca herkesten önce bas! Erken basan elenir'),
@@ -344,11 +403,11 @@ const GAMES = {
   tug: {
     title:L('شد الحبل 🪢', 'Tug of War 🪢', 'Halat Çekme 🪢'), help:L('اللي تحت ضد اللي فوق! اكبسوا بسرعة لتسحبوا الحبل لعندكم', 'Bottom side against top side! Press fast to pull the rope to you', 'Alttakiler üsttekilere karşı! İpi kendinize çekmek için hızlı basın'),
     start(){
-      this.pos = 0;
+      this.pos = 0; this.time = 0;
       this.teams = [players.map((p, i) => i).filter(i => i % 2 === 0), players.map((p, i) => i).filter(i => i % 2 === 1)];
       setMsg('');
     },
-    update(dt){ this.pos *= (1 - dt * 0.05); },
+    update(dt){ this.pos *= (1 - dt * 0.05); this.time += dt; if(this.time >= 30) finish(this.pos > 0.02 ? this.teams[0] : this.pos < -0.02 ? this.teams[1] : null); },
     press(i){
       const team = i % 2, size = this.teams[team].length;
       this.pos += (team === 0 ? 1 : -1) * 0.045 / size; SFX.tap(i, Math.abs(this.pos) * 20);
@@ -372,9 +431,543 @@ const GAMES = {
         drawBuddy(ctx, x, y, 26, players[pi], t * 2 + pi, 'happy', { x:0, y: side === 0 ? -1 : 1 });
       }));
     }
+  },
+
+  potato: {
+    title:L('البطاطا السخنة 🥔', 'Hot Potato 🥔', 'Sıcak Patates 🥔'), help:L('البطاطا معك؟ اكبس بسرعة لتعطيها للي بعدك قبل ما تفرقع! 💥', 'Got the potato? Press fast to pass it on before it goes BOOM! 💥', 'Patates sende mi? Patlamadan önce hızlıca yanındakine ver! 💥'),
+    start(){
+      players.forEach(p => p.out = false); refreshButtons();
+      this.done = false; this.boomT = 0; this.wait = 0; this.fly = 1;
+      const a = alive(); this.holder = this.from = a[Math.floor(Math.random() * a.length)];
+      this.newFuse();
+    },
+    newFuse(){ this.fuse = 4 + Math.random() * 5; this.total = this.fuse; this.tick = 0; },
+    next(i){
+      const order = CW.filter(k => k < players.length), p = order.indexOf(i);
+      for(let s = 1; s <= order.length; s++){ const k = order[(p + s) % order.length]; if(!players[k].out) return k; }
+      return i;
+    },
+    spot(i){ const s = seat(i), k = 0.38; return { x: s.x + (W / 2 - s.x) * k, y: s.y + (H / 2 - s.y) * k }; },
+    update(dt){
+      this.fly = Math.min(1, this.fly + dt * 6);
+      if(this.boomT > 0) this.boomT -= dt;
+      if(ending(this, dt)) return;
+      if(this.wait > 0){ this.wait -= dt; if(this.wait <= 0) setMsg(''); return; }
+      this.fuse -= dt; this.tick -= dt;
+      const k = 1 - this.fuse / this.total;
+      if(this.tick <= 0){ this.tick = 0.55 - 0.43 * k; tone(k > 0.7 ? 880 : 660, .05, 'square', .07); }
+      if(this.fuse <= 0){
+        const h = this.holder; players[h].out = true; refreshButtons(); SFX.boom(); this.boomT = 1; this.boomAt = h;
+        setMsg(L('بووم! 💥 ' + players[h].name + ' طلع', 'BOOM! 💥 ' + players[h].name + ' is out', 'BUM! 💥 ' + players[h].name + ' elendi'));
+        const a = alive();
+        if(a.length <= 1){ endAfter(this, a.length ? a[0] : null, 1.3); return; }
+        this.holder = this.from = this.next(h); this.fly = 1; this.wait = 1.5; this.newFuse();
+      }
+    },
+    press(i){
+      if(this.done || this.wait > 0 || i !== this.holder || this.fly < 1) return;
+      this.from = i; this.holder = this.next(i); this.fly = 0; SFX.turn();
+    },
+    draw(t){
+      const cx = W / 2, cy = H / 2, R = Math.min(W, H) * 0.12, k = this.done ? 0 : 1 - this.fuse / this.total;
+      if(!this.done && this.wait <= 0) glowCorner(this.holder, t, players[this.holder].color);
+      players.forEach((p, i) => { const s = seat(i); buddyAt(i, s.x, s.y, R * 0.6, t, i === this.holder && !this.done ? 'idle' : 'happy', { x:(cx - s.x) / W, y:(cy - s.y) / H }); });
+      // explosion
+      if(this.boomT > 0){
+        const s = this.spot(this.boomAt), e = 1 - this.boomT;
+        ['#ffcd4d', '#ff8a3d', '#ff5a5f'].forEach((c, j) => { ctx.fillStyle = c; ctx.globalAlpha = Math.max(0, this.boomT); ctx.beginPath(); ctx.arc(s.x, s.y, R * (0.8 + e * 2.4) * (1 - j * 0.25), 0, TAU); ctx.fill(); });
+        ctx.globalAlpha = 1; cemoji('💥', s.x, s.y, R * 1.8);
+      }
+      if(this.done || this.wait > 0 && this.boomT > 0.3) return;
+      // arrow in the middle pointing at the holder
+      const to = seat(this.holder), ang = Math.atan2(to.y - cy, to.x - cx);
+      ctx.save(); ctx.translate(cx, cy); ctx.rotate(ang);
+      shape(() => { ctx.moveTo(-R * 0.6, -R * 0.22); ctx.lineTo(R * 0.4, -R * 0.22); ctx.lineTo(R * 0.4, -R * 0.5); ctx.lineTo(R * 1.1, 0); ctx.lineTo(R * 0.4, R * 0.5); ctx.lineTo(R * 0.4, R * 0.22); ctx.lineTo(-R * 0.6, R * 0.22); ctx.closePath(); }, players[this.holder].color, 4);
+      ctx.restore();
+      // the potato flying from the last holder to the new one
+      const a = this.spot(this.from), b = this.spot(this.holder), f = this.fly, e = f * (2 - f);
+      const x = a.x + (b.x - a.x) * e, y = a.y + (b.y - a.y) * e - Math.sin(f * Math.PI) * R * 1.2;
+      ctx.save(); ctx.translate(x, y); ctx.rotate(Math.sin(t * (6 + k * 26)) * (0.08 + k * 0.25));
+      const hot = k > 0.7 && Math.floor(t * 8) % 2;
+      shape(() => ctx.ellipse(0, 0, R * 0.95, R * 0.72, 0.3, 0, TAU), hot ? '#ff7a4d' : '#d99a55', 5);
+      ctx.fillStyle = 'rgba(28,24,56,.35)';
+      [[-0.4, -0.15], [0.25, 0.25], [0.45, -0.25], [-0.1, 0.35]].forEach(d => { ctx.beginPath(); ctx.arc(d[0] * R, d[1] * R, R * 0.08, 0, TAU); ctx.fill(); });
+      ctx.fillStyle = 'rgba(255,255,255,.35)'; ctx.beginPath(); ctx.ellipse(-R * 0.35, -R * 0.35, R * 0.25, R * 0.12, -0.4, 0, TAU); ctx.fill();
+      // fuse + spark
+      ctx.strokeStyle = INK; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(R * 0.55, -R * 0.5); ctx.quadraticCurveTo(R * 0.9, -R * 1.0, R * 0.7, -R * 1.15); ctx.stroke();
+      star(R * 0.7, -R * 1.2, R * (0.22 + Math.random() * 0.1), Math.floor(t * 20) % 2 ? '#ffcd4d' : '#fff7e8');
+      ctx.fillStyle = INK; [-1, 1].forEach(s => { ctx.beginPath(); ctx.arc(s * R * 0.25 - R * 0.05, -R * 0.05, R * 0.09, 0, TAU); ctx.fill(); });
+      ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(-R * 0.05, R * 0.2, R * 0.16, 1.1 * Math.PI, 1.9 * Math.PI); ctx.stroke();
+      ctx.restore();
+    }
+  },
+
+  mycolor: {
+    title:L('لونك بس 🎨', 'Your Color 🎨', 'Senin Rengin 🎨'), help:L('اكبس بس لما الدائرة تصير بلونك! الغلط بيشيل نجمة. أول واحد بيجمع ٣ نجوم بيربح', 'Press only when the circle shows YOUR color! A wrong press loses a star. First to 3 stars wins', 'Sadece daire SENİN renginde olunca bas! Yanlış basış bir yıldız götürür. 3 yıldızı ilk toplayan kazanır'),
+    GOAL:3, LIMIT:45,
+    start(){
+      this.hits = players.map(() => 0); this.done = false; this.time = 0; this.state = 'gap'; this.timer = 0.9;
+      this.col = -9; this.last = -9; this.claimed = -1; this.fb = players.map(() => ({ t:0, ok:true })); this.pen = players.map(() => false);
+      this.decoys = PLAYERS.slice(players.length).map(p => p.color).concat(['#b46cff', '#ffffff']);
+    },
+    color(){ return this.col >= 0 ? players[this.col].color : this.decoys[-this.col - 1]; },
+    update(dt){
+      this.fb.forEach(f => f.t = Math.max(0, f.t - dt));
+      if(ending(this, dt)) return;
+      this.time += dt;
+      if(this.time >= this.LIMIT){ endAfter(this, best(this.hits), 0.3); return; }
+      this.timer -= dt;
+      if(this.timer > 0) return;
+      if(this.state === 'show'){ this.state = 'gap'; this.timer = 0.35 + Math.random() * 0.35; }
+      else {
+        this.state = 'show'; this.claimed = -1; this.pen = players.map(() => false);
+        this.timer = Math.max(0.8, 1.35 - this.time * 0.015);
+        let c; do { c = Math.random() < 0.3 ? -1 - Math.floor(Math.random() * this.decoys.length) : Math.floor(Math.random() * players.length); } while(c === this.last);
+        this.col = this.last = c; SFX.turn();
+      }
+    },
+    press(i){
+      if(this.done) return;
+      const mine = this.state === 'show' && this.col === i;
+      if(mine){
+        if(this.claimed >= 0) return;
+        this.claimed = i; this.hits[i]++; this.fb[i] = { t:0.8, ok:true }; SFX.point(); this.timer = Math.min(this.timer, 0.5);
+        if(this.hits[i] >= this.GOAL) endAfter(this, i, 0.8);
+      } else if(!this.pen[i]){
+        this.pen[i] = true; this.hits[i] = Math.max(0, this.hits[i] - 1); this.fb[i] = { t:0.8, ok:false }; SFX.buzz();
+      }
+    },
+    draw(t){
+      const r = centerRect(), cx = W / 2, cy = H / 2, R = Math.min(r.w, r.h) * 0.3;
+      const on = this.state === 'show', pulse = on ? 1 + Math.sin(t * 12) * 0.03 : 0.94;
+      shape(() => ctx.arc(cx, cy, R * 1.08, 0, TAU), '#2a2452', 6);
+      shape(() => ctx.arc(cx, cy, R * pulse, 0, TAU), on ? this.color() : '#3a3366', 6);
+      ctx.fillStyle = 'rgba(255,255,255,.28)'; ctx.beginPath(); ctx.ellipse(cx - R * 0.35, cy - R * 0.4, R * 0.3, R * 0.15, -0.6, 0, TAU); ctx.fill();
+      if(on && this.claimed >= 0) cemoji('⭐', cx, cy, R * 0.9);
+      else if(!on) cemoji('👀', cx, cy, R * 0.6);
+      players.forEach((p, i) => {
+        const s = seat(i), top = isTop(i), dir = top ? 1 : -1, f = this.fb[i];
+        buddyAt(i, s.x, s.y, R * 0.24, t, f.t > 0 ? (f.ok ? 'happy' : 'sad') : 'idle', { x:(cx - s.x) / W, y:(cy - s.y) / H });
+        for(let k = 0; k < this.GOAL; k++){
+          const sx = s.x + (isLeft(i) ? 1 : -1) * (R * 0.5 + k * R * 0.34);
+          star(sx, s.y, R * 0.15, k < this.hits[i] ? '#ffcd4d' : '#3a3366');
+        }
+        if(f.t > 0) cemoji(f.ok ? '✅' : '❌', s.x, s.y + dir * R * 0.42, R * 0.22);
+      });
+    }
+  },
+
+  pump: {
+    title:L('نفخ البالون 🎈', 'Balloon Pump 🎈', 'Balon Şişir 🎈'), help:L('كل كبسة بتنفخ بالونك. أكبر بالون بيربح… بس دير بالك لا يفقع!', 'Each press pumps up your balloon. The biggest one wins… but don\'t let it pop!', 'Her basış balonunu şişirir. En büyük balon kazanır… ama patlamasın!'),
+    LIMIT:12,
+    start(){
+      this.size = players.map(() => 0); this.popT = players.map(() => 0); this.burst = 16 + Math.floor(Math.random() * 14);
+      this.time = 0; this.done = false; players.forEach(p => p.out = false); refreshButtons();
+    },
+    update(dt){
+      this.popT = this.popT.map((v, i) => players[i].out ? v + dt : 0);
+      if(ending(this, dt)) return;
+      this.time += dt;
+      const a = alive();
+      if(a.length <= 1){ endAfter(this, a.length ? a[0] : null, 1.2); return; }
+      if(this.time >= this.LIMIT){ SFX.go(); endAfter(this, best(this.size.map((v, i) => players[i].out ? null : v)), 0.6); }
+    },
+    press(i){
+      if(this.done || players[i].out) return;
+      this.size[i]++; SFX.tap(i, this.size[i]);
+      if(this.size[i] > this.burst){
+        players[i].out = true; refreshButtons(); SFX.pop();
+        setMsg(L('بالون ' + players[i].name + ' فقع! 💥', players[i].name + '\'s balloon popped! 💥', players[i].name + ' balonunu patlattı! 💥'));
+      }
+    },
+    draw(t){
+      const r = centerRect(), cx = W / 2, cy = H / 2, rmax = Math.min(r.w / 2, r.h / 2) * 0.46, rmin = rmax * 0.22;
+      players.forEach((p, i) => {
+        const qx = isLeft(i) ? r.x + r.w / 4 : r.x + r.w * 3 / 4, qy = isTop(i) ? r.y + r.h / 4 : r.y + r.h * 3 / 4;
+        const k = Math.min(1, this.size[i] / 30), R = rmin + (rmax - rmin) * k, near = !p.out && this.size[i] >= this.burst - 4;
+        ctx.save(); ctx.translate(qx, qy); if(isTop(i)) ctx.rotate(Math.PI);
+        if(near) ctx.translate(Math.sin(t * 40) * 3, Math.cos(t * 33) * 2);
+        // string down to the player's side
+        ctx.strokeStyle = '#fff7e8'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(0, R); for(let y = 0; y < r.h / 4 - 10; y += 8) ctx.lineTo(Math.sin(y * 0.15 + t * 3) * 4, R + y); ctx.stroke();
+        if(p.out){
+          const e = Math.min(1, this.popT[i] * 3);
+          ctx.globalAlpha = 1 - e * 0.6;
+          for(let k2 = 0; k2 < 7; k2++){ const a = k2 * TAU / 7, d = R * (0.3 + e * 0.9); shape(() => ctx.ellipse(Math.cos(a) * d, Math.sin(a) * d, rmin * 0.35, rmin * 0.18, a, 0, TAU), p.color, 3); }
+          ctx.globalAlpha = 1;
+          if(this.popT[i] < 0.6) cemoji('💥', 0, 0, rmax);
+          drawBuddy(ctx, 0, R + r.h / 4 - 30, 18, GREY, t, 'sad');
+        } else {
+          shape(() => { ctx.moveTo(0, R * 0.92); ctx.lineTo(-R * 0.12, R * 1.08); ctx.lineTo(R * 0.12, R * 1.08); ctx.closePath(); }, p.dark, 3);
+          shape(() => ctx.ellipse(0, 0, R * 0.86, R, 0, 0, TAU), near && Math.floor(t * 10) % 2 ? '#fff0f0' : p.color, 5);
+          ctx.fillStyle = 'rgba(255,255,255,' + (near ? 0.6 : 0.35) + ')';
+          ctx.beginPath(); ctx.ellipse(-R * 0.35, -R * 0.45, R * 0.18, R * 0.3, 0.5, 0, TAU); ctx.fill();
+          // a little face
+          ctx.fillStyle = INK; [-1, 1].forEach(s => { ctx.beginPath(); ctx.arc(s * R * 0.25, -R * 0.08, Math.max(2, R * 0.07), 0, TAU); ctx.fill(); });
+          ctx.strokeStyle = INK; ctx.lineWidth = Math.max(2, R * 0.05);
+          ctx.beginPath(); if(near) ctx.arc(0, R * 0.25, R * 0.12, 0, TAU); else ctx.arc(0, R * 0.12, R * 0.18, 0.15 * Math.PI, 0.85 * Math.PI); ctx.stroke();
+          if(near) cemoji('😬', R * 0.7, -R * 0.8, R * 0.35);
+        }
+        ctx.restore();
+      });
+      clock(cx, cy, Math.min(W, H) * 0.06, 1 - this.time / this.LIMIT);
+    }
+  },
+
+  jumprope: {
+    title:L('نط الحبل 🪢', 'Jump Rope 🪢', 'İp Atlama 🪢'), help:L('الحبل عم يلف! اكبس لتنط لما يوصل لعندك', 'The rope is spinning! Press to jump when it reaches you', 'İp dönüyor! Sana gelince zıplamak için bas'),
+    AIR:0.55, LIMIT:45,
+    start(){
+      this.a = -Math.PI / 2; this.w = 1.1; this.time = 0; this.done = false;
+      this.j = players.map(() => ({ air:0, cd:0, hit:0 })); players.forEach(p => p.out = false); refreshButtons();
+    },
+    geo(){ const r = centerRect(), Rb = Math.min(r.w, r.h) * 0.36; return { Rb, L: Rb * 1.32 }; },
+    ang(i){ const s = seat(i); return Math.atan2(s.y - H / 2, s.x - W / 2); },
+    update(dt){
+      this.j.forEach(j => { if(j.hit) j.hit += dt; });
+      if(ending(this, dt)) return;
+      this.time += dt; this.w = Math.min(5.5, 1.1 + this.time * 0.13);
+      const a0 = this.a; this.a += this.w * dt;
+      this.j.forEach((j, i) => {
+        j.air = Math.max(0, j.air - dt); if(j.air === 0) j.cd = Math.max(0, j.cd - dt);
+        if(players[i].out) return;
+        const th = this.ang(i);
+        if(Math.floor((this.a - th) / TAU) !== Math.floor((a0 - th) / TAU) && j.air <= 0){
+          players[i].out = true; j.hit = 0.001; refreshButtons(); SFX.buzz();
+          setMsg(L('الحبل ضرب ' + players[i].name + '! 😵', 'The rope hit ' + players[i].name + '! 😵', 'İp ' + players[i].name + ' oyuncusuna çarptı! 😵'));
+        }
+      });
+      const al = alive();
+      if(al.length <= 1){ endAfter(this, al.length ? al[0] : null, 1.2); return; }
+      if(this.time >= this.LIMIT) endAfter(this, al, 0.5);
+    },
+    press(i){
+      const j = this.j[i]; if(this.done || players[i].out || j.air > 0 || j.cd > 0) return;
+      j.air = this.AIR; j.cd = 0.3; SFX.jump(i);
+    },
+    draw(t){
+      const cx = W / 2, cy = H / 2, g = this.geo();
+      // floor circle
+      ctx.fillStyle = 'rgba(255,255,255,.06)'; ctx.beginPath(); ctx.arc(cx, cy, g.L + 10, 0, TAU); ctx.fill();
+      ctx.strokeStyle = 'rgba(255,255,255,.14)'; ctx.setLineDash([8, 10]); ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(cx, cy, g.Rb, 0, TAU); ctx.stroke(); ctx.setLineDash([]);
+      // warning glow under players the rope is about to reach
+      players.forEach((p, i) => {
+        if(p.out) return;
+        const th = this.ang(i), ahead = ((th - this.a) % TAU + TAU) % TAU, x = cx + Math.cos(th) * g.Rb, y = cy + Math.sin(th) * g.Rb;
+        if(ahead < 1.0){ ctx.fillStyle = 'rgba(255,90,95,' + (0.55 * (1 - ahead)) + ')'; ctx.beginPath(); ctx.arc(x, y, 40, 0, TAU); ctx.fill(); }
+      });
+      // rope with a motion trail
+      const ropeAt = (a, w, col) => {
+        ctx.strokeStyle = col; ctx.lineWidth = w; ctx.lineCap = 'round';
+        ctx.beginPath(); ctx.moveTo(cx, cy);
+        const bend = -0.18, mx = cx + Math.cos(a + bend) * g.L * 0.55, my = cy + Math.sin(a + bend) * g.L * 0.55;
+        ctx.quadraticCurveTo(mx, my, cx + Math.cos(a) * g.L, cy + Math.sin(a) * g.L); ctx.stroke();
+      };
+      for(let k = 4; k >= 1; k--){ ctx.globalAlpha = 0.12 * (5 - k) / 4; ropeAt(this.a - k * 0.09 * this.w / 2, 10, '#ff8a3d'); }
+      ctx.globalAlpha = 1; ropeAt(this.a, 14, INK); ropeAt(this.a, 8, '#ff8a3d');
+      shape(() => ctx.arc(cx + Math.cos(this.a) * g.L, cy + Math.sin(this.a) * g.L, 9, 0, TAU), '#ffcd4d', 4);
+      shape(() => ctx.arc(cx, cy, 18, 0, TAU), '#b46cff', 5);
+      ctx.fillStyle = '#fff7e8'; ctx.beginPath(); ctx.arc(cx, cy, 6, 0, TAU); ctx.fill();
+      // buddies
+      players.forEach((p, i) => {
+        const th = this.ang(i), x = cx + Math.cos(th) * g.Rb, y = cy + Math.sin(th) * g.Rb, j = this.j[i];
+        const h = j.air > 0 ? Math.sin(Math.PI * (1 - j.air / this.AIR)) : 0;
+        if(h > 0){ ctx.fillStyle = 'rgba(0,0,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y + (isTop(i) ? -26 : 26), 22 * (1 - h * 0.4), 7, 0, 0, TAU); ctx.fill(); }
+        buddyAt(i, x, y, 26 * (1 + h * 0.25), t * (h ? 2 : 1), h > 0 ? 'happy' : 'idle', { x:0, y:0 }, h * 30);
+        if(j.hit && j.hit < 0.8) cemoji('💫', x, y + (isTop(i) ? 40 : -40), 34);
+      });
+    }
+  },
+
+  birds: {
+    title:L('الطيور الطايرة 🐤', 'Flappy Birds 🐤', 'Uçan Kuşlar 🐤'), help:L('اكبس ليطير عصفورك، ولا تخبط بالأنابيب! آخر عصفور طاير بيربح', 'Press to flap your bird. Don\'t bump the pipes! The last bird flying wins', 'Kuşunu uçurmak için bas. Borulara çarpma! En son uçan kuş kazanır'),
+    BX:0.2, BR:0.05, HIT:0.036, PW:0.15, LIMIT:45,
+    start(){
+      this.scroll = 0; this.time = 0; this.done = false; this.speed = 0.28;
+      this.pipes = []; let x = 1.25;
+      for(let k = 0; k < 60; k++){ const gap = Math.max(0.3, 0.46 - k * 0.007); this.pipes.push({ x, gy: 0.28 + Math.random() * 0.44, gap }); x += 0.85; }
+      this.b = players.map(() => ({ y:0.5, vy:0, on:false, dead:0 })); players.forEach(p => p.out = false); refreshButtons();
+    },
+    cell(i){ const r = centerRect(), w = r.w / 2 - 5, h = r.h / 2 - 5; return { x: isLeft(i) ? r.x : r.x + r.w / 2 + 5, y: isTop(i) ? r.y : r.y + r.h / 2 + 5, w, h }; },
+    update(dt){
+      if(ending(this, dt)){ this.b.forEach(b => { if(b.dead){ b.dead += dt; b.vy = Math.min(1.2, b.vy + 2.5 * dt); b.y = Math.min(1.3, b.y + b.vy * dt); } }); return; }
+      this.time += dt; this.speed = Math.min(0.42, 0.28 + this.time * 0.004); this.scroll += this.speed * dt;
+      const bx = this.scroll + this.BX;
+      this.b.forEach((b, i) => {
+        if(players[i].out){ b.dead += dt; b.vy = Math.min(1.2, b.vy + 2.5 * dt); b.y = Math.min(1.3, b.y + b.vy * dt); return; }
+        if(!b.on && this.time > 2.5) b.on = true;
+        if(!b.on){ b.y = 0.5 + Math.sin(this.time * 4 + i) * 0.03; return; }
+        b.vy = Math.min(0.8, b.vy + 1.4 * dt); b.y += b.vy * dt;
+        if(b.y < this.BR){ b.y = this.BR; b.vy = 0; }
+        let hit = b.y > 1 - this.BR;
+        for(const p of this.pipes){
+          if(p.x - this.PW / 2 > bx + this.HIT) break;
+          if(p.x + this.PW / 2 < bx - this.HIT) continue;
+          if(b.y - this.HIT < p.gy - p.gap / 2 || b.y + this.HIT > p.gy + p.gap / 2) hit = true;
+        }
+        if(hit){
+          players[i].out = true; b.dead = 0.001; b.vy = -0.3; refreshButtons(); SFX.buzz();
+          setMsg(L('عصفور ' + players[i].name + ' خبط! 💫', players[i].name + '\'s bird bumped! 💫', players[i].name + ' kuşu çarptı! 💫'));
+        }
+      });
+      const al = alive();
+      if(al.length <= 1){ endAfter(this, al.length ? al[0] : null, 1.2); return; }
+      if(this.time >= this.LIMIT) endAfter(this, al, 0.5);
+    },
+    press(i){
+      const b = this.b[i]; if(this.done || players[i].out) return;
+      b.on = true; b.vy = -0.55; SFX.flap(i);
+    },
+    draw(t){
+      const r = centerRect();
+      // empty corners (fewer than 4 players)
+      [0, 1, 2, 3].forEach(i => {
+        if(i < players.length) return;
+        const c = this.cell(i); ctx.fillStyle = 'rgba(255,255,255,.04)'; ctx.beginPath(); rrect(c.x, c.y, c.w, c.h, 16); ctx.fill();
+      });
+      players.forEach((p, i) => {
+        const c = this.cell(i), s = c.h, b = this.b[i];
+        ctx.save(); ctx.translate(c.x + c.w / 2, c.y + c.h / 2); if(isTop(i)) ctx.rotate(Math.PI); ctx.translate(-c.w / 2, -c.h / 2);
+        ctx.beginPath(); rrect(0, 0, c.w, c.h, 16); ctx.save(); ctx.clip();
+        const sky = ctx.createLinearGradient(0, 0, 0, c.h); sky.addColorStop(0, '#7fd3ff'); sky.addColorStop(1, '#c9f0ff');
+        ctx.fillStyle = sky; ctx.fillRect(0, 0, c.w, c.h);
+        // clouds
+        ctx.fillStyle = 'rgba(255,255,255,.85)';
+        for(let k = 0; k < 3; k++){ const x = ((k * 0.5 - this.scroll * 0.3) % 1.5 + 1.5) % 1.5 * s - 0.2 * s, y = (0.15 + k * 0.22) * s; ctx.beginPath(); ctx.arc(x, y, 0.06 * s, 0, TAU); ctx.arc(x + 0.07 * s, y - 0.02 * s, 0.07 * s, 0, TAU); ctx.arc(x + 0.14 * s, y, 0.05 * s, 0, TAU); ctx.fill(); }
+        // pipes
+        for(const pp of this.pipes){
+          const x = (pp.x - this.scroll) * s;
+          if(x < -this.PW * s) continue; if(x > c.w + this.PW * s) break;
+          const pw = this.PW * s, top = (pp.gy - pp.gap / 2) * s, bot = (pp.gy + pp.gap / 2) * s;
+          shape(() => rrect(x - pw / 2, -10, pw, top + 10, 6), '#3fd47a', 4);
+          shape(() => rrect(x - pw / 2 - 5, top - 16, pw + 10, 16, 5), '#249c55', 4);
+          shape(() => rrect(x - pw / 2, bot, pw, c.h - bot + 10, 6), '#3fd47a', 4);
+          shape(() => rrect(x - pw / 2 - 5, bot, pw + 10, 16, 5), '#249c55', 4);
+        }
+        // ground
+        ctx.fillStyle = '#8d6e63'; ctx.fillRect(0, c.h - 6, c.w, 6);
+        // bird
+        const by = b.y * s, bx = this.BX * s, br = this.BR * s;
+        ctx.save(); ctx.translate(bx, by); ctx.rotate(Math.max(-0.5, Math.min(1.2, b.vy * 1.1)) + (b.dead ? b.dead * 6 : 0));
+        drawBuddy(ctx, 0, 0, br * 1.25, p.out ? GREY : p, t + i, p.out ? 'sad' : 'happy', { x:1, y:0 });
+        const wing = Math.sin(t * (b.on && !p.out ? 25 : 8)) * 0.5;
+        shape(() => ctx.ellipse(-br * 0.6, br * 0.1, br * 0.6, br * 0.32, wing, 0, TAU), '#fff7e8', 3);
+        shape(() => { ctx.moveTo(br * 1.0, -br * 0.05); ctx.lineTo(br * 1.55, br * 0.15); ctx.lineTo(br * 1.0, br * 0.35); ctx.closePath(); }, '#ff8a3d', 3);
+        ctx.restore();
+        if(!b.on && !p.out) ctext('👆', bx, by - br * 2.6, br * 1.6);
+        if(p.out){ ctx.fillStyle = 'rgba(28,24,56,.35)'; ctx.fillRect(0, 0, c.w, c.h); }
+        ctx.restore();
+        // frame in the player's colour
+        ctx.beginPath(); rrect(0, 0, c.w, c.h, 16); ctx.lineWidth = 6; ctx.strokeStyle = p.out ? '#5d5880' : p.color; ctx.stroke();
+        ctx.restore();
+      });
+    }
+  },
+
+  fishing: {
+    title:L('صيد السمك 🎣', 'Fishing 🎣', 'Balık Tutma 🎣'), help:L('اكبس لترمي صنارتك بالبركة. أول واحد بيصيد ٥ سمكات بيربح', 'Press to drop your hook into the pond. First to catch 5 fish wins', 'Oltanı gölete atmak için bas. 5 balığı ilk tutan kazanır'),
+    GOAL:5, LIMIT:30, COLORS:['#ff8a3d', '#ff7eb6', '#b46cff', '#3fe0d0', '#ffcd4d'],
+    start(){
+      this.time = 0; this.done = false; this.caught = players.map(() => 0); this.fb = players.map(() => 0);
+      this.hooks = players.map(() => ({ d:0, st:'idle', fish:null }));
+      this.fish = []; for(let k = 0; k < 7; k++) this.fish.push(this.newFish());
+    },
+    newFish(){
+      const a = Math.random() * TAU, d = Math.sqrt(Math.random()) * 0.7, h = Math.random() * TAU;
+      return { u:Math.cos(a) * d, v:Math.sin(a) * d, h, sp:0.18 + Math.random() * 0.14, turn:(Math.random() - 0.5) * 1.2, c:this.COLORS[Math.floor(Math.random() * this.COLORS.length)], on:-1, wig:Math.random() * 9 };
+    },
+    pond(){ const r = centerRect(); return { x:W / 2, y:H / 2, rx:r.w * 0.47, ry:Math.min(r.h * 0.42, r.w * 0.72) }; },
+    dir(i){ const P = this.pond(), s = seat(i), dx = (s.x - P.x) / P.rx, dy = (s.y - P.y) / P.ry, m = Math.hypot(dx, dy); return { x:dx / m, y:dy / m }; },
+    hookPos(i){ const P = this.pond(), d = this.dir(i), k = 1 - 0.92 * this.hooks[i].d; return { x:P.x + d.x * k * P.rx, y:P.y + d.y * k * P.ry }; },
+    update(dt){
+      this.fb = this.fb.map(v => Math.max(0, v - dt));
+      const P = this.pond();
+      this.fish.forEach(f => {
+        f.wig += dt * 8;
+        if(f.on >= 0) return;
+        f.turn += (Math.random() - 0.5) * dt * 3; f.turn = Math.max(-1.2, Math.min(1.2, f.turn)); f.h += f.turn * dt;
+        f.u += Math.cos(f.h) * f.sp * dt; f.v += Math.sin(f.h) * f.sp * dt;
+        if(Math.hypot(f.u, f.v) > 0.78){ f.h = Math.atan2(-f.v, -f.u) + (Math.random() - 0.5); const m = Math.hypot(f.u, f.v); f.u *= 0.78 / m; f.v *= 0.78 / m; }
+      });
+      if(ending(this, dt)) return;
+      this.time += dt;
+      this.hooks.forEach((h, i) => {
+        if(h.st === 'down'){ h.d += dt * 1.3; if(h.d >= 1){ h.d = 1; h.st = 'up'; } }
+        else if(h.st === 'up'){
+          h.d -= dt * (h.fish ? 1.4 : 1.8);
+          if(h.d <= 0){
+            h.d = 0; h.st = 'idle';
+            if(h.fish){ this.fish.splice(this.fish.indexOf(h.fish), 1); this.fish.push(this.newFish()); h.fish = null; this.caught[i]++; this.fb[i] = 0.9; SFX.point();
+              if(this.caught[i] >= this.GOAL){ endAfter(this, i, 0.7); return; } }
+          }
+        }
+        if(h.st !== 'idle' && !h.fish){
+          const hp = this.hookPos(i);
+          for(const f of this.fish){
+            if(f.on >= 0) continue;
+            const fx = P.x + f.u * P.rx, fy = P.y + f.v * P.ry;
+            if(Math.hypot(fx - hp.x, fy - hp.y) < Math.min(W, H) * 0.06){ f.on = i; h.fish = f; h.st = 'up'; tone(700 + i * 50, .12, 'sine', .1, 0, 1000); break; }
+          }
+        }
+        if(h.fish){ const hp = this.hookPos(i); h.fish.u = (hp.x - P.x) / P.rx; h.fish.v = (hp.y - P.y) / P.ry; }
+      });
+      if(!this.done && this.time >= this.LIMIT){ SFX.go(); endAfter(this, best(this.caught), 0.6); }
+    },
+    press(i){ const h = this.hooks[i]; if(this.done || h.st !== 'idle') return; h.st = 'down'; tone(500, .1, 'sine', .07, 0, 250); },
+    draw(t){
+      const P = this.pond(), U = Math.min(W, H);
+      // pond
+      shape(() => ctx.ellipse(P.x, P.y, P.rx + 14, P.ry + 14, 0, 0, TAU), '#7cc576', 5);
+      shape(() => ctx.ellipse(P.x, P.y, P.rx, P.ry, 0, 0, TAU), '#3fa9ff', 5);
+      ctx.strokeStyle = 'rgba(255,255,255,.25)'; ctx.lineWidth = 3;
+      for(let k = 1; k <= 2; k++){ ctx.beginPath(); ctx.ellipse(P.x, P.y, P.rx * (0.3 * k + Math.sin(t + k) * 0.03), P.ry * (0.3 * k + Math.sin(t + k) * 0.03), 0, 0, TAU); ctx.stroke(); }
+      [[-0.55, 0.05], [0.6, -0.1]].forEach(l => shape(() => { const x = P.x + l[0] * P.rx, y = P.y + l[1] * P.ry; ctx.moveTo(x, y); ctx.arc(x, y, U * 0.05, 0.3, TAU - 0.3); ctx.closePath(); }, '#3fd47a', 3));
+      clock(P.x, P.y, U * 0.045, 1 - this.time / this.LIMIT);
+      // fish
+      this.fish.forEach(f => {
+        const x = P.x + f.u * P.rx, y = P.y + f.v * P.ry, s = U * 0.035;
+        ctx.save(); ctx.translate(x, y); ctx.rotate(f.on >= 0 ? Math.sin(f.wig * 2) * 0.6 : f.h); if(f.on < 0 && Math.cos(f.h) < 0) ctx.scale(1, -1);
+        shape(() => { ctx.moveTo(-s * 0.9, 0); ctx.lineTo(-s * 1.6, -s * 0.6 + Math.sin(f.wig) * s * 0.15); ctx.lineTo(-s * 1.6, s * 0.6 + Math.sin(f.wig) * s * 0.15); ctx.closePath(); }, f.c, 3);
+        shape(() => ctx.ellipse(0, 0, s * 1.05, s * 0.62, 0, 0, TAU), f.c, 3);
+        ctx.fillStyle = '#fff'; ctx.beginPath(); ctx.arc(s * 0.45, -s * 0.12, s * 0.2, 0, TAU); ctx.fill();
+        ctx.fillStyle = INK; ctx.beginPath(); ctx.arc(s * 0.5, -s * 0.12, s * 0.1, 0, TAU); ctx.fill();
+        ctx.restore();
+      });
+      // rods, lines, hooks and scores
+      players.forEach((p, i) => {
+        const d = this.dir(i), rim = { x:P.x + d.x * P.rx, y:P.y + d.y * P.ry }, hp = this.hookPos(i), s = seat(i);
+        const base = { x:rim.x + d.x * U * 0.12, y:rim.y + d.y * U * 0.12 }, tip = { x:rim.x - d.x * U * 0.02, y:rim.y - d.y * U * 0.02 };
+        ctx.strokeStyle = INK; ctx.lineWidth = 9; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(tip.x, tip.y); ctx.stroke();
+        ctx.strokeStyle = p.dark; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(base.x, base.y); ctx.lineTo(tip.x, tip.y); ctx.stroke();
+        ctx.strokeStyle = 'rgba(255,255,255,.8)'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tip.x, tip.y); ctx.lineTo(hp.x, hp.y); ctx.stroke();
+        shape(() => ctx.arc(hp.x, hp.y, U * 0.018, 0, TAU), p.color, 3);
+        ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(hp.x, hp.y + U * 0.03, U * 0.012, 0, Math.PI); ctx.stroke();
+        buddyAt(i, s.x, s.y, U * 0.055, t, this.fb[i] > 0 ? 'happy' : 'idle', { x:-d.x, y:-d.y });
+        const lx = s.x + (isLeft(i) ? 1 : -1) * U * 0.14, ly = s.y;
+        cemoji('🐟', lx, ly - (isTop(i) ? -1 : 1) * U * 0.035, U * 0.06, isTop(i) ? Math.PI : 0);
+        ctext(AR(this.caught[i]), lx, ly + (isTop(i) ? -1 : 1) * U * 0.04, U * 0.07, p.color, isTop(i));
+      });
+    }
+  },
+
+  stop10: {
+    title:L('وقّف على ١٠ ⏱️', 'Stop at 10 ⏱️', '10\'da Dur ⏱️'), help:L('الساعة رح تختفي! عدّ براسك واكبس مرة وحدة لما تحس إنه مرقت ١٠ ثواني', 'The clock will hide! Count in your head and press once when you think 10 seconds have passed', 'Saat gizlenecek! İçinden say ve 10 saniye geçti sanınca bir kez bas'),
+    start(){ this.time = 0; this.done = false; this.at = players.map(() => null); this.reveal = 0; this.wins = []; },
+    update(dt){
+      if(ending(this, dt)) return;
+      this.time += dt;
+      if(this.reveal){
+        this.reveal += dt;
+        if(this.reveal > 3.4) endAfter(this, this.wins.length ? this.wins : null, 0);
+        return;
+      }
+      if(this.at.every(v => v != null) || this.time >= 15){
+        this.reveal = 0.001; setMsg(''); SFX.point();
+        const diff = this.at.map(v => v == null ? null : Math.round(Math.abs(Math.round(v * 10) / 10 - 10) * 10));
+        const m = Math.min(...diff.filter(v => v != null));
+        this.wins = isFinite(m) ? diff.map((v, i) => v === m ? i : -1).filter(i => i >= 0) : [];
+      }
+    },
+    press(i){ if(this.done || this.reveal || this.at[i] != null) return; this.at[i] = this.time; SFX.tap(i, 6); },
+    draw(t){
+      const r = centerRect(), cx = W / 2, cy = H / 2, U = Math.min(r.w, r.h), R = U * 0.26;
+      shape(() => ctx.arc(cx, cy, R, 0, TAU), '#fff7e8', 7);
+      ctx.strokeStyle = INK; ctx.lineWidth = 3;
+      for(let k = 0; k < 12; k++){ const a = k * TAU / 12; ctx.beginPath(); ctx.moveTo(cx + Math.cos(a) * R * 0.82, cy + Math.sin(a) * R * 0.82); ctx.lineTo(cx + Math.cos(a) * R * 0.92, cy + Math.sin(a) * R * 0.92); ctx.stroke(); }
+      const shown = this.time < 3 || this.reveal;
+      if(shown){
+        const v = this.reveal ? 10 : this.time, a = -Math.PI / 2 + (v % 10) / 10 * TAU;
+        ctx.strokeStyle = '#ff5a5f'; ctx.lineWidth = 6; ctx.lineCap = 'round'; ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + Math.cos(a) * R * 0.72, cy + Math.sin(a) * R * 0.72); ctx.stroke();
+      }
+      shape(() => ctx.arc(cx, cy, 8, 0, TAU), INK, 2);
+      const label = this.reveal ? fmt1(10) : this.time < 3 ? fmt1(this.time) : '?';
+      [false, true].forEach(f => ctext(label, cx, cy + (f ? -1 : 1) * R * 0.5, R * (this.time < 3 || this.reveal ? 0.36 : 0.5), this.time < 3 || this.reveal ? INK : '#b46cff', f));
+      if(!shown) cemoji('🙈', cx, cy, R * 0.5);
+      players.forEach((p, i) => {
+        const s = seat(i), top = isTop(i), dir = top ? -1 : 1, v = this.at[i], win = this.reveal && this.wins.includes(i);
+        buddyAt(i, s.x, s.y + dir * U * 0.02, U * 0.08, t, win ? 'happy' : v != null ? 'happy' : 'idle', { x:0, y:0 });
+        if(win) cemoji('👑', s.x, s.y - dir * U * 0.15, U * 0.09, top ? Math.PI : 0);
+        const lx = s.x + (isLeft(i) ? 1 : -1) * U * 0.2;
+        if(this.reveal){
+          const pop = Math.min(1, this.reveal * 3);
+          ctext(v == null ? '—' : fmt1(Math.round(v * 10) / 10), lx, s.y, U * 0.11 * pop, win ? '#ffcd4d' : p.color, top);
+        } else if(v != null) cemoji('✋', lx, s.y, U * 0.09, top ? Math.PI : 0);
+        else ctext('…', lx, s.y, U * 0.09, p.color, top);
+      });
+    }
+  },
+
+  chairs: {
+    title:L('الكراسي الموسيقية 🪑', 'Musical Chairs 🪑', 'Müzikli Sandalyeler 🪑'), help:L('ارقصوا مع الموسيقى! لما توقف اكبس بسرعة لتقعد. اللي بيكبس والموسيقى شغالة بيطلع', 'Dance to the music! When it stops, press fast to sit. Press while the music plays and you are out', 'Müzikle dans edin! Müzik durunca oturmak için hızlıca bas. Müzik çalarken basan elenir'),
+    TUNE:[523, 659, 784, 659, 587, 698, 880, 698, 523, 659, 784, 1046, 988, 784, 659, 587],
+    start(){ this.done = false; players.forEach(p => p.out = false); refreshButtons(); this.rot = 0; this.newRound(); },
+    newRound(){ this.state = 'music'; this.timer = 3 + Math.random() * 4.5; this.beat = 0; this.bt = 0; this.order = []; this.seatOf = players.map(() => -1); this.nChairs = Math.max(1, alive().length - 1); },
+    update(dt){
+      if(ending(this, dt)) return;
+      if(this.state === 'music'){
+        this.rot += dt * 1.3; this.bt -= dt;
+        if(this.bt <= 0){ this.bt = 0.21; SFX.note(this.TUNE[this.beat % this.TUNE.length]); this.beat++; }
+        this.timer -= dt;
+        if(this.timer <= 0){ this.state = 'stop'; this.timer = 3; setMsg(L('اقعدوا! 🪑', 'Sit down! 🪑', 'Oturun! 🪑')); SFX.go(); }
+      } else if(this.state === 'stop'){
+        this.timer -= dt;
+        if(this.order.length >= this.nChairs || this.timer <= 0) this.judge();
+      } else if(this.state === 'pause'){
+        this.timer -= dt;
+        if(this.timer <= 0){ setMsg(''); this.newRound(); }
+      }
+    },
+    judge(){
+      const al = alive(), late = al.filter(i => this.seatOf[i] < 0);
+      this.state = 'pause'; this.timer = 1.8;
+      if(late.length === al.length){ setMsg(L('ما حدا قعد! كمان مرة', 'Nobody sat! Again', 'Kimse oturmadı! Tekrar')); return; }
+      late.forEach(i => players[i].out = true); refreshButtons(); SFX.buzz();
+      const names = late.map(i => players[i].name).join(L(' و', ' and ', ' ve '));
+      setMsg(L(names + ' ما لحق كرسي 😅', names + ' didn\'t get a chair 😅', names + ' sandalye kapamadı 😅'));
+      const left = alive(); if(left.length <= 1) endAfter(this, left.length ? left[0] : null, 1.6);
+    },
+    press(i){
+      if(this.done || players[i].out) return;
+      if(this.state === 'music'){
+        players[i].out = true; refreshButtons(); SFX.buzz();
+        setMsg(L(players[i].name + ' كبس والموسيقى شغالة! 😅', players[i].name + ' pressed during the music! 😅', players[i].name + ' müzik çalarken bastı! 😅'));
+        const left = alive(); if(left.length <= 1){ endAfter(this, left.length ? left[0] : null, 1.6); return; }
+        this.nChairs = Math.max(1, left.length - 1);
+      } else if(this.state === 'stop' && this.seatOf[i] < 0 && this.order.length < this.nChairs){
+        this.seatOf[i] = this.order.length; this.order.push(i); SFX.tap(i, 8);
+      }
+    },
+    chairPos(k, n){
+      const r = centerRect(), Rc = n === 1 ? 0 : Math.min(r.w, r.h) * 0.15, a = -Math.PI / 2 + k * TAU / n;
+      return { x:W / 2 + Math.cos(a) * Rc, y:H / 2 + Math.sin(a) * Rc, a };
+    },
+    draw(t){
+      const r = centerRect(), U = Math.min(r.w, r.h), cs = U * 0.07, music = this.state === 'music';
+      // dance floor
+      ctx.fillStyle = 'rgba(255,255,255,.05)'; ctx.beginPath(); ctx.arc(W / 2, H / 2, U * 0.45, 0, TAU); ctx.fill();
+      for(let k = 0; k < this.nChairs; k++){
+        const c = this.chairPos(k, this.nChairs);
+        ctx.save(); ctx.translate(c.x, c.y); ctx.rotate(c.a + Math.PI / 2);
+        shape(() => rrect(-cs, -cs * 1.5, cs * 2, cs * 0.6, 6), '#a0522d', 4);
+        shape(() => rrect(-cs, -cs * 0.8, cs * 2, cs * 1.7, 8), '#d98a4e', 4);
+        ctx.restore();
+      }
+      const n = players.length;
+      players.forEach((p, i) => {
+        if(p.out){ const s = seat(i); buddyAt(i, s.x, s.y, U * 0.06, t, 'sad'); return; }
+        let x, y, lift = 0;
+        if(this.seatOf[i] >= 0){ const c = this.chairPos(this.seatOf[i], this.nChairs); x = c.x; y = c.y; }
+        else { const a = -Math.PI / 2 + i * TAU / n + this.rot; x = W / 2 + Math.cos(a) * U * 0.36; y = H / 2 + Math.sin(a) * U * 0.36; if(music) lift = Math.abs(Math.sin(t * 7 + i)) * 10; }
+        buddyAt(i, x, y, U * 0.065, music ? t * 1.6 : t, this.seatOf[i] >= 0 ? 'happy' : music ? 'happy' : 'idle', { x:0, y:0 }, lift);
+      });
+      if(music){
+        for(let k = 0; k < 4; k++){ const a = t * 0.8 + k * TAU / 4, rr = U * (0.22 + 0.05 * Math.sin(t * 2 + k)); ctext(k % 2 ? '♪' : '♫', W / 2 + Math.cos(a) * rr, H / 2 + Math.sin(a) * rr, U * 0.08, ['#ffcd4d', '#ff7eb6', '#3fe0d0', '#b46cff'][k], false); }
+      }
+    }
   }
+
 };
-const ORDER = ['reaction','race','lava','tug'];
+const ORDER = ['reaction','race','lava','tug','potato','mycolor','pump','jumprope','birds','fishing','stop10','chairs'];
 
 /* ---------- Match flow ---------- */
 let phase = 'menu', game = null, phaseTime = 0, queue = [], lastGame = null, countdown = 0;
@@ -382,8 +975,8 @@ function nextGame(){
   if(!queue.length){ queue = ORDER.slice().sort(() => Math.random() - 0.5); if(queue[0] === lastGame) queue.push(queue.shift()); }
   lastGame = queue.shift(); game = GAMES[lastGame];
   players.forEach(p => p.out = false); refreshButtons();
-  phase = 'intro'; phaseTime = 2.8; setMsg(game.title, game.help); say(game.title.replace(/[^\p{L}\p{M}\p{N} ]/gu, '').trim());
   if(game.start && lastGame !== 'reaction') game.start(); // show the board during intro
+  phase = 'intro'; phaseTime = 2.8; setMsg(game.title, game.help); say(game.title.replace(/[^\p{L}\p{M}\p{N} ]/gu, '').trim());
 }
 function press(i){ if(phase === 'play' && game) game.press(i); }
 function finish(winner){
@@ -448,6 +1041,14 @@ function showMenu(){
       '<li><span>🏁</span><span>' + L('<b>سباق الكبس:</b> اكبس بسرعة لتوصل العلم', '<b>Tap Race:</b> press fast to get to the flag', '<b>Basma Yarışı:</b> bayrağa varmak için hızlı bas') + '</span></li>' +
       '<li><span>🌋</span><span>' + L('<b>أرض الحمم:</b> كل كبسة بتلفّك، لا توقع بالحمم', '<b>Lava Floor:</b> each press turns you, don\'t fall in the lava', '<b>Lav Zemini:</b> her basış seni döndürür, lava düşme') + '</span></li>' +
       '<li><span>🪢</span><span>' + L('<b>شد الحبل:</b> اللي تحت ضد اللي فوق', '<b>Tug of War:</b> bottom side against top side', '<b>Halat Çekme:</b> alttakiler üsttekilere karşı') + '</span></li>' +
+      '<li><span>🥔</span><span>' + L('<b>البطاطا السخنة:</b> مرّق البطاطا قبل ما تفرقع', '<b>Hot Potato:</b> pass the potato before it goes boom', '<b>Sıcak Patates:</b> patlamadan patatesi yanındakine ver') + '</span></li>' +
+      '<li><span>🎨</span><span>' + L('<b>لونك بس:</b> اكبس بس لما تشوف لونك', '<b>Your Color:</b> press only when you see your color', '<b>Senin Rengin:</b> sadece kendi rengini görünce bas') + '</span></li>' +
+      '<li><span>🎈</span><span>' + L('<b>نفخ البالون:</b> انفخ كتير بس لا تفقّعه', '<b>Balloon Pump:</b> pump it big, but don\'t pop it', '<b>Balon Şişir:</b> kocaman şişir ama patlatma') + '</span></li>' +
+      '<li><span>🪢</span><span>' + L('<b>نط الحبل:</b> نط لما يوصل الحبل لعندك', '<b>Jump Rope:</b> jump when the rope reaches you', '<b>İp Atlama:</b> ip sana gelince zıpla') + '</span></li>' +
+      '<li><span>🐤</span><span>' + L('<b>الطيور الطايرة:</b> طيّر عصفورك بين الأنابيب', '<b>Flappy Birds:</b> fly your bird between the pipes', '<b>Uçan Kuşlar:</b> kuşunu boruların arasından uçur') + '</span></li>' +
+      '<li><span>🎣</span><span>' + L('<b>صيد السمك:</b> ارمي الصنارة وصيد ٥ سمكات', '<b>Fishing:</b> drop your hook and catch 5 fish', '<b>Balık Tutma:</b> oltanı at, 5 balık tut') + '</span></li>' +
+      '<li><span>⏱️</span><span>' + L('<b>وقّف على ١٠:</b> عدّ براسك واكبس عالعشرة', '<b>Stop at 10:</b> count in your head and press at ten', '<b>10\'da Dur:</b> içinden say, onda bas') + '</span></li>' +
+      '<li><span>🪑</span><span>' + L('<b>الكراسي الموسيقية:</b> لما توقف الموسيقى اقعد بسرعة', '<b>Musical Chairs:</b> when the music stops, sit fast', '<b>Müzikli Sandalyeler:</b> müzik durunca hemen otur') + '</span></li>' +
     '</ul>' +
     '<a class="ghost-btn" href="../">' + L('⬅ كل الألعاب', '⬅ All games', '⬅ Bütün oyunlar') + '</a>';
   card.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { nPlayers = +b.dataset.n; store.set('n', nPlayers); card.querySelectorAll('[data-n]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
