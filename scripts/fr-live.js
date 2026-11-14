@@ -17,7 +17,7 @@ const log = (...a) => console.log(...a);
   log('A buttons', JSON.stringify(btns));
   log('A friends', JSON.stringify(await A.evaluate(() => Friends.list())));
   // B goes into heist (playing)
-  await B.goto(SITE + 'heist/'); await B.waitForTimeout(30000);
+  await B.goto(SITE + 'heist/'); await B.waitForTimeout(28000);
   log('A friends after B in heist', JSON.stringify(await A.evaluate(() => Friends.list())));
   await A.reload(); await A.waitForTimeout(4000);
   const joinBtn = await A.$('button.join');
@@ -28,7 +28,7 @@ const log = (...a) => console.log(...a);
     for (let i = 0; i < 30 && !popup; i++) { await B.waitForTimeout(1000); popup = await B.evaluate(() => !!document.querySelector('.ip-wrap.show')); }
     log('B popup', popup, popup ? await B.evaluate(() => document.querySelector('.ip-wrap').innerText.replace(/\s+/g, ' ')) : '');
     if (popup) {
-      await B.evaluate(() => { const b = document.querySelector('.ip-wrap .ip-go'); b && b.click(); });
+      await B.evaluate(() => { const b = document.querySelector('.ip-wrap .ip-yes'); b && b.click(); });
       for (let i = 0; i < 40; i++) { await A.waitForTimeout(1000); if (/heist/.test(A.url())) break; }
       log('A url', A.url(), 'B url', B.url());
       await A.waitForTimeout(8000);
