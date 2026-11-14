@@ -986,7 +986,8 @@ function say(text, ms){
 function hush(){ clearTimeout(guideTimer); $('#guide').hidden = true; }
 function popText(t){ const p = $('#pop'); p.textContent = t; p.classList.remove('go'); void p.offsetWidth; p.classList.add('go'); }
 let tutStep = 99;
-function tut(n){ if(mode !== 'sp' || tutStep !== n) return; tutStep = n + 1; const key = 't' + (n + 1); if(LINES[key]) setTimeout(() => { if(state === 'play') say(LINES[key], 5200); }, 500); if(tutStep >= 5){ SAVE.tut = 1; persist(); } }
+function tut(n){ if(mode !== 'sp' || tutStep !== n) return; tutStep = n + 1; const key = 't' + (n + 1); if(LINES[key]) setTimeout(() => { if(state === 'play') say(LINES[key], 5200); }, 500);
+  if(n === 3){ SAVE.tut = 1; persist(); setTimeout(() => { if(state === 'play' && tutStep === 4){ tutStep = 5; say(LINES.t5, 5200); } }, 6500); } }
 function fxLocal(ev){
   if(!GS) return;
   const a = actors[ev.a] || actors[0], mine = ev.a === ME && ME >= 0, y = 1.2;
@@ -1254,7 +1255,7 @@ function endRound(){
   if(!GS || GS.over) return;
   if(MP.match){ if(MP.isHost) mpHostEnd(); return; }
   GS.over = true;
-  const b = GS.bases[ME]; if(b.carry){ const c = b.carry; b.carry = null; if(c.st) returnEgg(ME, c, true); else { const s = freeSlot(b); if(s >= 0) b.nests[s] = c.t; else b.coins += TIERS[c.t].price; } }
+  const b = GS.bases[ME]; b.coins += Math.floor(b.pend); b.pend = 0; if(b.carry){ const c = b.carry; b.carry = null; if(c.st) returnEgg(ME, c, true); else { const s = freeSlot(b); if(s >= 0) b.nests[s] = c.t; else b.coins += TIERS[c.t].price; } }
   const vals = GS.bases.map(eggValue), rows = rankRows(vals), me = rows.find(r => r.i === ME);
   const coins = GS.t >= 60 ? PRIZE[me.place - 1] : 0;
   if(coins && window.World){ World.addCoins(coins, L('من اسرق البيضة', 'for Egg Heist', 'Yumurta Soygunu için')); if(me.place === 1) World.track('win', 'heist'); }
@@ -1669,7 +1670,8 @@ function tick(dt, withInput){
   if(withInput && ME >= 0 && !frozen){ readInput(dt); stepPlayer(dt); }
   else if(ME >= 0){ P.vx = P.vz = 0; P.move = 0; const a = actors[ME]; a.m = 0; }
   if(frozen) return;
-  if(!MP.match || MP.isHost){ let rest = dt; while(rest > 0){ const h = Math.min(rest, 1 / 30); hostStep(h); rest -= h; } }
+  if(GS.over) return;
+  if(!MP.match || MP.isHost){ let rest = dt; while(rest > 0 && !GS.over){ const h = Math.min(rest, 1 / 30); hostStep(h); rest -= h; } }
   else { GS.t += dt; for(const e of GS.belt) e.s = Math.min(1, e.s + dt * BELT_V / ARC); }
 }
 let camOverride = null;
