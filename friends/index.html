@@ -124,6 +124,9 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(32px,9vw,42px);lin
 .toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:99;background:var(--gold);color:#3a2a00;max-width:calc(100% - 32px);text-align:center;
   font:800 18px var(--display);padding:8px 18px;border-radius:999px;box-shadow:0 6px 0 var(--gold-d),0 10px 30px rgba(0,0,0,.4);pointer-events:none;transition:opacity .4s,transform .4s}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+.name-in{width:100%;box-sizing:border-box;margin:6px 0 2px;padding:14px 16px;border-radius:16px;border:3px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:#fff;font:800 22px/1.2 inherit;font-family:inherit;text-align:center;outline:none}
+.name-in:focus{border-color:#ffcd4d}
+.name-note{font-size:13px;opacity:.8;margin:4px 0 10px}
 </style>
 </head>
 <body>
@@ -181,9 +184,9 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(32px,9vw,42px);lin
   <span class="lbl2" data-en="Picture" data-tr="Resim">الصورة</span>
   <div class="grid" id="avGrid"></div>
   <p style="font-size:13px" data-en="Bobo wears your wardrobe colours and hats" data-tr="Bobo dolabındaki renkleri ve şapkaları giyer">بوبو بيلبس ألوان وقبعات خزانتك</p>
-  <span class="lbl2" data-en="Nickname (pick 2 words)" data-tr="Lakap (2 kelime seç)">لقب (اختار كلمتين)</span>
-  <div class="chips" id="nounChips"></div>
-  <div class="chips" id="adjChips"></div>
+  <span class="lbl2" data-en="Your name" data-tr="Adın">اسمك</span>
+  <input id="nameIn" class="name-in" maxlength="14" autocomplete="off" autocapitalize="words" spellcheck="false" placeholder="مثلاً: سارة" data-en-ph="e.g. Sara" data-tr-ph="örn. Sara">
+  <p class="name-note" data-en="Only your friends see it. Letters only, no numbers." data-tr="Sadece arkadaşların görür. Sadece harf, rakam yok.">بس أصحابك بيشوفوه. أحرف بس، بلا أرقام.</p>
   <button class="gold-btn" id="saveLook" data-en="Save ✓" data-tr="Kaydet ✓">احفظ ✓</button>
 </div></div>
 
@@ -260,7 +263,7 @@ function btn(cls, html, aria, fn){ const b = document.createElement('button'); b
 
 /* state + render */
 let me = null, data = { friends:[], incoming:[], outgoing:[], invites:[] }, loading = false;
-const myLook = () => ({ avatar:(me && me.avatar) || 'bobo', color:W.outfit.color || 'purple', hat:W.outfit.hat || null, glasses:W.outfit.glasses || null, na:me && me.na, nn:me && me.nn });
+const myLook = () => ({ avatar:(me && me.avatar) || 'bobo', color:W.outfit.color || 'purple', hat:W.outfit.hat || null, glasses:W.outfit.glasses || null, na:me && me.na, nn:me && me.nn, name:me && me.name });
 
 function renderMe(){
   $('myCode').textContent = me ? F.fmtCode(me.code) : '······';
@@ -410,7 +413,7 @@ let look = null;
 function drawLook(){
   const prev = $('lookPrev'); prev.innerHTML = '';
   prev.appendChild(F.avatarEl(look, 72));
-  const b = document.createElement('b'); b.style.cssText = 'font-family:var(--display);font-size:22px'; b.textContent = F.nick(look) || L('بلا لقب', 'No nickname', 'Lakapsız'); prev.appendChild(b);
+  const b = document.createElement('b'); b.style.cssText = 'font-family:var(--display);font-size:22px'; b.textContent = F.nick(look) || L('بلا اسم', 'No name', 'İsimsiz'); prev.appendChild(b);
   const g = $('avGrid'); g.innerHTML = '';
   Object.keys(F.AVATARS).forEach(id => {
     const p = document.createElement('button'); p.className = 'pick'; p.setAttribute('aria-pressed', look.avatar === id);
@@ -425,14 +428,15 @@ function drawLook(){
       c.onclick = () => { tap(); look[keyName] = look[keyName] === id ? null : id; drawLook(); }; box.appendChild(c);
     });
   };
-  chips($('nounChips'), F.NOUN, 'nn'); chips($('adjChips'), F.ADJ, 'na');
-  const half = (look.na == null) !== (look.nn == null);
-  $('saveLook').disabled = half;
 }
-$('editBtn').onclick = () => { tap(); look = myLook(); drawLook(); openSheet('lookSheet'); };
+const cleanName = s => String(s || '').replace(/[^\p{L} ]/gu, '').replace(/\s+/g, ' ').slice(0, 14);
+$('nameIn').addEventListener('input', () => { const v = cleanName($('nameIn').value); if(v !== $('nameIn').value) $('nameIn').value = v; look.name = v.trim() || null; const b = $('lookPrev').querySelector('b'); if(b) b.textContent = F.nick(look) || L('بلا اسم', 'No name', 'İsimsiz'); });
+$('editBtn').onclick = () => { tap(); look = myLook(); $('nameIn').value = look.name || ''; drawLook(); openSheet('lookSheet'); };
 $('saveLook').onclick = async () => {
   tap(); $('saveLook').disabled = true;
-  try{ const c = await F.setLook(look); me = Object.assign({}, me, c); renderMe(); ding(); closeSheets(); toast(L('تمام! ✨', 'Saved! ✨', 'Kaydedildi! ✨')); }
+  try{ const c = await F.setLook(look); me = Object.assign({}, me, c);
+    const nm = (look.name || '').trim(); if(nm !== (me.name || '')){ try{ const c2 = await F.setName(nm); me = Object.assign({}, me, c2); }catch(e2){ toast(L('هالاسم ما بيصير، جرّب اسم تاني 🙈', "That name isn't allowed, try another 🙈", 'Bu isim olmaz, başka dene 🙈')); $('saveLook').disabled = false; return; } }
+    renderMe(); ding(); closeSheets(); toast(L('تمام! ✨', 'Saved! ✨', 'Kaydedildi! ✨')); }
   catch(e){ toast(F.errText(e)); }
   $('saveLook').disabled = false;
 };
