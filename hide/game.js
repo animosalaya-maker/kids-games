@@ -933,7 +933,7 @@ function frame(now){
   renderer.render(scene, camera);
 }
 document.addEventListener('visibilitychange', () => { if(document.hidden){ persist(); if(state === 'play' && !mpActive()) showPause(); } });
-addEventListener('pagehide', () => persist());
+addEventListener('pagehide', () => { persist(); try{ if(MP.t) mpLeave(true); }catch(e){} });
 
 /* ======================================================================
    Online («👫 العب مع أصحابك»): a room of up to 4. Nothing is stored on a server.
