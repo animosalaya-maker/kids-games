@@ -321,7 +321,7 @@ function layout(){
   SAL = saProbe.offsetWidth; SAB = saProbe.offsetHeight;
 }
 function toLayer(cx, cy){ return ROT ? { x:cy, y:VW - cx } : { x:cx, y:cy }; }
-function tryLandscapeLock(){ try{ const o = screen.orientation; if(o && o.lock) o.lock('landscape').catch(() => {}); }catch(e){} }
+function tryLandscapeLock(){ /* no system rotation: the game rotates itself inside the page, so the screen never flips back and forth */ }
 layout(); tryLandscapeLock();
 
 /* ---------- Sound (tiny synth, no files) ---------- */
