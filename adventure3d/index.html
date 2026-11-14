@@ -1590,7 +1590,7 @@ class SupabaseTransport{
     if(!SupabaseTransport.client) SupabaseTransport.client = window.supabase.createClient(MP_URL, MP_KEY, {
       auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:40 } } });
     const sb = SupabaseTransport.client;
-    const ch = this.ch = sb.channel('bobo-room-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id } } });
+    const ch = this.ch = sb.channel('bobo-room-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id, enabled:true } } });
     ch.on('presence', { event:'sync' }, () => {
       const st = ch.presenceState(), list = [];
       for(const k in st){ const m = st[k]; if(m && m.length) list.push(Object.assign({}, m[m.length - 1], { id:k })); }
@@ -1785,7 +1785,10 @@ async function mpOpen(code, mode){
   }catch(e){ if(live()) mpClose(); throw e; }
   if(!live()) throw new Error('cancelled');
   const t0 = performance.now();
-  await new Promise(res => { const chk = () => (MP.synced || performance.now() - t0 > 1500 || !live()) ? res() : setTimeout(chk, 40); chk(); });
+  // the server only sends the room's member list after we track something: send a short 'probe' first, then wait for the list
+  t.track({ ph:'probe' });
+  await new Promise(res => { const chk = () => (MP.synced || performance.now() - t0 > 6000 || !live()) ? res() : setTimeout(chk, 40); chk(); });
+  if(MP.synced) await new Promise(r => setTimeout(r, 300));
   if(!live()) throw new Error('cancelled');
   const others = MP.list.filter(p => p.id !== MP.id);
   if(mode === 'create' && others.length){ mpClose(); return 'busy'; }
@@ -1800,6 +1803,7 @@ async function mpOpen(code, mode){
 function mpTrack(){ if(MP.t && MP.meta) MP.t.track(MP.meta); }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
 function mpPresence(list){
+  list = (list || []).filter(p => p.ph !== 'probe');
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
