@@ -2,7 +2,7 @@
    Tap your half to shoot your arrow straight at the middle. 5 arrows each, bullseye 10, middle ring 5, outer ring 2. */
 Duel.register({
   id: 'archery', title: L('الرماية', 'Archery', 'Okçuluk'), emoji: '🏹', bg: '#2ec4b6',
-  help: L('اكبس لترمي سهمك لما يكون الهدف قدّامك. النص الأصفر بيعطي ١٠', 'Tap to shoot when the target is in front of you. The yellow middle gives 10', 'Hedef önüne gelince okunu atmak için dokun. Sarı orta 10 puan verir'),
+  help: L('اكبس لترمي سهمك لما يكون الهدف قدّامك. النص الأصفر بيعطي 10', 'Tap to shoot when the target is in front of you. The yellow middle gives 10', 'Hedef önüne gelince okunu atmak için dokun. Sarı orta 10 puan verir'),
   create(api){
     const OUT = '#1c1838', N = 5, COOL = 0.6, LIMIT = 40;
     const S = () => Math.min(api.W, api.H);

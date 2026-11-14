@@ -118,7 +118,7 @@ Duel.register({
           // status line
           let msg = '', mc = col.dark;
           if(stage === 'show'){
-            if(winner === pl){ msg = L('صح! +١ 🎉', 'Right! +1 🎉', 'Doğru! +1 🎉'); mc = '#2a9d5c'; }
+            if(winner === pl){ msg = L('صح! +1 🎉', 'Right! +1 🎉', 'Doğru! +1 🎉'); mc = '#2a9d5c'; }
             else if(winner === other) msg = L('سبقك رفيقك!', 'Your friend was faster!', 'Arkadaşın daha hızlıydı!');
             else msg = L('ولا حدا جاوب 🤷', 'Nobody got it 🤷', 'Kimse bilemedi 🤷');
           } else if(lock[pl]) msg = L('غلط! استنى السؤال الجاي ✋', 'Oops! Wait for the next one ✋', 'Yanlış! Sonrakini bekle ✋');

@@ -86,7 +86,7 @@ Duel.register({
         if(state === 'red' && t - redSince > 0.12){
           if(sad[pl] > 0.4) return; // already caught a moment ago: don't stack penalties
           step[pl] = Math.max(0, step[pl] - BACK); sad[pl] = 0.9; shake[pl] = 1;
-          api.sfx.buzz(); api.say(api.L('شفتك! ارجع ٣ 🙈', 'I saw you! Go back 3 🙈', 'Gördüm seni! 3 geri 🙈'), pl, 900);
+          api.sfx.buzz(); api.say(api.L('شفتك! ارجع 3 🙈', 'I saw you! Go back 3 🙈', 'Gördüm seni! 3 geri 🙈'), pl, 900);
           return;
         }
         if(state === 'red') return;

@@ -26,7 +26,7 @@ function load(){
 }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(mem)); }catch(e){} }
 
-const AR = n => (window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]));
+const AR = n => (window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => d));
 function toast(text){
   try{
     const el = document.createElement('div');

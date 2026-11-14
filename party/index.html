@@ -5,7 +5,7 @@
 <script src="../i18n.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Friends Party" data-tr="Arkadaş Partisi">حفلة الأصحاب</title>
-<meta name="description" content="ألعاب صغيرة لـ ٢ لـ ٤ أولاد على نفس الجوال." data-en="Little games for 2 to 4 kids on one phone." data-tr="Tek telefonda 2-4 çocuk için mini oyunlar.">
+<meta name="description" content="ألعاب صغيرة لـ 2 لـ 4 أولاد على نفس الجوال." data-en="Little games for 2 to 4 kids on one phone." data-tr="Tek telefonda 2-4 çocuk için mini oyunlar.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -105,7 +105,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 (function(){
 'use strict';
 const $ = s => document.querySelector(s);
-const AR = n => window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]); // digits for the current language
+const AR = n => window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => d); // digits for the current language
 const LTR = !!(window.I18N && I18N.dir === 'ltr');
 { const md = document.querySelector('meta[name="description"]'), dl = window.I18N && md && md.getAttribute('data-' + I18N.lang); if(dl) md.setAttribute('content', dl); }
 const store = {
@@ -503,7 +503,7 @@ const GAMES = {
   },
 
   mycolor: {
-    title:L('لونك بس 🎨', 'Your Color 🎨', 'Senin Rengin 🎨'), help:L('اكبس بس لما الدائرة تصير بلونك! الغلط بيشيل نجمة. أول واحد بيجمع ٣ نجوم بيربح', 'Press only when the circle shows YOUR color! A wrong press loses a star. First to 3 stars wins', 'Sadece daire SENİN renginde olunca bas! Yanlış basış bir yıldız götürür. 3 yıldızı ilk toplayan kazanır'),
+    title:L('لونك بس 🎨', 'Your Color 🎨', 'Senin Rengin 🎨'), help:L('اكبس بس لما الدائرة تصير بلونك! الغلط بيشيل نجمة. أول واحد بيجمع 3 نجوم بيربح', 'Press only when the circle shows YOUR color! A wrong press loses a star. First to 3 stars wins', 'Sadece daire SENİN renginde olunca bas! Yanlış basış bir yıldız götürür. 3 yıldızı ilk toplayan kazanır'),
     GOAL:3, LIMIT:45,
     start(){
       this.hits = players.map(() => 0); this.done = false; this.time = 0; this.state = 'gap'; this.timer = 0.9;
@@ -765,7 +765,7 @@ const GAMES = {
   },
 
   fishing: {
-    title:L('صيد السمك 🎣', 'Fishing 🎣', 'Balık Tutma 🎣'), help:L('اكبس لترمي صنارتك بالبركة. أول واحد بيصيد ٥ سمكات بيربح', 'Press to drop your hook into the pond. First to catch 5 fish wins', 'Oltanı gölete atmak için bas. 5 balığı ilk tutan kazanır'),
+    title:L('صيد السمك 🎣', 'Fishing 🎣', 'Balık Tutma 🎣'), help:L('اكبس لترمي صنارتك بالبركة. أول واحد بيصيد 5 سمكات بيربح', 'Press to drop your hook into the pond. First to catch 5 fish wins', 'Oltanı gölete atmak için bas. 5 balığı ilk tutan kazanır'),
     GOAL:5, LIMIT:30, COLORS:['#ff8a3d', '#ff7eb6', '#b46cff', '#3fe0d0', '#ffcd4d'],
     start(){
       this.time = 0; this.done = false; this.caught = players.map(() => 0); this.fb = players.map(() => 0);
@@ -851,7 +851,7 @@ const GAMES = {
   },
 
   stop10: {
-    title:L('وقّف على ١٠ ⏱️', 'Stop at 10 ⏱️', '10\'da Dur ⏱️'), help:L('الساعة رح تختفي! عدّ براسك واكبس مرة وحدة لما تحس إنه مرقت ١٠ ثواني', 'The clock will hide! Count in your head and press once when you think 10 seconds have passed', 'Saat gizlenecek! İçinden say ve 10 saniye geçti sanınca bir kez bas'),
+    title:L('وقّف على 10 ⏱️', 'Stop at 10 ⏱️', '10\'da Dur ⏱️'), help:L('الساعة رح تختفي! عدّ براسك واكبس مرة وحدة لما تحس إنه مرقت 10 ثواني', 'The clock will hide! Count in your head and press once when you think 10 seconds have passed', 'Saat gizlenecek! İçinden say ve 10 saniye geçti sanınca bir kez bas'),
     start(){ this.time = 0; this.done = false; this.at = players.map(() => null); this.reveal = 0; this.wins = []; },
     update(dt){
       if(ending(this, dt)) return;
@@ -1046,8 +1046,8 @@ function showMenu(){
       '<li><span>🎈</span><span>' + L('<b>نفخ البالون:</b> انفخ كتير بس لا تفقّعه', '<b>Balloon Pump:</b> pump it big, but don\'t pop it', '<b>Balon Şişir:</b> kocaman şişir ama patlatma') + '</span></li>' +
       '<li><span>🪢</span><span>' + L('<b>نط الحبل:</b> نط لما يوصل الحبل لعندك', '<b>Jump Rope:</b> jump when the rope reaches you', '<b>İp Atlama:</b> ip sana gelince zıpla') + '</span></li>' +
       '<li><span>🐤</span><span>' + L('<b>الطيور الطايرة:</b> طيّر عصفورك بين الأنابيب', '<b>Flappy Birds:</b> fly your bird between the pipes', '<b>Uçan Kuşlar:</b> kuşunu boruların arasından uçur') + '</span></li>' +
-      '<li><span>🎣</span><span>' + L('<b>صيد السمك:</b> ارمي الصنارة وصيد ٥ سمكات', '<b>Fishing:</b> drop your hook and catch 5 fish', '<b>Balık Tutma:</b> oltanı at, 5 balık tut') + '</span></li>' +
-      '<li><span>⏱️</span><span>' + L('<b>وقّف على ١٠:</b> عدّ براسك واكبس عالعشرة', '<b>Stop at 10:</b> count in your head and press at ten', '<b>10\'da Dur:</b> içinden say, onda bas') + '</span></li>' +
+      '<li><span>🎣</span><span>' + L('<b>صيد السمك:</b> ارمي الصنارة وصيد 5 سمكات', '<b>Fishing:</b> drop your hook and catch 5 fish', '<b>Balık Tutma:</b> oltanı at, 5 balık tut') + '</span></li>' +
+      '<li><span>⏱️</span><span>' + L('<b>وقّف على 10:</b> عدّ براسك واكبس عالعشرة', '<b>Stop at 10:</b> count in your head and press at ten', '<b>10\'da Dur:</b> içinden say, onda bas') + '</span></li>' +
       '<li><span>🪑</span><span>' + L('<b>الكراسي الموسيقية:</b> لما توقف الموسيقى اقعد بسرعة', '<b>Musical Chairs:</b> when the music stops, sit fast', '<b>Müzikli Sandalyeler:</b> müzik durunca hemen otur') + '</span></li>' +
     '</ul>' +
     '<a class="ghost-btn" href="../">' + L('⬅ كل الألعاب', '⬅ All games', '⬅ Bütün oyunlar') + '</a>';

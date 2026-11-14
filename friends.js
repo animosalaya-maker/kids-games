@@ -282,7 +282,7 @@ function statusText(st){
     already_friends:T('إنتو أصحاب أصلاً 😄', 'You are already friends 😄', 'Zaten arkadaşsınız 😄'),
     self:T('هاد رمزك إنت! 😄', "That's your own code! 😄", 'Bu senin kodun! 😄'),
     not_found:T('ما لقينا هالرمز، تأكّد منه 🔍', "We couldn't find that code, check it 🔍", 'Bu kod bulunamadı, kontrol et 🔍'),
-    my_limit:T('عندك ٥٠ صاحب، هاد الحد 🙈', 'You have 50 friends, that is the limit 🙈', '50 arkadaşın var, sınır bu 🙈'),
+    my_limit:T('عندك 50 صاحب، هاد الحد 🙈', 'You have 50 friends, that is the limit 🙈', '50 arkadaşın var, sınır bu 🙈'),
     their_limit:T('صاحبك عنده أصحاب كتير 🙈', 'Your friend has too many friends 🙈', 'Arkadaşının çok fazla arkadaşı var 🙈'),
     pending_limit:T('بعتت طلبات كتير، استنّى يقبلوا ⏳', 'Too many requests waiting, wait for answers ⏳', 'Çok fazla bekleyen istek var, cevapları bekle ⏳'),
     none:T('هالطلب مش موجود هلّق', 'That request is gone', 'Bu istek artık yok')

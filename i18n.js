@@ -17,7 +17,7 @@ const SPEECH = { ar:'ar-SA', en:'en-US', tr:'tr-TR' };
 const I18N = {
   lang, dir, speech: SPEECH[lang], langs: SUP,
   names: { ar:'العربية', en:'English', tr:'Türkçe' },
-  num(n){ const s = String(n); return lang === 'ar' ? s.replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]) : s; },
+  num(n){ return String(n); },
   set(l){ if(!SUP.includes(l)) return; try{ localStorage.setItem('bobo_lang', l); }catch(e){} location.reload(); },
   apply(root){
     if(lang === 'ar') return;

@@ -382,7 +382,7 @@ function buildKeys(){
 function key(k){
   if(sending) return;
   if(k === 'del'){ typed = typed.slice(0, -1); tap(); }
-  else if(k === 'ok'){ if(typed.length === 6) sendReq(typed); else { nope(); $('addMsg').textContent = L('الرمز ٦ حروف', 'The code has 6 letters', 'Kod 6 harfli'); } return; }
+  else if(k === 'ok'){ if(typed.length === 6) sendReq(typed); else { nope(); $('addMsg').textContent = L('الرمز 6 حروف', 'The code has 6 letters', 'Kod 6 harfli'); } return; }
   else if(F.ALPHABET.includes(k) && typed.length < 6){ typed += k; tap(); }
   $('addMsg').textContent = ''; drawSlots();
   if(typed.length === 6){ const code = typed; setTimeout(() => { if(!$('addSheet').hidden && typed === code && !sending) sendReq(code); }, 300); }

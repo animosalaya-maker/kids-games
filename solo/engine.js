@@ -1,7 +1,7 @@
 /* Solo engine: one kid, full screen, Bobo is the hero. A game file calls Solo.register({...}). See solo/GAME_API.md. */
 (function(){
 'use strict';
-const AR = n => (window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]));
+const AR = n => (window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => d));
 const L = window.L || ((a) => a);
 if(!CanvasRenderingContext2D.prototype.roundRect){
   CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r){ r = Math.min(typeof r === 'number' ? r : (r && r[0]) || 0, w / 2, h / 2); this.moveTo(x + r, y); this.arcTo(x + w, y, x + w, y + h, r); this.arcTo(x + w, y + h, x, y + h, r); this.arcTo(x, y + h, x, y, r); this.arcTo(x, y, x + w, y, r); this.closePath(); };
