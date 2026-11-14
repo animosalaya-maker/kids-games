@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<script src="../i18n.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title data-en="Bobo Shop" data-tr="Bobo Mağazası">متجر بوبو</title>
+<meta name="description" content="خرائط مميزة لبوبو لاند." data-en="Premium maps for Bobo Land." data-tr="Bobo Land için premium haritalar.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#2b2350">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<style>
+/* «متجر بوبو»: premium maps. Purchases are not live yet: a parental gate, then «قريباً». Always landscape (rotated layer). */
+:root{
+  --night:#2b2350; --night-2:#3a2f68; --night-3:#4a3d80; --wall-face:#231c45;
+  --ink:#fff7e8; --muted:#d6cdf2; --gold:#ffcd4d; --mint:#5fe3b1; --pink:#ff8fb8;
+  --display:"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif; --body:"Tajawal",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html{box-sizing:border-box;height:100%;background:var(--night)}
+*,*::before,*::after{box-sizing:inherit}
+body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:var(--body);overflow:hidden;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#stage{position:fixed;left:0;top:0;width:100%;height:100%;overflow:hidden;transform-origin:0 0;
+  background:radial-gradient(ellipse at 50% 120%,#c86a8a 0%,#5a3f8c 45%,#2b2350 80%);
+  --sa-t:env(safe-area-inset-top,0px);--sa-r:env(safe-area-inset-right,0px);--sa-b:env(safe-area-inset-bottom,0px);--sa-l:env(safe-area-inset-left,0px);--sh:100vh}
+#stage.rot{--sa-t:env(safe-area-inset-right,0px);--sa-r:env(safe-area-inset-bottom,0px);--sa-b:env(safe-area-inset-left,0px);--sa-l:env(safe-area-inset-top,0px)}
+.page{position:absolute;inset:0;overflow-y:auto;display:flex;flex-direction:column;align-items:center;gap:12px;
+  padding:calc(12px + var(--sa-t)) max(16px,var(--sa-r)) calc(16px + var(--sa-b)) max(16px,var(--sa-l))}
+header{display:flex;align-items:center;justify-content:center;gap:12px;width:100%;min-height:52px;padding:0 150px}
+h1{margin:0;font-family:var(--display);font-weight:800;font-size:38px;line-height:1.1;color:var(--gold);text-shadow:0 4px 0 var(--wall-face);white-space:nowrap}
+.coins{position:absolute;top:calc(14px + var(--sa-t));inset-inline-start:max(16px,var(--sa-r));background:rgba(43,35,80,.85);border-radius:999px;padding:6px 14px;font:800 20px/1.2 var(--display);box-shadow:inset 0 0 0 3px var(--gold);direction:ltr}
+[dir=ltr] .coins{inset-inline-start:auto;right:max(16px,var(--sa-r))}
+.cards{display:flex;gap:16px;width:100%;max-width:1100px;justify-content:center;align-items:stretch}
+.mc{flex:1 1 0;min-width:0;max-width:360px;background:rgba(58,47,104,.95);border-radius:26px;padding:10px;display:flex;flex-direction:column;gap:8px;box-shadow:0 0 0 3px var(--night-3),0 14px 30px rgba(0,0,0,.35);position:relative}
+.mc.real{box-shadow:0 0 0 4px var(--gold),0 14px 30px rgba(0,0,0,.35)}
+.pic{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:16/9;background:#3a2f68}
+.pic img,.pic canvas{display:block;width:100%;height:100%;object-fit:cover}
+.badge{position:absolute;top:8px;inset-inline-start:8px;background:var(--pink);color:#4a0f2a;border-radius:999px;padding:3px 12px;font:800 15px/1.2 var(--display);box-shadow:0 3px 0 #c45a83}
+.owned{position:absolute;top:8px;inset-inline-end:8px;background:var(--mint);color:#063d2a;border-radius:999px;padding:3px 12px;font:800 15px/1.2 var(--display)}
+.soon{position:absolute;inset:0;display:grid;place-items:center;background:rgba(30,22,60,.35)}
+.soon span{background:rgba(255,247,232,.95);color:#2a1f4a;border-radius:999px;padding:6px 16px;font:800 20px/1.2 var(--display);box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.mc h2{margin:0;font-family:var(--display);font-weight:800;font-size:23px;line-height:1.2}
+.mc p{margin:0;color:var(--muted);font-weight:700;font-size:14px;line-height:1.4;flex:1}
+.buy{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.price{background:var(--night);border-radius:999px;padding:5px 12px;font:800 19px/1.2 var(--display);color:var(--gold);direction:ltr}
+.btn{border:0;border-radius:16px;background:var(--gold);color:#3a2a00;font:800 18px/1.1 var(--display);padding:10px 14px;box-shadow:0 5px 0 #c48f12;flex:1;min-width:0}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #c48f12}
+.btn.mint{background:var(--mint);color:#063d2a;box-shadow:0 5px 0 #2a9c74}
+.btn.pink{background:var(--pink);color:#4a0f2a;box-shadow:0 5px 0 #c45a83}
+.btn:disabled{opacity:.5;transform:none}
+.foot{display:flex;gap:10px;align-items:center;justify-content:center;flex-wrap:wrap}
+.ghost{border:0;background:var(--night-3);border-radius:16px;padding:10px 16px;font-weight:700;font-size:16px;box-shadow:0 4px 0 var(--wall-face)}
+.ghost:active{transform:translateY(3px);box-shadow:0 1px 0 var(--wall-face)}
+.note{color:var(--muted);font-size:13px;font-weight:700;text-align:center;max-width:620px;margin:0}
+.toast{position:absolute;left:50%;bottom:calc(20px + var(--sa-b));transform:translateX(-50%);background:#fff7e8;color:#2a1f4a;border-radius:18px;padding:10px 18px;font:800 18px/1.3 var(--display);box-shadow:0 6px 0 rgba(0,0,0,.25);z-index:50;text-align:center;max-width:90%}
+#stage.short h1{font-size:30px} #stage.short .mc h2{font-size:19px} #stage.short .mc p{font-size:13px} #stage.short .btn{font-size:16px;padding:8px 10px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div id="stage"><div class="page" id="page">
+  <span class="coins" id="coins"></span>
+  <header><h1><span data-en="Bobo Shop" data-tr="Bobo Mağazası">متجر بوبو</span> 🛍️</h1></header>
+  <div class="cards" id="cards"></div>
+  <div class="foot">
+    <button class="ghost" id="bRestore">🔄 <span data-en="Restore my purchases" data-tr="Satın aldıklarımı geri yükle">استرجع مشترياتي</span></button>
+    <button class="exit-btn" id="bExit" style="margin:0">🚪 <span data-en="Exit" data-tr="Çıkış">خروج</span></button>
+  </div>
+  <p class="note" data-en="Purchases are made by a parent through Google Play. Nothing is sold inside the games." data-tr="Satın alma işlemleri bir ebeveyn tarafından Google Play üzerinden yapılır. Oyunların içinde hiçbir şey satılmaz.">الشراء بيعمله بابا أو ماما من Google Play. ما في شي بينباع جوّا الألعاب.</p>
+</div></div>
+<script src="../world.js"></script>
+<script src="entitlements.js"></script>
+<script src="billing.js"></script>
+<script src="gate.js"></script>
+<script>
+(function(){
+'use strict';
+const $ = s => document.querySelector(s);
+const stage = $('#stage');
+/* always landscape: the page turns itself (no system rotation lock) */
+function layout(){
+  const VW = innerWidth, vh = innerHeight, rot = vh > VW, SW = rot ? vh : VW, SH = rot ? VW : vh;
+  stage.style.width = SW + 'px'; stage.style.height = SH + 'px';
+  stage.style.transform = rot ? `translateX(${VW}px) rotate(90deg)` : 'none';
+  stage.style.setProperty('--sh', SH + 'px'); stage.classList.toggle('rot', rot); stage.classList.toggle('short', SH <= 520);
+}
+layout(); addEventListener('resize', layout); addEventListener('orientationchange', () => setTimeout(layout, 120));
+const fmt = s => { s = Math.max(0, Math.ceil(s)); const m = Math.floor(s / 60), r = s % 60; return m + ':' + (r < 10 ? '0' : '') + r; };
+function toast(t){ const el = document.createElement('div'); el.className = 'toast'; el.textContent = t; stage.appendChild(el); setTimeout(() => el.remove(), 3200); }
+function tap(){ try{ const a = tap.a || (tap.a = new (window.AudioContext || window.webkitAudioContext)()); const o = a.createOscillator(), g = a.createGain(); o.type = 'triangle'; o.frequency.value = 520; g.gain.setValueAtTime(.08, a.currentTime); g.gain.exponentialRampToValueAtTime(.0001, a.currentTime + .06); o.connect(g).connect(a.destination); o.start(); o.stop(a.currentTime + .07); }catch(e){} }
+
+/* teaser pictures: one dark silhouette on a soft two-tone sky (drawn, no image files) */
+function teaser(kind){
+  const c = document.createElement('canvas'); c.width = 640; c.height = 360; const x = c.getContext('2d'), W = 640, H = 360;
+  const g = x.createLinearGradient(0, 0, 0, H); g.addColorStop(0, kind === 'space' ? '#2c2a6e' : '#4a4f9a'); g.addColorStop(1, kind === 'space' ? '#7a5fb0' : '#e89a8a'); x.fillStyle = g; x.fillRect(0, 0, W, H);
+  const ink = '#1f1840'; x.fillStyle = ink;
+  if(kind === 'pirate'){
+    x.fillStyle = 'rgba(255,240,210,.85)'; x.beginPath(); x.arc(520, 80, 34, 0, 7); x.fill(); x.fillStyle = ink;
+    x.fillRect(0, 290, W, 70);                                                    // sea
+    x.beginPath(); x.ellipse(150, 300, 120, 34, 0, Math.PI, 0); x.fill();          // island
+    x.fillRect(118, 170, 12, 120); for(let k = 0; k < 5; k++){ x.save(); x.translate(124, 172); x.rotate(-1.2 + k * .6); x.beginPath(); x.ellipse(36, 0, 40, 9, 0, 0, 7); x.fill(); x.restore(); }   // palm
+    x.beginPath(); x.moveTo(330, 280); x.lineTo(560, 280); x.lineTo(530, 318); x.lineTo(360, 318); x.closePath(); x.fill();   // hull
+    x.fillRect(440, 120, 8, 160); x.fillRect(385, 150, 6, 130);
+    x.beginPath(); x.moveTo(452, 128); x.quadraticCurveTo(520, 180, 452, 250); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(395, 160); x.quadraticCurveTo(445, 200, 395, 250); x.closePath(); x.fill();
+    x.beginPath(); x.moveTo(448, 104); x.lineTo(486, 112); x.lineTo(448, 120); x.closePath(); x.fill();
+  } else {
+    x.fillStyle = 'rgba(255,255,255,.75)'; for(let k = 0; k < 40; k++){ x.beginPath(); x.arc((k * 97) % W, (k * 53) % 220, 1.6, 0, 7); x.fill(); }
+    x.fillStyle = ink;
+    x.beginPath(); x.arc(110, 90, 40, 0, 7); x.fill(); x.lineWidth = 7; x.strokeStyle = ink; x.beginPath(); x.ellipse(110, 90, 66, 16, -.3, 0, 7); x.stroke();
+    x.fillRect(0, 300, W, 60);
+    for(const [cx, r] of [[180, 60], [300, 44], [420, 70]]){ x.beginPath(); x.arc(cx, 300, r, Math.PI, 0); x.fill(); }
+    x.fillRect(250, 220, 16, 80); x.fillRect(360, 200, 14, 100);
+    x.save(); x.translate(520, 210);                                               // rocket
+    x.beginPath(); x.moveTo(0, -120); x.quadraticCurveTo(34, -70, 28, 40); x.lineTo(-28, 40); x.quadraticCurveTo(-34, -70, 0, -120); x.fill();
+    x.beginPath(); x.moveTo(-28, 10); x.lineTo(-52, 60); x.lineTo(-24, 44); x.fill(); x.beginPath(); x.moveTo(28, 10); x.lineTo(52, 60); x.lineTo(24, 44); x.fill();
+    x.restore();
+  }
+  return c;
+}
+
+const CASTLE = { sku:'map_castle', url:'../maps/castle/', img:'castle.jpg',
+  name:L('قلعة الألعاب 🏰', 'Toy Castle 🏰', 'Oyuncak Kalesi 🏰'),
+  desc:L('قلعة ضخمة على جزيرة: تسلّق البرج، سباق قوارب، ترامبولين، كيك، و30 لعبة ذهبية مخبّاية. والعب مع أصحابك!', 'A huge castle on an island: tower climb, boat race, trampolines, cake stacking and 30 hidden golden toys. Play with friends too!', 'Adada dev bir kale: kule tırmanışı, tekne yarışı, trambolinler, pasta ve 30 gizli altın oyuncak. Arkadaşlarınla da oyna!') };
+const TEASERS = [
+  { id:'pirate', name:L('جزيرة القراصنة 🏴‍☠️', 'Pirate Island 🏴‍☠️', 'Korsan Adası 🏴‍☠️'), desc:L('سفن، كنوز، وجزر صغيرة… قريباً!', 'Ships, treasure and tiny islands… soon!', 'Gemiler, hazineler ve minik adalar… yakında!') },
+  { id:'space', name:L('مدينة الفضاء 🚀', 'Space City 🚀', 'Uzay Şehri 🚀'), desc:L('صواريخ، كواكب، ونطّ بلا جاذبية… قريباً!', 'Rockets, planets and zero-gravity jumps… soon!', 'Roketler, gezegenler ve yerçekimsiz zıplamalar… yakında!') }
+];
+let trialLeft = Trial.left('castle');
+function render(){
+  const own = Entitlements.has(CASTLE.sku), price = Billing.price(CASTLE.sku);
+  $('#coins').textContent = '🪙 ' + (window.World ? World.coins : 0);
+  const real = `<article class="mc real" id="cardCastle"><div class="pic"><img src="${CASTLE.img}" alt=""><span class="badge">${L('جديد', 'New', 'Yeni')}</span>${own ? `<span class="owned">✓ ${L('عندك', 'Yours', 'Senin')}</span>` : ''}</div>
+    <h2>${CASTLE.name}</h2><p>${CASTLE.desc}</p>
+    <div class="buy">${own ? `<button class="btn mint" id="bPlay">▶️ ${L('العب', 'Play', 'Oyna')}</button>`
+      : `<span class="price">${price}</span><button class="btn mint" id="bTry"${trialLeft <= 0 ? ' disabled' : ''}>▶️ ${trialLeft > 0 ? L('جرّب ببلاش', 'Try free', 'Ücretsiz dene') + ' ' + fmt(trialLeft) : L('خلصت التجربة', 'Try used', 'Deneme bitti')}</button>
+         <button class="btn pink" id="bBuy">💛 ${L('اشتري', 'Buy', 'Satın al')}</button>`}</div></article>`;
+  const teas = TEASERS.map(t => `<article class="mc" id="card_${t.id}"><div class="pic" data-t="${t.id}"><div class="soon"><span>🔒 ${L('قريباً', 'Soon', 'Yakında')}</span></div></div>
+    <h2>${t.name}</h2><p>${t.desc}</p><div class="buy"><button class="btn" disabled>⏳ ${L('قريباً', 'Soon', 'Yakında')}</button></div></article>`).join('');
+  $('#cards').innerHTML = real + teas;
+  document.querySelectorAll('.pic[data-t]').forEach(el => el.insertBefore(teaser(el.dataset.t), el.firstChild));
+  const go = () => { tap(); location.href = CASTLE.url; };
+  if(own) $('#bPlay').onclick = go;
+  else {
+    const bt = $('#bTry'); if(bt) bt.onclick = go;
+    $('#bBuy').onclick = () => { tap(); askParent({ mount:stage, sku:CASTLE.sku, name:CASTLE.name, onDone:() => render() }); };
+  }
+}
+$('#bRestore').onclick = async () => {
+  tap();
+  const ok = await Billing.available().catch(() => false);
+  if(!ok){ toast(L('استرجاع المشتريات رح يكون متاح قريباً 💛', 'Restoring purchases will be available soon 💛', 'Satın alımları geri yükleme yakında açılacak 💛')); return; }
+  const list = await Billing.owned().catch(() => []);
+  list.forEach(p => Entitlements.grant(p.sku, 'restore'));
+  toast(list.length ? L('رجّعنا مشترياتك ✅', 'Purchases restored ✅', 'Satın alımlar geri yüklendi ✅') : L('ما لقينا مشتريات', 'No purchases found', 'Satın alım bulunamadı'));
+  render();
+};
+$('#bExit').onclick = e => { e.preventDefault(); tap(); location.href = '../'; };
+render();
+// the free-try time left comes from the server (5 minutes in total per kid)
+addEventListener('DOMContentLoaded', () => Trial.fetch('castle').then(r => { trialLeft = r.left; render(); }));
+window.__shop = { render, get trialLeft(){ return trialLeft; }, owned:() => Entitlements.has('map_castle') };
+})();
+</script>
+<script src="../back.js"></script>
+<script>BoboBack.init({ visible: () => !document.querySelector('.pg-back'), onBack: () => { location.href = '../'; }, mount: document.getElementById('stage') });</script>
+<script src="../friends.js"></script>
+<script src="../invitepop.js"></script>
+</body>
+</html>

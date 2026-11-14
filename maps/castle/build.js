@@ -8,7 +8,7 @@ export const KEEP = { x:0, z:-10, r:5, top:26 };
 export const DIRS = [[0, 1], [1, 0], [0, -1], [-1, 0]];         // the 4 bridges and gates: south, east, north, west
 export const SPOTS = {
   tower:{ x:0, z:-1.6 }, treasure:{ x:6, z:13.5 }, boat:{ x:-14.6, z:37.8 }, bounce:{ x:31, z:33 }, cake:{ x:-8.2, z:7.4 },
-  laila:{ x:4.2, z:15.2 }, statue:{ x:-4.6, z:17 }, zipTop:{ x:0, y:KEEP.top, z:-5.8 }, zipEnd:{ x:5, y:0, z:52 }, spawn:{ x:0, z:50 }
+  laila:{ x:4.2, z:15.2 }, statue:{ x:-4.6, z:17 }, zipTop:{ x:0, y:KEEP.top, z:-5.8 }, zipEnd:{ x:5, y:0, z:52 }, spawn:{ x:-3, z:45 }
 };
 export const BOAT_A0 = -0.42;                                   // boat race start angle on the moat
 export const PARK = { x:42, z:42 };                             // bounce park centre
@@ -32,7 +32,11 @@ export function inGate(x, z){ for(const [dx, dz] of DIRS){ const al = x * dx + z
 export function onBridge(x, z){ const b = bridgeAt(x, z); return !!(b && b.lat < BRIDGE_W - .1); }
 
 export function buildCastle(THREE, K, scene, L){
-  const { Merge, G, CG, canvasTex, glowTex } = K;
+  const { Merge, G, canvasTex, glowTex } = K;
+  /* scenery geometry: smooth enough to look round, light enough for phones */
+  const CG = { sph:new THREE.SphereGeometry(1, 14, 10), sm:new THREE.SphereGeometry(1, 7, 5), cyl:new THREE.CylinderGeometry(1, 1, 1, 22), cyl8:new THREE.CylinderGeometry(1, 1, 1, 8),
+    cone:new THREE.ConeGeometry(1, 1, 16), cone4:G.cone4, hemi:new THREE.SphereGeometry(1, 12, 5, 0, Math.PI * 2, 0, Math.PI / 2), torus:new THREE.TorusGeometry(1, .18, 6, 20) };
+  const petal = new THREE.OctahedronGeometry(1, 0);
   const rnd = (() => { let s = 1234567; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
   const solids = [];
   const addC = (x, z, r, y0, y1, o) => solids.push(Object.assign({ t:'c', x, z, r, y0, y1 }, o || {}));
@@ -92,9 +96,9 @@ export function buildCastle(THREE, K, scene, L){
 
   /* paths: light stone discs from each bridge to the gate and on to the stations */
   function path(ax, az, bx, bz, w = 1.6){
-    const d = Math.hypot(bx - ax, bz - az), n = Math.ceil(d / 1.25);
+    const d = Math.hypot(bx - ax, bz - az), n = Math.ceil(d / .9);
     for(let i = 0; i <= n; i++){ const t = i / n, x = ax + (bx - ax) * t, z = az + (bz - az) * t; if(onBridge(x, z) || Math.abs(Math.hypot(x, z) - MOAT_MID) < 4.6) continue;
-      M(x, z).add(G.cyl8, x + (rnd() - .5) * .25, groundAt(x, z) + .03, z + (rnd() - .5) * .25, w * (.55 + rnd() * .12), .06, w * (.5 + rnd() * .12), 0, rnd() * 3, 0, rnd() < .5 ? 0xf3e6cc : 0xe8d7b4); }
+      M(x, z).add(G.cyl8, x + (rnd() - .5) * .25, groundAt(x, z) + .03, z + (rnd() - .5) * .25, w * (.36 + rnd() * .1), .06, w * (.33 + rnd() * .1), 0, rnd() * 3, 0, rnd() < .5 ? 0xf3e6cc : 0xe8d7b4); }
   }
   DIRS.forEach(([dx, dz]) => path(dx * 39.5, dz * 39.5, dx * 60, dz * 60));
   path(-12.5, 39.5, 0, 42); path(3, 41, 28, 32); path(0, 42, 4, 50);
@@ -326,9 +330,9 @@ export function buildCastle(THREE, K, scene, L){
   })();
   // flowers (instanced, each flower one colour), in beds around gardens and along the wall
   (() => {
-    const fm = new Merge(); fm.add(CG.cyl8, 0, .2, 0, .03, .4, .03, 0, 0, 0, 0x3f9a48);
-    for(let k = 0; k < 5; k++){ const a = k / 5 * Math.PI * 2; fm.add(CG.sm, Math.sin(a) * .1, .42, Math.cos(a) * .1, .09, .05, .09, 0, 0, 0, 0xffffff); }
-    fm.add(CG.sm, 0, .44, 0, .06, .06, .06, 0, 0, 0, 0xffd23f);
+    const fm = new Merge(); fm.add(new THREE.CylinderGeometry(1, 1, 1, 4), 0, .2, 0, .03, .4, .03, 0, 0, 0, 0x3f9a48);
+    for(let k = 0; k < 4; k++){ const a = k / 4 * Math.PI * 2; fm.add(petal, Math.sin(a) * .1, .42, Math.cos(a) * .1, .09, .05, .09, 0, 0, 0, 0xffffff); }
+    fm.add(petal, 0, .44, 0, .06, .06, .06, 0, 0, 0, 0xffd23f);
     const g = fm.geometry(), pts = [], cols = [0xff6f8e, 0xffffff, 0xffd23f, 0xb48cff, 0xff9a3c, 0x7fc8ff];
     const bed = (cx, cz, r, n) => { for(let k = 0; k < n; k++){ const a = rnd() * 6.283, d = Math.sqrt(rnd()) * r, x = cx + Math.sin(a) * d, z = cz + Math.cos(a) * d; pts.push([x, z, cols[Math.floor(rnd() * cols.length)]]); } };
     for(let k = 0; k < 16; k++){ const a = (k + .5) / 16 * Math.PI * 2, x = Math.sin(a) * 26.6, z = Math.cos(a) * 26.6; if(DIRS.some(([dx, dz]) => Math.abs(x * dz - z * dx) < 4 && x * dx + z * dz > 0)) continue; bed(x, z, 1.4, 14); }
