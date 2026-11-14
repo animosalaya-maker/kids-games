@@ -35,7 +35,7 @@ const mmss = s => { s = Math.max(0, Math.ceil(s)); return N(Math.floor(s / 60)) 
 const COLS = 5, ROWS = 5, TILE = 1.75, SOIL = 1.5, NCELL = COLS * ROWS;
 const cellX = i => (i % COLS - 2) * TILE, cellZ = i => (Math.floor(i / COLS) - 2) * TILE;
 /* plot levels: rectangles of cells (c0, c1, r0, r1) added at each level → 6, 9, 12, 18, 20, 25 tiles */
-const PLOT_RECTS = [[1, 3, 1, 2], [1, 3, 1, 3], [1, 3, 0, 3], [0, 4, 1, 3], [0, 4, 0, 3], [0, 4, 0, 4]];
+const PLOT_RECTS = [[1, 3, 2, 3], [1, 3, 1, 3], [1, 3, 1, 4], [0, 4, 1, 3], [0, 4, 1, 4], [0, 4, 0, 4]];
 const PLOT_MAX = PLOT_RECTS.length - 1;
 const PLOT_PRICE = [60, 150, 300, 600, 1000];
 const unlockedSet = lvl => { const s = new Set(); for(let l = 0; l <= lvl; l++){ const [c0, c1, r0, r1] = PLOT_RECTS[l]; for(let r = r0; r <= r1; r++) for(let c = c0; c <= c1; c++) s.add(r * COLS + c); } return s; };
@@ -1034,7 +1034,7 @@ function spotAction(k){
 function guideTarget(){
   if(state !== 'play' || visiting) return null;
   const tut = SAVE.tut;
-  if(tut <= 1){ const un = unlocked(); for(const i of [7, 6, 8, 11, 12, 13]) if(un.has(i) && !SAVE.tiles[i]) return { x:cellX(i), z:cellZ(i), y:1.3 }; }
+  if(tut <= 1){ const un = unlocked(); for(const i of [12, 11, 13, 17, 16, 18]) if(un.has(i) && !SAVE.tiles[i]) return { x:cellX(i), z:cellZ(i), y:1.3 }; }
   if(tut === 2){ const i = SAVE.tiles.findIndex(t => t && t.w <= 0 && t.g < 1); if(i >= 0) return { x:cellX(i), z:cellZ(i), y:1.4 }; }
   if(tut === 3){ const i = SAVE.tiles.findIndex(t => t && t.g >= 1); if(i >= 0) return { x:cellX(i), z:cellZ(i), y:1.6 }; }
   if(tut === 4 && basketCount()) return { x:SPOTS.sell.fx, z:SPOTS.sell.fz, y:2.4 };
@@ -1430,6 +1430,7 @@ class LocalTransport{
   close(){ clearInterval(this.iv); if(this.bc){ if(this.meta) this.bc.postMessage({ k:'bye', from:this.id }); this.bc.close(); this.bc = null; } }
 }
 const MP = { t:null, id:null, code:null, list:[], players:[], meta:null, isHost:false, hostId:null, synced:false, screen:'off', tok:0, sendT:0, gdnT:0, inviteFor:null, typed:'', helps:0 };
+window.__boboRoom = () => (MP.t && MP.meta && MP.code) ? MP.code : null;
 const mpActive = () => !!(MP.t && MP.meta);
 const mpNewId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const mpSort = (a, b) => ((a.o || 0) - (b.o || 0)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
