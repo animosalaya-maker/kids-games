@@ -96,6 +96,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
   .card h1{font-size:36px} #boboCv{width:130px;height:115px}
 }
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+#btnHome{background:#ffcd4d!important;border:3px solid #fff!important;box-shadow:0 3px 0 #c99418!important}
 </style>
 </head>
 <body>
@@ -813,5 +814,7 @@ function start(){
 start();
 })();
 </script>
+<script src="../back.js"></script>
+<script>BoboBack.init({ visible: () => { const b = document.querySelector('.lvl'); return !!(b && b.offsetParent); } });</script>
 </body>
 </html>

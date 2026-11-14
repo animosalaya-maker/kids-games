@@ -2208,5 +2208,7 @@ window.__adv3d = {
 resize(); hud(); showTitle();
 requestAnimationFrame(frame);
 </script>
+<script src="../back.js"></script>
+<script>BoboBack.init({ visible: () => { const o = document.getElementById('overlay'); return !o.hidden && o.classList.contains('title'); }, mount: document.getElementById('stage') });</script>
 </body>
 </html>
