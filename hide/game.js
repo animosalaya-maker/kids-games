@@ -1001,7 +1001,7 @@ class LocalTransport{
     this.iv = setInterval(() => {
       if(this.meta) this.beat();
       const now = Date.now(); let ch = false;
-      for(const [k, p] of this.peers) if(now - p.last > 3500){ this.peers.delete(k); ch = true; }
+      for(const [k, p] of this.peers) if(now - p.last > 6000){ this.peers.delete(k); ch = true; }
       if(ch) this.sync();
     }, 1000);
     bc.postMessage({ k:'hello', from:id });
@@ -1040,7 +1040,7 @@ addEventListener('pagehide', () => { try{ if(frRoomCode && window.Friends){ clea
 function mpClose(){
   frRoom(null);
   if(MP.t){ try{ MP.t.close(); }catch(e){} }
-  MP.t = null; MP.meta = null; MP.list = []; MP.players = []; MP.isHost = false; MP.hostId = null; MP.synced = false;
+  MP.t = null; MP.meta = null; MP.list = []; MP.players = []; MP.isHost = false; MP.hostId = null; MP.synced = false; MP.hostGone = 0;
 }
 async function mpOpen(code, how){
   mpClose();
@@ -1085,7 +1085,9 @@ function mpPresence(list){
   const before = MP.players.map(p => p.id);
   MP.players = all.slice(0, MP_MAX);
   MP.isHost = MP.hostId === MP.id;
-  if(!MP.isHost && MP.hostId && !MP.players.some(p => p.id === MP.hostId)){ mpLeave(); showMenu(); say(L('صاحب الغرفة طلع 🚪', 'The room owner left 🚪', 'Oda sahibi çıktı 🚪'), 4000); return; }
+  // the owner missing from the list: wait a few seconds (a slow phone can miss a heartbeat) before leaving
+  if(!MP.isHost && MP.hostId && !MP.players.some(p => p.id === MP.hostId)){ if(!MP.hostGone) MP.hostGone = performance.now(); }
+  else MP.hostGone = 0;
   const joined = MP.players.filter(p => p.id !== MP.id && !before.includes(p.id));
   if(joined.length && before.length) SFX.go();
   // a friend who left during a round: a bot takes over their slot
@@ -1171,6 +1173,7 @@ function mpMsg(ev, p){
 function sanRes(r){ return { win:r.win === 'seeker' ? 'seeker' : 'hiders', list:r.list.slice(0, 4).map(e => ({ id:String(e.id), hero:okHero(e.hero), role:e.role === 'seeker' ? 'seeker' : 'hider', st:e.st === 'found' ? 'found' : 'free', finds:e.finds | 0, tf:clamp(e.tf | 0, 0, SEEK_T), kind:e.kind === 'bot' ? 'bot' : 'net' })) }; }
 function mpFrame(dt){
   if(!mpActive()) return;
+  if(MP.hostGone && performance.now() - MP.hostGone > 5000){ MP.hostGone = 0; mpLeave(); showMenu(); say(L('صاحب الغرفة طلع 🚪', 'The room owner left 🚪', 'Oda sahibi çıktı 🚪'), 4000); return; }
   MP.sendT -= dt; MP.stT -= dt;
   if(R.online && R.ph !== 'idle' && R.ph !== 'end') mpPos(false);
   if(MP.isHost && R.online && (R.ph === 'count' || R.ph === 'seek') && MP.stT <= 0){ MP.stT = .15; mpSnap(); }
@@ -1332,7 +1335,7 @@ window.__hide = {
   nav:() => W.nodes.map((n, i) => ({ i, x:+n.x.toFixed(1), z:+n.z.toFixed(1), y:+n.y.toFixed(2), k:n.kind, e:n.e.map(e => e[0]) })),
   get fps(){ return fps; }, get dpr(){ return dpr; }, get rot(){ return ROT; }, get shadows(){ return renderer.shadowMap.enabled; },
   shot(v){ closeup = v ? { px:v[0], py:v[1], pz:v[2], lx:v[3], ly:v[4], lz:v[5] } : null; if(v){ camPos.set(v[0], v[1], v[2]); camLook.set(v[3], v[4], v[5]); } },
-  cam, hud(on){ hudEl.style.visibility = on ? '' : 'hidden'; },
+  cam, hud(on){ for(const el of [hudEl, joyEl, jumpBtn, actBtn, toolBtn, guideEl, inChip]) el.style.visibility = on ? '' : 'hidden'; },
   pathCheck(){ // how many hiding places each node can reach (bots' map health)
     const out = {}; const from = MAPS.nearest(W, W.spawn.seeker[0], 0, W.spawn.seeker[1]);
     out.conts = W.conts.map(c => !!MAPS.path(W, from, c.node)); out.spots = W.spots.map(s => !!MAPS.path(W, from, s.node));
@@ -1345,6 +1348,12 @@ loadMap(SAVE.map);
 resize();
 showMenu();
 requestAnimationFrame(frame);
+/* build the other rooms when the phone is idle, so starting a round never stalls */
+(function prebuild(){
+  const todo = MAP_IDS.filter(m => !builtMaps[m]); if(!todo.length) return;
+  const go = () => { if(state === 'menu' || state === 'select' || (state === 'mp' && R.ph === 'idle')){ const m = todo[0]; builtMaps[m] = builtMaps[m] || MAPS.build(m); } setTimeout(prebuild, 600); };
+  if(window.requestIdleCallback) requestIdleCallback(go, { timeout:3000 }); else setTimeout(go, 1500);
+})();
 (function(){
   const join = QS.get('join'), host = QS.get('host') === '1', inv = QS.get('invite');
   if(!/^\d{4}$/.test(join || '') && !host) return;

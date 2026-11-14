@@ -207,7 +207,7 @@ export function makeMaps(THREE, K, renderer){
     }
     function floor(m, col){ bag(m).add(GEO.box, 0, -.5, 0, W.bx1 - W.bx0 + 2, 1, W.bz1 - W.bz0 + 2, 0, 0, 0, col); }
     function texPlane(tex, w, h, x, y, z, ry, o = {}){
-      const pm = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map:tex, roughness:o.rough || .8, transparent:!!o.alpha }));
+      const pm = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshStandardMaterial({ map:tex, roughness:o.rough || .8, alphaTest:o.alpha ? .5 : 0 }));
       pm.position.set(x, y, z); pm.rotation.set(o.rx || 0, ry, 0); pm.receiveShadow = true; W.group.add(pm); return pm;
     }
     const chairAt = (x0, z0, back, col, seat = 4.6) => { // 6 x 6 chair, back on side 'n' (z0) or 's'
@@ -245,7 +245,7 @@ export function makeMaps(THREE, K, renderer){
         for(const sx of [-1, 1]) M.add(K.G.box, sx * 4.02, 2.6, 0, .1, 1, 2.8, 0, 0, 0, 0xffffff); },
       drawer:(col) => M => { M.add(K.G.box, 0, .2, 0, 10, .4, 7, 0, 0, 0, col); M.add(K.G.box, 0, 1, 3.3, 10, 2, .4, 0, 0, 0, col); M.add(K.G.box, 0, 1, -3.3, 10, 2, .4, 0, 0, 0, col);
         M.add(K.G.box, -4.8, 1, 0, .4, 2, 7, 0, 0, 0, col); M.add(K.G.box, 4.8, 1, 0, .4, 2, 7, 0, 0, 0, col); M.add(K.G.box, 0, 1.1, 3.6, 2, .5, .5, 0, 0, 0, 0xffffff);
-        const sc = [0xff8fb1, 0x6cc4ff, 0xffc23d, 0x5ed6a0, 0xffffff, 0xb48cff];
+        const sc = [0xff8fb1, 0xffffff, 0xffb8cc, 0xffffff, 0xff9ab8, 0xffe0ea];
         for(let i = 0; i < 12; i++) M.add(K.G.sph, -3.6 + (i % 5) * 1.8, 1.3 + (i % 3) * .2, -2.4 + Math.floor(i / 5) * 2.2 + (i % 2) * .5, 1, .6, 1.2, 0, i, 0, sc[i % 6]); },
       jewel:(col) => M => { M.add(K.G.box, 0, 1, 0, 3.4, 2, 2.6, 0, 0, 0, col); M.add(K.G.box, 0, 2.6, -1.2, 3.4, 1.8, .3, -.5, 0, 0, col); M.add(K.G.sph, 0, 1.9, 0, .5, .5, .5, 0, 0, 0, 0xffe066); M.add(K.G.box, 0, 2.02, 0, 3, .04, 2.2, 0, 0, 0, 0xb4436a); },
       pencils:(col) => M => { M.add(K.G.cyl, 0, 1.6, 0, 1.4, 3.2, 1.4, 0, 0, 0, col); const pc = [0xffc23d, 0x6cc4ff, 0xff6f91, 0x5ed6a0];
@@ -302,7 +302,7 @@ export function makeMaps(THREE, K, renderer){
       spot(-22, -17.6, 0, L('تحت الخزانة', 'under the cupboard', 'dolabın altı')); spot(-6, -17.6, 0, L('تحت الخزانة', 'under the cupboard', 'dolabın altı')); spot(6, -17.6, 0, L('تحت الخزانة', 'under the cupboard', 'dolabın altı'));
       nav(-26, -17.6); nav(-14, -17.6); nav(0, -17.6); nav(8.5, -17.6);
       // dining table, rug and chairs
-      texPlane(TX.rug, 26, 26, 0, .03, 7, 0, { rx:-Math.PI / 2 });
+      texPlane(TX.rug, 26, 26, 0, .03, 7, 0, { rx:-Math.PI / 2, alpha:true });
       box(-9, 7.2, 1, 9, 7.9, 12, 0xd99a5b, 'wood');
       for(const [x, z] of [[-8.2, 1.8], [8.2, 1.8], [-8.2, 11.2], [8.2, 11.2]]) box(x - .55, 0, z - .55, x + .55, 7.2, z + .55, 0xc4884e, 'wood');
       chairAt(-6.5, 13.4, 's', 0xff9a6c);
@@ -324,7 +324,7 @@ export function makeMaps(THREE, K, renderer){
       cont('pot', -14, -11, 0, 2.6, 3.4, L('الطنجرة', 'the big pot', 'tencere'), C.pot(0xc0c6d0), { az:3.8 });
       box(-12.5, 0, -9, -10.5, 3, -6.5, 0xd0d6de, 'plain', { round:true });       // a lid leaning
       // big cookbooks standing by the right wall: hide behind them
-      books(23.6, -4, 'z', 8, 0, [0xff6f91, 0x5aa9e6, 0xffc23d, 0x5ed6a0, 0xb48cff], 7, 1.5, 2.6);
+      books(23.6, -4, 'z', 8, 0, [0xe8584f, 0xf28b6b, 0xd9463e, 0xffa38a], 7, 1.5, 2.6);
       spot(28.2, 0, 0, L('ورا الكتب', 'behind the books', 'kitapların arkası')); nav(28.2, -5.5); nav(28.2, 9);
       // a basket of oranges and a rolling pin
       cont('basket', 24.5, 16, 0, 2.6, 3.4, L('سلة البرتقال', 'the orange basket', 'portakal sepeti'), C.basket(0xd9a35b), { az:-3.8 });
@@ -389,12 +389,12 @@ export function makeMaps(THREE, K, renderer){
       // bookshelf on the right wall: books on the bottom shelf, a gap behind them
       box(25.6, 0, -9, 30, .8, 7, 0xffffff, 'wood'); box(25.6, 0, -9.6, 30, 17, -9, 0xffffff, 'wood'); box(25.6, 0, 7, 30, 17, 7.6, 0xffffff, 'wood');
       box(25.6, 6, -9, 30, 6.6, 7, 0xffffff, 'wood'); box(25.6, 11.6, -9, 30, 12.2, 7, 0xffffff, 'wood'); box(25.6, 16.6, -9.6, 30, 17.2, 7.6, 0xffffff, 'wood');
-      books(25.8, -8.6, 'z', 9, .8, [0x6cc4ff, 0xff6f91, 0x5ed6a0, 0xffc23d, 0xb48cff], 4.4, 1.3, 1.7);
-      books(26, -8, 'z', 10, 6.6, [0xffc23d, 0x5ed6a0, 0xb48cff, 0x6cc4ff, 0xff6f91], 4.2, 1.2, 3.6, { nocol:true });
+      books(25.8, -8.6, 'z', 9, .8, [0x5aa9e6, 0x3d86c9, 0x8cc8f2, 0x6cb4ef], 4.4, 1.3, 1.7);
+      books(26, -8, 'z', 10, 6.6, [0xffc23d, 0xffd66b, 0xf2a93b, 0xffe39a], 4.2, 1.2, 3.6, { nocol:true });
       solid(26, 6.6, -8, 29.6, 11, 4.6);
       spot(28.7, -2, .8, L('ورا الكتب', 'behind the books', 'kitapların arkası')); nav(27, 5.8, .8); nav(28.7, 4.4, .8); nav(28.7, -6.5, .8);
       // round rug, big ball, toy train, bean bag
-      texPlane(TX.rug, 22, 22, 2, .03, 4, 0, { rx:-Math.PI / 2 });
+      texPlane(TX.rug, 22, 22, 2, .03, 4, 0, { rx:-Math.PI / 2, alpha:true });
       ball(-4, 9, 0, 3, 0xff6f91);
       for(let i = 0; i < 7; i++){ const a = i * 2.4, u = .9 - (i % 3) * .55, rr = Math.sqrt(1 - u * u) * 3.02; deco(GEO.sm, -4 + Math.cos(a) * rr, 3 + u * 3.02, 9 + Math.sin(a) * rr, .55, .55, .55, 0xffffff); }
       for(let i = 0; i < 3; i++){ const x = 4 + i * 4.6; box(x, .8, -2, x + 4, 3.8, 1, [0x6cc4ff, 0xffc23d, 0x5ed6a0][i], 'plain', { round:true }); for(const zz of [-1.6, .6]) for(const xx of [x + .9, x + 3.1]) deco(GEO.cyl, xx, .8, zz, .8, .5, .8, 0x333344, 'plain', Math.PI / 2); }
@@ -418,7 +418,7 @@ export function makeMaps(THREE, K, renderer){
       cont('slipper', -9, 18, 0, 1.8, 2.2, L('الشحّاطة', 'the slipper', 'terlik'), C.slipper(0xff9ab8), { az:-3.6, cs:.9 });
       deco(GEO.sph, -5, .9, 18.6, 1.8, 1, 3, 0xff9ab8); deco(GEO.box, -5, .25, 18.6, 3.2, .5, 5.6, 0xffffff); deco(GEO.sph, -5, 1.9, 17, .7, .7, .7, 0xffffff);
       cont('plant', 26.5, 18, 0, 3, 5, L('أصيص الزرع', 'the plant pot', 'saksı'), C.plant(0x6cc4ff), { az:-4.2, ax:-1 });
-      texPlane(TX.picture, 8, 8, 0, 19, -21.9, 0); deco(GEO.box, 0, 19, -21.95, 9, 9, .2, 0xd9a35b);
+      texPlane(TX.picture, 8, 8, 0, 19, -21.78, 0); deco(GEO.box, 0, 19, -21.95, 9, 9, .2, 0xd9a35b);
       W.spawn = { seeker:[0, -6], hiders:[[-2, 6], [2, 6], [6, 4], [-6, 4]] };
       W.podium = { x:-14, z:9, f:Math.PI * .15 };
       W.disg = ['block', 'ball', 'sock'];
