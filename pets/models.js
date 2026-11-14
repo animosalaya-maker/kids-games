@@ -128,7 +128,7 @@ export function makePetModels(THREE, K){
       // legs
       const lr = lerp(.075, .085, k) * (pony ? .9 : 1), legCol = sp === 'panda' ? S.acc : sp === 'fox' ? S.acc : S.col, paw = pony ? S.acc : sp === 'panda' || sp === 'fox' ? S.acc : S.belly;
       for(const [sx, sz] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]){
-        const l = piv(root, sx * rx * .55, ll + .02, sz * rz * .5);
+        const l = piv(body, sx * rx * .55, ll + .02 - by, sz * rz * .5);
         const E = new Merge(); E.add(G.cyl8, 0, -ll / 2, 0, lr, ll, lr, 0, 0, 0, legCol); E.add(G.sm, 0, -ll + lr * .3, lr * .25, lr * 1.18, lr * .8, lr * 1.3, 0, 0, 0, paw);
         l.add(mesh(E)); P.legs.push(l);
       }
@@ -188,7 +188,7 @@ export function makePetModels(THREE, K){
         w.add(mesh(W)); w.userData.side = s; w.userData.flat = true; P.wings.push(w);
       }
       for(const s of [-1, 1]){
-        const l = piv(root, s * rx * .42, ll + .02, rz * .1);
+        const l = piv(body, s * rx * .42, ll + .02 - by, rz * .1);
         const E = new Merge(); E.add(G.cyl8, 0, -ll / 2, 0, .035, ll, .035, 0, 0, 0, S.acc); E.add(G.sph, 0, -ll, .07, .09, .035, .12, 0, 0, 0, S.acc);
         l.add(mesh(E)); P.legs.push(l);
       }
@@ -213,14 +213,14 @@ export function makePetModels(THREE, K){
       faceBits(H, hr, S, { my:.3, mz:.82 }); head.add(mesh(H));
       P.eyes = eyes(head, hr, k, 1.05);
       for(const [sx, sz] of [[-1, 1], [1, 1], [-1, -1], [1, -1]]){
-        const l = piv(root, sx * rs * .82, ll + .03, sz * rs * .7);
+        const l = piv(body, sx * rs * .82, ll + .03 - by, sz * rs * .7);
         const E = new Merge(); E.add(G.sph, 0, -ll * .4, 0, .09, ll + .04, .1, 0, 0, 0, S.col); l.add(mesh(E)); P.legs.push(l);
       }
       P.hr = hr; P.headTop = by + .14 + hr * 1.3;
     }
     P.body = body; P.head = head;
     P.hatPiv = piv(head, 0, hr * .86, 0); P.hatPiv.scale.setScalar(hr);
-    const scale = [.62, .8, 1][st] * S.size;
+    const scale = [.74, .9, 1.08][st] * S.size;
     root.scale.setScalar(scale); P.scale = scale;
     P.h = P.headTop * scale; P.r = (kind === 'pony' ? .5 : .4) * scale;
     P.bodyY = body.position.y; P.headRest = head.rotation.x;
@@ -340,7 +340,7 @@ export function makePetModels(THREE, K){
       else { x.beginPath(); x.ellipse(cx, cy, rr, rr * 1.3, 0, 0, 6.3); x.fill(); }
     }
     if(cracks > 0){
-      x.strokeStyle = '#4a3020'; x.lineWidth = 5; x.lineCap = 'round'; x.lineJoin = 'round';
+      x.strokeStyle = '#4a3020'; x.lineWidth = 8; x.lineCap = 'round'; x.lineJoin = 'round';
       let q = 3; const rr = () => (q = (q * 48271) % 2147483647) / 2147483647;
       for(let c = 0; c < cracks; c++){
         let px = 20 + c * 51 + rr() * 20, py = 100 + rr() * 40; x.beginPath(); x.moveTo(px, py);
