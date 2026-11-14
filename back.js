@@ -14,6 +14,9 @@
 .bb-back:active{transform:translateY(3px);box-shadow:0 1px 0 #c99418,0 4px 10px rgba(0,0,0,.25)}
 .bb-back svg{width:30px;height:30px;flex:none}
 .bb-back[hidden]{display:none}
+.exit-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:12px auto 0;min-width:180px;height:52px;padding:0 26px;border-radius:26px;border:3px solid #fff;
+  background:#ff4d6d!important;color:#fff!important;opacity:1!important;text-shadow:0 2px 0 rgba(0,0,0,.25);font:900 20px/1 inherit;font-family:inherit;cursor:pointer;box-shadow:0 4px 0 #b8243f,0 8px 16px rgba(0,0,0,.28);-webkit-tap-highlight-color:transparent}
+.exit-btn:active{transform:translateY(3px);box-shadow:0 1px 0 #b8243f}
 .bb-back.sm{width:50px;padding:0;justify-content:center}.bb-back.sm span{display:none}
 @media (max-height:420px){.bb-back{height:42px;font-size:16px;padding:0 14px 0 8px}.bb-back svg{width:24px;height:24px}}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
@@ -30,6 +33,8 @@
     const host = cfg.mount || document.body; if(cfg.mount) btn.classList.add('in'); host.appendChild(btn);
   }
   function tick(){ if(!btn) return; let v = true; try { v = cfg.visible ? !!cfg.visible() : true; } catch(e){} if(btn.hidden === v) btn.hidden = !v; let c = false; try { c = cfg.compact ? !!cfg.compact() : false; } catch(e){} btn.classList.toggle('sm', c); }
+  // any .exit-btn without its own handler goes to the home page
+  document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('.exit-btn'); if(b && !b.onclick){ e.preventDefault(); location.href = b.dataset.href || '../'; } });
   window.BoboBack = {
     init(o){ cfg = o || {}; const go = () => { make(); tick(); setInterval(tick, 200); }; document.body ? go() : addEventListener('DOMContentLoaded', go); },
     refresh(){ if(btn){ btn.querySelector('span').textContent = word(); btn.setAttribute('aria-label', word()); } tick(); }

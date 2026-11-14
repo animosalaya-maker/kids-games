@@ -1177,8 +1177,9 @@ function showPause(){
     <div class="row">${mp ? '' : `<button class="ghost-btn" id="bRestart">🔁 ${L('من الأول', 'Restart', 'Yeniden başla')}</button>
     <button class="ghost-btn" id="bHeroP">🦸 ${L('غيّر الشخصية', 'Change hero', 'Kahramanı değiştir')}</button>`}
     <button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button>
-    <button class="ghost-btn" id="bHub">🌍 ${mp ? L('اطلع من السباق', 'Leave the race', 'Yarıştan ayrıl') : L('العوالم', 'Worlds', 'Dünyalar')}</button></div>`;
+    <button class="ghost-btn" id="bHub">🌍 ${mp ? L('اطلع من السباق', 'Leave the race', 'Yarıştan ayrıl') : L('العوالم', 'Worlds', 'Dünyalar')}</button></div><button class="exit-btn" id="bExit">🚪 ${L('خروج', 'Exit', 'Çıkış')}</button>`;
   $('#bRes').onclick = () => { SFX.tap(); resume(); };
+  $('#bExit').onclick = () => { SFX.tap(); try{ if(mp) mpLeave(); }catch(e){} setTimeout(() => { location.href = '../'; }, 150); };
   if(!mp){
     $('#bRestart').onclick = () => { SFX.tap(); startWorld(worldIdx); };
     $('#bHeroP').onclick = () => { SFX.tap(); showSelect('pause'); };
@@ -1242,7 +1243,7 @@ function showFinish(o){
     ${o.unlockedNext ? `<p class="newbest">🔓 ${L('فتحت عالم جديد', 'You opened a new world', 'Yeni bir dünya açtın')}: ${nxt.emoji} ${W_NAME(nxt)}</p>` : ''}
     <div class="row">${nxt && isUnlocked(worldIdx + 1) ? `<button class="big-btn" id="bNext">▶️ ${W_NAME(nxt)} ${nxt.emoji}</button>` : ''}
     <button class="${nxt && isUnlocked(worldIdx + 1) ? 'ghost-btn' : 'big-btn'}" id="bAgain">🔁 ${L('كمان مرة', 'Again', 'Tekrar')}</button>
-    <button class="ghost-btn" id="bHubF">🌍 ${L('العوالم', 'Worlds', 'Dünyalar')}</button></div>`;
+    <button class="ghost-btn" id="bHubF">🌍 ${L('العوالم', 'Worlds', 'Dünyalar')}</button></div><button class="exit-btn">🚪 ${L('خروج', 'Exit', 'Çıkış')}</button>`;
   [0, 1, 2].forEach(i => { if(o.got[i]) setTimeout(() => SFX.star(), 200 + i * 250); });
   const bn = $('#bNext'); if(bn) bn.onclick = () => { SFX.tap(); hubPick = worldIdx + 1; showSheet(worldIdx + 1); };
   $('#bAgain').onclick = () => { SFX.tap(); startWorld(worldIdx); };

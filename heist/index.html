@@ -1236,9 +1236,10 @@ function showPause(){
     <button class="big-btn" id="bRes">▶️ ${L('كمّل', 'Resume', 'Devam')}</button>
     <div class="row">${mp ? '' : `<button class="ghost-btn" id="bFin">🏁 ${L('خلّص الجولة', 'Finish the round', 'Turu bitir')}</button>`}
     <button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button>
-    <button class="ghost-btn" id="bMenu">🏠 ${mp ? L('اطلع من اللعبة', 'Leave the game', 'Oyundan ayrıl') : L('القائمة', 'Menu', 'Menü')}</button></div>`;
+    <button class="ghost-btn" id="bMenu">🏠 ${mp ? L('اطلع من اللعبة', 'Leave the game', 'Oyundan ayrıl') : L('القائمة', 'Menu', 'Menü')}</button></div><button class="exit-btn" id="bExit">🚪 ${L('خروج', 'Exit', 'Çıkış')}</button>`;
   $('#bRes').onclick = () => { SFX.tap(); resume(); };
   if(!mp) $('#bFin').onclick = () => { SFX.tap(); endRound(); };
+  $('#bExit').onclick = () => { SFX.tap(); try{ if(mp) mpLeave(); else saveSP(); }catch(e){} setTimeout(() => { location.href = '../'; }, 150); };
   $('#bSnd').onclick = () => { muted = !muted; rawSet('adv3d_muted', String(muted)); $('#bSnd').innerHTML = (muted ? '🔇' : '🔊') + ' ' + L('الصوت', 'Sound', 'Ses'); SFX.tap(); };
   $('#bMenu').onclick = () => { SFX.tap(); if(mp) mpLeave(); else { saveSP(); showMenu(); } };
 }
