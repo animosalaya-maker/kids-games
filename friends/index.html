@@ -148,6 +148,12 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(32px,9vw,42px);lin
 .gcard .gpic img:nth-of-type(1){inset-inline-start:-6px}.gcard .gpic img:nth-of-type(2){inset-inline-end:-6px}
 .gcard .gpic .em.small{position:absolute;top:-6px;inset-inline-end:-6px;font-size:34px;z-index:1}
 .gcard .gpic canvas{width:92px;height:92px}
+/* «انضم» request: waiting for the friend to accept */
+.wait-av{position:relative;display:grid;place-items:center;width:110px;height:110px}
+.wait-av::before{content:'';position:absolute;inset:0;border-radius:50%;border:5px solid rgba(255,205,77,.25);border-top-color:var(--gold);animation:wspin 1.1s linear infinite}
+.wait-av.done::before{animation:none;border-color:rgba(255,205,77,.35)}
+@keyframes wspin{to{transform:rotate(360deg)}}
+.wait-g{display:inline-block;padding:3px 14px;border-radius:999px;background:rgba(255,205,77,.18);color:var(--gold);font-weight:800}
 .gcard .gt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
 .gcard .gt b{font-family:var(--display);font-weight:800;font-size:23px;line-height:1.1;text-shadow:0 2px 0 rgba(0,0,0,.2)}
 .gcard .gt small{font-weight:700;font-size:14px;opacity:.92;line-height:1.3}
@@ -225,6 +231,14 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(32px,9vw,42px);lin
   <div class="games" id="gameList"></div>
 </div></div>
 
+<div class="sheet" id="waitSheet" hidden><div class="card">
+  <div class="wait-av" id="waitAv"></div>
+  <h2 id="waitH"></h2>
+  <span class="wait-g" id="waitG"></span>
+  <p id="waitP"></p>
+  <div class="btns"><button class="ghost" id="waitX"></button></div>
+</div></div>
+
 <div class="sheet" id="askSheet" hidden><div class="card">
   <div id="askAv"></div>
   <h2 id="askH"></h2>
@@ -260,11 +274,11 @@ function offline(e){ $('offline').hidden = false; $('offText').textContent = F.e
 function online(){ $('offline').hidden = true; }
 
 /* sheets + back button */
-const sheets = ['addSheet', 'lookSheet', 'gameSheet', 'askSheet'];
+const sheets = ['addSheet', 'lookSheet', 'gameSheet', 'askSheet', 'waitSheet'];
 const openSheet = id => { $(id).hidden = false; };
-const closeSheets = () => sheets.forEach(id => { $(id).hidden = true; });
+const closeSheets = () => { sheets.forEach(id => { $(id).hidden = true; }); stopWait(); };
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => { tap(); closeSheets(); });
-sheets.forEach(id => $(id).addEventListener('click', e => { if(e.target === $(id) && id !== 'askSheet') closeSheets(); }));
+sheets.forEach(id => $(id).addEventListener('click', e => { if(e.target === $(id) && id !== 'askSheet' && id !== 'waitSheet') closeSheets(); }));
 BoboBack.init({ onBack: () => { if(sheets.some(id => !$(id).hidden)){ closeSheets(); if(askDone) askDone(false); } else location.href = '../'; } });
 
 let askDone = null;
@@ -340,14 +354,18 @@ function render(){
     const play = btn('play' + (k.online && !k.room ? '' : ' off'), L('تعا العب 🎮', 'Play 🎮', 'Oyna 🎮'), null, () => { tap(); pickGame(k); });
     const more = btn('more', '⋯', L('أكتر', 'More', 'Daha fazla'), () => removeFriend(k));
     let buttons = [play, more];
-    if(k.room){
-      // the friend is in an online room right now: «انضم» goes straight in, «تعا العب» stays as the second choice
+    const playing = k.playing && F.GAMES[k.playing] ? k.playing : null, busy = !!(playing || k.room);
+    if(busy){
+      // the friend is playing an online game right now: «انضم» asks them first (they get ✓/✕ in their game);
+      // an older client that only reports a room is joined directly. «تعا العب» stays as the second choice.
       const acts = document.createElement('div'); acts.className = 'acts';
-      const j = btn('join', `<span>${L('انضم 🚪', 'Join 🚪', 'Katıl 🚪')}</span><small>${F.gameName(k.game)}</small>`, null, b => { tap(); b.disabled = true; location.href = F.gameUrl('../' + F.GAMES[F.gameOf(k.game)].path, { join:k.room }); });
+      const j = playing
+        ? btn('join', `<span>${L('انضم 🚪', 'Join 🚪', 'Katıl 🚪')}</span><small>${F.gameName(playing)}</small>`, null, b => { tap(); askToJoin(k, b); })
+        : btn('join', `<span>${L('انضم 🚪', 'Join 🚪', 'Katıl 🚪')}</span><small>${F.gameName(k.game)}</small>`, null, b => { tap(); b.disabled = true; location.href = F.gameUrl('../' + F.GAMES[F.gameOf(k.game)].path, { join:k.room }); });
       acts.appendChild(j); acts.appendChild(play); buttons = [acts, more];
     }
-    fl.appendChild(row(k, { dot:true, cls:k.room ? 'inroom' : '',
-      sub:k.room ? L('عم يلعب هلّق 🎮', 'Playing now 🎮', 'Şu an oynuyor 🎮') : k.online ? L('موجود هلّق 🟢', 'Online now', 'Şu an çevrimiçi') : L('مش موجود هلّق', 'Not online now', 'Şu an çevrimdışı'), subOn:k.online || !!k.room,
+    fl.appendChild(row(k, { dot:true, cls:busy ? 'inroom' : '',
+      sub:playing ? L('عم يلعب: ', 'Playing: ', 'Oynuyor: ') + F.gameName(playing) : k.room ? L('عم يلعب هلّق 🎮', 'Playing now 🎮', 'Şu an oynuyor 🎮') : k.online ? L('موجود هلّق 🟢', 'Online now', 'Şu an çevrimiçi') : L('مش موجود هلّق', 'Not online now', 'Şu an çevrimdışı'), subOn:k.online || busy,
       buttons }));
   });
   // outgoing
@@ -381,7 +399,7 @@ function pickGame(k){
   const who = $('gameWho'); who.innerHTML = ''; who.appendChild(F.avatarEl(k, 40));
   const t = document.createElement('span'); t.textContent = L('مع ', 'with ', '') + label(k) + L('', '', ' ile'); who.appendChild(t);
   const gl = $('gameList'); gl.innerHTML = '';
-  Object.keys(F.GAMES).forEach(id => {
+  Object.keys(F.GAMES).filter(id => F.GAMES[id].invite && GAME_SUB[id]).forEach(id => {
     const g = F.GAMES[id], b = document.createElement('button'); b.className = 'gcard'; b.dataset.game = id;
     b.style.setProperty('--gc', g.color); b.style.setProperty('--gd', g.dark);
     b.appendChild(gamePic(id));
@@ -392,6 +410,55 @@ function pickGame(k){
     gl.appendChild(b);
   });
   openSheet('gameSheet');
+}
+
+/* «انضم»: ask the friend (they see ✓ قبول / ✕ رفض inside their game), then wait; accepted → straight into their room */
+let waitT = 0, waitId = null;
+function stopWait(){ clearTimeout(waitT); waitT = 0; waitId = null; }
+function waitShow(k, game, state){
+  const av = $('waitAv'); av.innerHTML = ''; av.appendChild(F.avatarEl(k, 84)); av.classList.toggle('done', state !== 'wait');
+  $('waitG').textContent = F.gameName(game); $('waitG').hidden = state !== 'wait';
+  const T3 = {
+    wait:[L('استنّى ' + label(k) + ' يقبل… ⏳', 'Waiting for ' + label(k) + ' to accept… ⏳', label(k) + ' kabul etsin, bekle… ⏳'),
+          L('صاحبك رح يشوف طلبك جوّا اللعبة', 'Your friend sees your request inside the game', 'Arkadaşın isteğini oyunun içinde görecek'), L('✕ الغي', '✕ Cancel', '✕ İptal')],
+    yes:[L('قبل! يلّا نفوت 🎉', 'Accepted! Going in 🎉', 'Kabul etti! Giriyoruz 🎉'), '', L('✕ الغي', '✕ Cancel', '✕ İptal')],
+    no:[L('صاحبك مش فاضي هلّق 💛', 'Your friend is busy right now 💛', 'Arkadaşın şu an meşgul 💛'), L('جرّب كمان شوي', 'Try again a bit later', 'Biraz sonra tekrar dene'), L('تمام 👍', 'OK 👍', 'Tamam 👍')],
+    late:[L('ما ردّ صاحبك، جرّب بعدين', "Your friend didn't answer, try later", 'Arkadaşın cevap vermedi, sonra dene'), '💛', L('تمام 👍', 'OK 👍', 'Tamam 👍')]
+  }[state];
+  $('waitH').textContent = T3[0]; $('waitP').textContent = T3[1]; $('waitX').textContent = T3[2];
+  $('waitX').onclick = () => { tap(); closeSheets(); };
+  openSheet('waitSheet');
+}
+async function askToJoin(k, b){
+  if(b) b.disabled = true;
+  let r;
+  try{ r = await F.askJoin(k.code); }
+  catch(e){ if(b) b.disabled = false; toast(F.errText(e)); return; }
+  if(b) b.disabled = false;
+  if(!r || r.status !== 'sent'){
+    toast(({ not_playing:L('صاحبك خلّص لعب هلّق 🙂', 'Your friend stopped playing 🙂', 'Arkadaşın oyunu bıraktı 🙂'),
+             slow_down:L('استنّى شوي وجرّب كمان مرّة ⏳', 'Wait a little and try again ⏳', 'Biraz bekle ve tekrar dene ⏳') })[r && r.status] || F.statusText('none'));
+    load(); return;
+  }
+  stopWait(); const id = waitId = r.id, game = r.game; let fails = 0;
+  waitShow(k, game, 'wait');
+  const poll = async () => {
+    if(waitId !== id) return;
+    let s = null;
+    try{ s = await F.joinStatus(id); fails = 0; }catch(e){ if(++fails > 15){ stopWait(); closeSheets(); toast(F.errText(e)); return; } }
+    if(waitId !== id) return;
+    const st = s && s.status;
+    if(st === 'accepted' && /^\d{4}$/.test(s.room || '')){
+      stopWait(); ding(); waitShow(k, game, 'yes');
+      const g = F.GAMES[s.game] ? s.game : game;
+      setTimeout(() => { location.href = F.gameUrl('../' + F.GAMES[F.gameOf(g)].path, { join:s.room }); }, 500);
+      return;
+    }
+    if(st === 'declined'){ stopWait(); nope(); waitShow(k, game, 'no'); return; }
+    if(st === 'expired' || st === 'cancelled' || st === 'none'){ stopWait(); waitShow(k, game, 'late'); return; }
+    waitT = setTimeout(poll, 2000);
+  };
+  waitT = setTimeout(poll, 2000);
 }
 
 async function load(){

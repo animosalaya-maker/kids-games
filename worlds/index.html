@@ -1396,6 +1396,8 @@ function mpUpdateRemotes(dt){
 }
 /* «أصحابي»: tell friends which room I'm in (so they see «انضم»), every 60 s while in it, cleared on leave / page close */
 const FR_GAME = 'worlds';
+/* «انضم»: invitepop.js answers a friend's join request with this room (and ?host=1&accept=<id> makes one first) */
+window.__boboRoom = () => (MP.t && MP.meta && MP.code) ? MP.code : null;
 let frRoomCode = null, frRoomIv = 0;
 function frRoom(code){
   if(!(window.Friends && Friends.has()) || code === frRoomCode) return;
