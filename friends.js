@@ -22,14 +22,23 @@ const NOUN = {
   tiger:['نمر','Tiger','Kaplan'], lion:['أسد','Lion','Aslan'], rabbit:['أرنب','Rabbit','Tavşan'], falcon:['صقر','Falcon','Şahin'],
   dolphin:['دلفين','Dolphin','Yunus'], bear:['دب','Bear','Ayı'], fox:['ثعلب','Fox','Tilki'], penguin:['بطريق','Penguin','Penguen'],
   cat:['قط','Cat','Kedi'], elephant:['فيل','Elephant','Fil'], horse:['حصان','Horse','At'], star:['نجم','Star','Yıldız'] };
-/* the online games a friend can be invited to (ids match the server: bobo_fr_set_room / bobo_fr_invite2) */
+/* the online games. invite:true = in the «تعا العب» picker (the server's bobo_fr_set_room / bobo_fr_invite2 accept only those ids);
+   every id here can be reported with bobo_fr_set_playing and asked to join («انضم» → bobo_fr_ask_join) */
 const GAMES = {
-  '3d':   { path:'adventure3d/', emoji:'⭐', color:'#ffb53d', dark:'#b8740f',
+  '3d':   { path:'adventure3d/', invite:true, emoji:'⭐', color:'#ffb53d', dark:'#b8740f',
             name:['سباق النجوم 3D ⭐', 'Star Rush 3D ⭐', 'Yıldız Yarışı 3D ⭐'], game:['مغامرة بوبو 3D', "Bobo's Adventure 3D", "Bobo'nun Macerası 3D"] },
-  worlds: { path:'worlds/', emoji:'🌍', color:'#5b8cff', dark:'#3555b8', pics:['worlds/chars/sara.png', 'worlds/chars/samir.png'],
+  worlds: { path:'worlds/', invite:true, emoji:'🌍', color:'#5b8cff', dark:'#3555b8', pics:['worlds/chars/sara.png', 'worlds/chars/samir.png'],
             name:['سباق العوالم 🌍', 'Worlds Race 🌍', 'Dünyalar Yarışı 🌍'], game:['عوالم بوبو', 'Bobo Worlds', 'Bobo Dünyaları'] },
-  heist:  { path:'heist/', emoji:'🥚', color:'#3fc47a', dark:'#23854f', pics:['worlds/chars/zaqzouq.png', 'worlds/chars/laila.png'],
-            name:['اسرق البيضة 🥚', 'Egg Heist 🥚', 'Yumurta Soygunu 🥚'], game:['اسرق البيضة', 'Egg Heist', 'Yumurta Soygunu'] }
+  heist:  { path:'heist/', invite:true, emoji:'🥚', color:'#3fc47a', dark:'#23854f', pics:['worlds/chars/zaqzouq.png', 'worlds/chars/laila.png'],
+            name:['اسرق البيضة 🥚', 'Egg Heist 🥚', 'Yumurta Soygunu 🥚'], game:['اسرق البيضة', 'Egg Heist', 'Yumurta Soygunu'] },
+  pets:   { path:'pets/', emoji:'🐾', color:'#ff8fb8', dark:'#c4527e',
+            name:['حيوانات بوبو 🐾', 'Bobo Pets 🐾', 'Bobo Hayvanları 🐾'], game:['حيوانات بوبو', 'Bobo Pets', 'Bobo Hayvanları'] },
+  castle: { path:'maps/castle/', emoji:'🏰', color:'#b07cff', dark:'#7240c2',
+            name:['قلعة الألعاب 🏰', 'Toy Castle 🏰', 'Oyuncak Kalesi 🏰'], game:['قلعة الألعاب', 'Toy Castle', 'Oyuncak Kalesi'] },
+  garden: { path:'garden/', emoji:'🌻', color:'#5cc46a', dark:'#2f8a3c',
+            name:['حديقة بوبو 🌻', 'Bobo Garden 🌻', 'Bobo Bahçesi 🌻'], game:['حديقة بوبو', 'Bobo Garden', 'Bobo Bahçesi'] },
+  hide:   { path:'hide/', emoji:'🙈', color:'#ff9f43', dark:'#b8661a',
+            name:['الغميضة 🙈', 'Hide and Seek 🙈', 'Saklambaç 🙈'], game:['الغميضة', 'Hide and Seek', 'Saklambaç'] }
 };
 const gameOf = g => GAMES[g] ? g : '3d';
 const gameName = (g, inGame) => { const x = GAMES[gameOf(g)][inGame ? 'game' : 'name']; return T(x[0], x[1], x[2]); };
@@ -58,14 +67,17 @@ function secret(create){
 function makeMock(load, save, now){
   const ok = s => typeof s === 'string' && s.length >= 43 && s.length <= 128 && /^[A-Za-z0-9_-]+$/.test(s);
   const fail = (code, msg) => { const e = new Error(msg); e.code = code; throw e; };
-  const fresh = () => ({ seq:1, kids:[], req:[], fr:[], inv:[] });
+  const fresh = () => ({ seq:1, kids:[], req:[], fr:[], inv:[], jr:[] });
+  const playingOf = k => (k.playing && now() - (k.pt || 0) < 60000) ? k.playing : null;
+  const jrs = d => (d.jr = d.jr || []);
   const inRoom = k => !!(k.room && now() - (k.rt || 0) < 90000);
   const card = k => ({ code:k.code, avatar:k.avatar, color:k.color, hat:k.hat, glasses:k.glasses, na:k.na, nn:k.nn, name:k.name || null, online:now() - k.seen < 60000,
-    room:inRoom(k) ? k.room : null, game:inRoom(k) ? k.game : null });
+    room:inRoom(k) ? k.room : null, game:inRoom(k) ? k.game : null, playing:playingOf(k) });
   const isFr = (d, a, b) => d.fr.some(f => f[0] === a && f[1] === b);
   const nFr = (d, a) => d.fr.filter(f => f[0] === a).length;
   const counts = (d, id) => ({ requests:d.req.filter(r => r[1] === id).length,
-    invites:d.inv.filter(i => i.to === id && !i.dis && i.exp > now() && isFr(d, id, i.from)).length });
+    invites:d.inv.filter(i => i.to === id && !i.dis && i.exp > now() && isFr(d, id, i.from)).length,
+    joins:jrs(d).filter(j => j.to === id && j.st === 'pending' && j.exp > now() && isFr(d, id, j.from)).length });
   const byCode = (d, c) => d.kids.find(k => k.code === String(c || '').trim().toUpperCase());
   const befriend = (d, a, b) => { d.req = d.req.filter(r => !((r[0] === a && r[1] === b) || (r[0] === b && r[1] === a))); if(!isFr(d, a, b)) d.fr.push([a, b, now()], [b, a, now()]); };
   const F = {
@@ -160,10 +172,39 @@ function makeMock(load, save, now){
       return d.inv.filter(i => i.to === me.id && !i.dis && i.exp > now() && isFr(d, me.id, i.from)).sort((x, y) => y.t - x.t)
         .map(i => ({ id:i.id, room:i.room, game:i.game || '3d', from:card(d.kids.find(k => k.id === i.from)), left:Math.max(0, Math.floor((i.exp - now()) / 1000)) }));
     },
+    bobo_fr_set_playing(d, a, me){
+      if(a.p_game != null && !/^[a-z0-9_]{2,16}$/.test(a.p_game)) fail('22023', 'bad_game');
+      me.playing = a.p_game || null; me.pt = a.p_game ? now() : 0; me.seen = now(); return counts(d, me.id);
+    },
+    bobo_fr_ask_join(d, a, me){
+      const o = byCode(d, a.p_code); if(!o || !isFr(d, me.id, o.id)) return { status:'not_friends' };
+      const g = playingOf(o); if(!g) return { status:'not_playing' };
+      if(jrs(d).filter(j => j.from === me.id && now() - j.t < 60000).length >= 6) return { status:'slow_down' };
+      d.jr.forEach(j => { if(j.from === me.id && j.to === o.id && j.st === 'pending') j.st = 'cancelled'; });
+      d.jr = d.jr.filter(j => j.exp > now() - 864e5);
+      const id = d.seq++; d.jr.push({ id, from:me.id, to:o.id, game:g, t:now(), exp:now() + 120000, st:'pending', room:null });
+      return { status:'sent', id, game:g };
+    },
+    bobo_fr_join_reqs(d, a, me){
+      return jrs(d).filter(j => j.to === me.id && j.st === 'pending' && j.exp > now() && isFr(d, me.id, j.from)).sort((x, y) => y.t - x.t)
+        .map(j => ({ id:j.id, game:j.game, from:card(d.kids.find(k => k.id === j.from)), left:Math.max(0, Math.floor((j.exp - now()) / 1000)) }));
+    },
+    bobo_fr_answer_join(d, a, me){
+      if(a.p_accept && !/^[0-9]{4}$/.test(a.p_room || '')) fail('22023', 'bad_room');
+      const j = jrs(d).find(x => x.id === +a.p_id && x.to === me.id && x.st === 'pending');
+      if(!j) return { status:'none' };
+      j.st = a.p_accept ? 'accepted' : 'declined'; j.room = a.p_accept ? a.p_room : null; j.exp = Math.max(j.exp, now() + 60000);
+      return { status:'ok' };
+    },
+    bobo_fr_join_status(d, a, me){
+      const j = jrs(d).find(x => x.id === +a.p_id && x.from === me.id); if(!j) return { status:'none' };
+      return { status:j.st === 'pending' && j.exp <= now() ? 'expired' : j.st, room:j.room, game:j.game };
+    },
     bobo_fr_dismiss(d, a, me){ d.inv.forEach(i => { if(i.id === +a.p_id && i.to === me.id) i.dis = true; }); return { status:'dismissed' }; },
     bobo_fr_delete_me(d, a, me){
       const id = me.id; d.kids = d.kids.filter(k => k.id !== id);
       d.req = d.req.filter(r => r[0] !== id && r[1] !== id); d.fr = d.fr.filter(f => f[0] !== id && f[1] !== id); d.inv = d.inv.filter(i => i.from !== id && i.to !== id);
+      d.jr = jrs(d).filter(j => j.from !== id && j.to !== id);
       return { status:'deleted' };
     }
   };
@@ -313,6 +354,22 @@ function setRoom(room, game, unload){
   return call('bobo_fr_set_room', { p_room:args.p_room, p_game:args.p_game });
 }
 
+/* "I'm playing <game> now" (any id in GAMES; null = stopped). invitepop.js calls it every ~25 s while a game page is open
+   (it also counts as the heartbeat and returns the badge counts) and with null on pagehide (unload=true: keepalive, no waiting). */
+function setPlaying(game, unload){
+  const s = secret(false); if(!s) return Promise.resolve(null);
+  const g = game == null ? null : String(game);
+  if(unload){
+    try{
+      const args = { p_secret:s, p_game:g };
+      if(mock) mock.call('bobo_fr_set_playing', args);
+      else fetch(URL_ + '/rest/v1/rpc/bobo_fr_set_playing', { method:'POST', keepalive:true, headers:{ 'Content-Type':'application/json', apikey:KEY }, body:JSON.stringify(args) }).catch(() => {});
+    }catch(e){}
+    return Promise.resolve(null);
+  }
+  return call('bobo_fr_set_playing', { p_game:g });
+}
+
 /* heartbeat: tells the server "I'm here" every 25 s while the page is visible; cb gets the badge counts */
 function startHeartbeat(cb, ms){
   if(!secret(false)) return () => {};
@@ -355,7 +412,12 @@ window.Friends = {
   list: () => call('bobo_fr_friends'),
   heartbeat: () => call('bobo_fr_heartbeat'),
   invite: (code, room, game) => call('bobo_fr_invite2', { p_code:code, p_room:String(room), p_game:gameOf(game) }),
-  setRoom,
+  setRoom, setPlaying,
+  /* «انضم» = ask a friend who is playing to let me in: {status:'sent', id, game} | not_friends | not_playing | slow_down */
+  askJoin: code => call('bobo_fr_ask_join', { p_code:code }),
+  joinReqs: () => call('bobo_fr_join_reqs'),
+  answerJoin: (id, yes, room) => call('bobo_fr_answer_join', { p_id:+id, p_accept:!!yes, p_room:yes ? String(room) : null }),
+  joinStatus: id => call('bobo_fr_join_status', { p_id:+id }),
   /* free-preview time of a premium map (300 s in total per kid): addSec 0 just reads it; at most 60 s per call */
   trial: (map, addSec) => call('bobo_trial', { p_map:map, p_add_sec:Math.max(0, Math.min(60, Math.round(+addSec || 0))) }),
   invites: () => call('bobo_fr_invites'),

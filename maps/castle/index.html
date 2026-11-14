@@ -1277,6 +1277,8 @@ const mpOthers = () => MP.t && MP.meta ? MP.players.filter(p => p.id !== MP.id).
 const wearBits = () => (SAVE.outfit.wear.crown && SAVE.outfit.own.includes('crown') ? 1 : 0) | (SAVE.outfit.wear.cape && SAVE.outfit.own.includes('cape') ? 2 : 0);
 /* «أصحابي»: tell friends which room I'm in — only once the friends server knows this game ('castle' in Friends.GAMES) */
 const FR_GAME = 'castle';
+/* «انضم»: invitepop.js answers a friend's join request with this room (and ?host=1&accept=<id> makes one first) */
+window.__boboRoom = () => (MP.t && MP.meta && MP.code) ? MP.code : null;
 const frOk = () => !!(window.Friends && Friends.has() && Friends.GAMES && Friends.GAMES[FR_GAME]);
 let frRoomCode = null, frRoomIv = 0;
 function frRoom(code){

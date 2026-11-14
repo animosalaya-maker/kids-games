@@ -1019,6 +1019,7 @@ class LocalTransport{
   close(){ clearInterval(this.iv); if(this.bc){ if(this.meta) this.bc.postMessage({ k:'bye', from:this.id }); this.bc.close(); this.bc = null; } }
 }
 const MP = { t:null, id:null, code:null, list:[], players:[], meta:null, isHost:false, hostId:null, synced:false, screen:'off', tok:0, sendT:0, stT:0, inviteFor:null, typed:'', map:'kitchen', round:0 };
+window.__boboRoom = () => (MP.t && MP.meta && MP.code) ? MP.code : null;
 const mpActive = () => !!(MP.t && MP.meta);
 const isHost = () => !R.online || MP.isHost;
 const mpNewId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
