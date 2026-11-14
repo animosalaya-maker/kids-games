@@ -1,0 +1,1811 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<script src="../i18n.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title data-en="Bobo Worlds" data-tr="Bobo Dünyaları">عوالم بوبو</title>
+<meta name="description" content="عوالم ثلاثية الأبعاد للأطفال: سباقات حواجز، قفز ومنصّات، والعب مع أصحابك." data-en="3D worlds for kids: obstacle courses, jumping and platforms, and racing with friends." data-tr="Çocuklar için 3D dünyalar: engelli parkurlar, zıplama, platformlar ve arkadaşlarla yarış.">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bobo Land">
+<meta name="theme-color" content="#1c1838">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<style>
+/* Bobo Worlds: full-screen WebGL obby worlds. Always landscape (rotated layer like the 3D adventure).
+   Hub of world cards → world sheet → play (HUD, joystick, jump) → finish card. */
+:root{
+  --night:#1c1838; --night-2:#2a2452; --night-3:#362e68; --wall-face:#2f2858;
+  --ink:#fff7e8; --muted:#bdb4e6; --gold:#ffcd4d; --mint:#5fe3b1; --pink:#ff8fb8;
+  --display:"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif;
+  --body:"Tajawal",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html{box-sizing:border-box;height:100%;background:var(--night)}
+*,*::before,*::after{box-sizing:inherit}
+body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:var(--body);font-size:16px;overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:none;overscroll-behavior:none}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#stage{position:fixed;left:0;top:0;width:100%;height:100%;overflow:hidden;transform-origin:0 0;
+  --sa-t:env(safe-area-inset-top,0px);--sa-r:env(safe-area-inset-right,0px);--sa-b:env(safe-area-inset-bottom,0px);--sa-l:env(safe-area-inset-left,0px);--sw:100vw;--sh:100vh}
+#stage.rot{--sa-t:env(safe-area-inset-right,0px);--sa-r:env(safe-area-inset-bottom,0px);--sa-b:env(safe-area-inset-left,0px);--sa-l:env(safe-area-inset-top,0px)}
+#saProbe{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;width:var(--sa-l);height:var(--sa-b)}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#touch{position:absolute;inset:0;z-index:2;touch-action:none}
+#flash{position:absolute;inset:0;z-index:3;background:#fff;opacity:0;pointer-events:none;transition:opacity .45s ease-out}
+#flash.on{opacity:.75;transition:none}
+
+.hud{position:absolute;left:0;right:0;top:0;z-index:5;display:flex;align-items:flex-start;gap:8px;pointer-events:none;
+  padding:calc(8px + var(--sa-t)) max(12px,var(--sa-r)) 0 max(12px,var(--sa-l))}
+.hud > *{pointer-events:auto}
+.icon-btn{width:48px;height:48px;flex:none;border:0;border-radius:16px;background:rgba(28,24,56,.78);font-size:22px;display:grid;place-items:center;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.icon-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+.hud-mid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
+.chips{display:flex;gap:6px;flex:none;direction:ltr;flex-wrap:wrap;justify-content:flex-end;max-width:calc(var(--sw) * .4)}
+.chip{background:rgba(28,24,56,.78);border-radius:999px;padding:6px 12px;font-weight:700;font-size:17px;white-space:nowrap;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:4px}
+.chip.timer{font-family:var(--display);font-size:22px;background:rgba(28,24,56,.85);padding:2px 16px;min-width:96px;justify-content:center;box-shadow:inset 0 0 0 3px var(--gold)}
+.mpbar{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;direction:ltr;pointer-events:none}
+.chip.ps{box-shadow:inset 0 0 0 3px var(--c);padding:3px 10px 3px 3px;gap:5px}
+.chip.ps img{width:30px;height:30px;border-radius:50%;display:block;background:var(--night);object-fit:cover;object-position:top}
+.chip.ps.me{background:rgba(74,63,140,.95)}
+.chip.ps.done{background:rgba(40,120,80,.95)}
+
+.joy{position:absolute;z-index:4;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:rgba(255,247,232,.16);border:3px solid rgba(255,247,232,.45);pointer-events:none;box-shadow:0 5px 0 rgba(0,0,0,.2)}
+.joy.on{background:rgba(255,247,232,.24)}
+.knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:rgba(255,247,232,.85);box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.jump{position:absolute;z-index:4;right:max(18px,calc(var(--sa-r) + 8px));bottom:calc(22px + var(--sa-b));--s:min(calc(var(--sw) * .27),110px);width:var(--s);height:var(--s);
+  border-radius:50%;border:3px solid rgba(255,224,140,.9);background:rgba(255,205,77,.55);display:grid;place-items:center;box-shadow:0 6px 0 rgba(0,0,0,.25);touch-action:none}
+.jump svg{width:46%;height:46%;fill:#fff7e8}
+.jump.on{transform:translateY(4px) scale(.96);background:rgba(255,205,77,.85);box-shadow:0 1px 0 rgba(0,0,0,.25)}
+#stage.short .jump{--s:min(calc(var(--sh) * .25),104px)}
+#stage.short .joy{width:110px;height:110px;margin:-55px 0 0 -55px}
+
+/* Aunt Laila's speech bubble */
+.guide{position:absolute;z-index:6;left:50%;bottom:calc(14px + var(--sa-b));transform:translateX(-50%);display:flex;align-items:flex-end;gap:6px;pointer-events:none;
+  max-width:min(520px,calc(var(--sw) - 300px));animation:gIn .35s cubic-bezier(.2,1.4,.4,1)}
+.guide img{width:74px;height:96px;object-fit:contain;object-position:bottom;flex:none;filter:drop-shadow(0 4px 0 rgba(0,0,0,.25))}
+.guide p{margin:0 0 18px;background:#fff7e8;color:#2a1f4a;font-family:var(--display);font-weight:800;font-size:18px;line-height:1.3;padding:9px 15px;border-radius:20px;position:relative;box-shadow:0 6px 0 rgba(0,0,0,.2)}
+.guide p::before{content:"";position:absolute;bottom:10px;inset-inline-start:-9px;border:9px solid transparent;border-inline-end-color:#fff7e8;border-inline-start:0}
+[dir=rtl] .guide p::before{inset-inline-start:auto;inset-inline-end:-9px;border-inline-end-color:transparent;border-inline-start:9px solid #fff7e8;border-inline-end:0}
+.guide.hub{left:auto;right:max(14px,var(--sa-r));transform:none;bottom:calc(10px + var(--sa-b));max-width:min(380px,calc(var(--sw) * .44))}
+@keyframes gIn{from{opacity:0;transform:translateX(-50%) translateY(30px) scale(.8)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
+.guide.hub{animation:gIn2 .4s cubic-bezier(.2,1.4,.4,1)}
+@keyframes gIn2{from{opacity:0;transform:translateY(30px) scale(.8)}to{opacity:1;transform:none}}
+#stage.short .guide img{width:58px;height:76px} #stage.short .guide p{font-size:16px;padding:7px 12px;margin-bottom:12px}
+
+.overlay{position:absolute;inset:0;z-index:20;display:flex;background:rgba(18,14,40,.55);overflow-y:auto;
+  padding-left:max(16px,var(--sa-l));padding-right:max(16px,var(--sa-r));padding-block:calc(14px + var(--sa-t)) calc(14px + var(--sa-b))}
+.overlay.dim{background:rgba(18,14,40,.8)}
+.overlay.clear{background:linear-gradient(180deg,rgba(18,14,40,.55),rgba(18,14,40,.15) 40%,rgba(18,14,40,.35))}
+.card{width:100%;max-width:460px;margin:auto;background:rgba(42,36,82,.94);border-radius:28px;padding:20px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
+  box-shadow:0 0 0 3px var(--night-3),0 24px 60px rgba(0,0,0,.5);animation:cardIn .3s ease-out}
+.card.wide{max-width:880px}
+.card.bare{background:none;box-shadow:none;max-width:none;padding:0;animation:none}
+@keyframes cardIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
+.card h1{font-family:var(--display);font-weight:800;font-size:38px;line-height:1.1;margin:0;color:var(--gold);text-shadow:0 4px 0 var(--wall-face)}
+.card h2{font-family:var(--display);font-weight:800;font-size:30px;line-height:1.15;margin:0}
+.card p{margin:0;color:var(--muted);line-height:1.5;font-size:16px;text-wrap:balance}
+.big-btn{border:0;border-radius:20px;background:var(--gold);color:#3a2a00;font-family:var(--display);font-weight:800;font-size:24px;padding:11px 26px;min-width:190px;box-shadow:0 6px 0 #c48f12}
+.big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #c48f12}
+.big-btn.alt{background:var(--pink);color:#4a0f2a;box-shadow:0 6px 0 #c45a83}
+.big-btn.alt:active{box-shadow:0 2px 0 #c45a83}
+.big-btn.mint{background:var(--mint);color:#063d2a;box-shadow:0 6px 0 #2a9c74}
+.big-btn.mint:active{box-shadow:0 2px 0 #2a9c74}
+.big-btn:disabled{opacity:.45;transform:none}
+.ghost-btn{border:0;background:var(--night-3);border-radius:16px;padding:11px 18px;font-weight:700;font-size:17px;box-shadow:0 4px 0 var(--wall-face);text-decoration:none;color:var(--ink);display:inline-block}
+.ghost-btn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--wall-face)}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.tally{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;direction:ltr}
+.tally span{background:var(--night);border-radius:16px;padding:7px 14px;font-weight:700;font-size:18px}
+.bigstar{font-size:70px;line-height:1;animation:spin .7s ease-out;filter:drop-shadow(0 6px 0 rgba(0,0,0,.25))}
+@keyframes spin{from{transform:scale(0) rotate(-200deg)}to{transform:scale(1) rotate(0)}}
+.rothint{display:flex;align-items:center;gap:10px;background:var(--gold);color:#3a2a00;border-radius:18px;padding:6px 16px 6px 12px;font-family:var(--display);font-weight:800;font-size:18px;box-shadow:0 4px 0 #c48f12}
+.rothint i{font-style:normal;font-size:30px;line-height:1;display:inline-block;animation:rotphone 2.6s ease-in-out infinite}
+@keyframes rotphone{0%,20%{transform:rotate(-90deg)}55%,85%{transform:rotate(-180deg)}100%{transform:rotate(-90deg)}}
+
+/* hub */
+.hub{width:100%;display:flex;flex-direction:column;gap:10px;margin:auto 0}
+.hub-top{display:flex;align-items:center;gap:12px;padding-inline-start:120px;min-height:52px}
+[dir=ltr] .hub-top{padding-inline-start:120px}
+.hub-top h1{flex:1;min-width:0;margin:0;font-family:var(--display);font-weight:800;font-size:36px;line-height:1;color:var(--gold);text-shadow:0 4px 0 var(--wall-face)}
+.hub-top h1 small{display:block;font-size:16px;color:var(--ink);text-shadow:none;font-weight:700;margin-top:4px;opacity:.9}
+.hero-btn{flex:none;display:flex;align-items:center;gap:8px;border:0;border-radius:20px;background:rgba(42,36,82,.92);padding:4px 14px 4px 4px;box-shadow:0 0 0 3px var(--c,var(--gold)),0 5px 0 rgba(0,0,0,.3);font-family:var(--display);font-weight:800;font-size:18px}
+.hero-btn img{width:46px;height:46px;border-radius:14px;object-fit:cover;object-position:top;background:var(--night-3)}
+.coins{flex:none;background:rgba(42,36,82,.92);border-radius:999px;padding:8px 14px;font-family:var(--display);font-weight:800;font-size:20px;direction:ltr;box-shadow:0 5px 0 rgba(0,0,0,.3)}
+.worlds{display:flex;gap:14px;overflow-x:auto;padding:14px 6px 18px;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;touch-action:pan-x}
+.worlds::-webkit-scrollbar{display:none}
+.wcard{flex:none;width:clamp(150px,calc(var(--sw) * .19),200px);aspect-ratio:3/4;border:0;border-radius:26px;position:relative;overflow:hidden;scroll-snap-align:center;padding:0;
+  background:linear-gradient(170deg,var(--a),var(--b));box-shadow:0 0 0 4px rgba(255,255,255,.85),0 8px 0 var(--d),0 14px 26px rgba(0,0,0,.35);
+  animation:wfloat 4s ease-in-out infinite;animation-delay:calc(var(--i) * -.7s);display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:4px;padding:10px 8px 12px}
+.wcard:active{transform:translateY(5px)!important;box-shadow:0 0 0 4px rgba(255,255,255,.85),0 3px 0 var(--d)}
+@keyframes wfloat{0%,100%{transform:translateY(0) rotate(-.6deg)}50%{transform:translateY(-6px) rotate(.6deg)}}
+.wcard::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,.45) 50%,transparent 65%);transform:translateX(-120%);animation:shine 5s ease-in-out infinite;animation-delay:calc(var(--i) * .8s);pointer-events:none}
+@keyframes shine{0%,70%{transform:translateX(-120%)}100%{transform:translateX(120%)}}
+.wcard .wem{position:absolute;top:10%;left:50%;transform:translateX(-50%);font-size:clamp(54px,calc(var(--sw) * .07),76px);line-height:1;filter:drop-shadow(0 6px 0 rgba(0,0,0,.2))}
+.wcard .wnm{font-family:var(--display);font-weight:800;font-size:clamp(17px,calc(var(--sw) * .022),22px);line-height:1.1;color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.35);text-align:center}
+.wcard .wst{font-size:20px;letter-spacing:1px;direction:ltr;line-height:1}
+.wcard .wst i{font-style:normal}.wcard .wst i.off{filter:grayscale(1) brightness(1.4);opacity:.45}
+.wcard .wbt{font-size:13px;font-weight:700;background:rgba(0,0,0,.28);color:#fff;border-radius:999px;padding:2px 10px;direction:ltr}
+.wcard .wnew{position:absolute;top:10px;inset-inline-end:-30px;transform:rotate(35deg);background:#ff4d6d;color:#fff;font-weight:800;font-size:13px;padding:3px 34px;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+[dir=rtl] .wcard .wnew{transform:rotate(-35deg)}
+.wcard.locked{filter:saturate(.25) brightness(.75)}
+.wcard .wlock{position:absolute;inset:0;display:grid;place-items:center;font-size:52px;background:rgba(20,16,40,.35)}
+.wcard.sel{box-shadow:0 0 0 5px var(--gold),0 8px 0 var(--d),0 14px 26px rgba(0,0,0,.35)}
+#stage.short .hub-top h1{font-size:28px} #stage.short .hub-top h1 small{font-size:14px}
+#stage.short .worlds{padding:10px 6px 14px} #stage.short .wcard{width:clamp(140px,calc(var(--sh) * .42),180px)}
+/* world sheet */
+.sheet{display:flex;gap:18px;align-items:center;width:100%;text-align:start}
+.sheet .wbig{flex:none;width:170px;aspect-ratio:3/4;border-radius:26px;background:linear-gradient(170deg,var(--a),var(--b));display:grid;place-items:center;font-size:84px;box-shadow:0 0 0 4px rgba(255,255,255,.85),0 8px 0 var(--d)}
+.sheet .info{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.goals{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.goals li{display:flex;gap:8px;align-items:center;font-weight:700;font-size:16px}
+.goals li i{font-style:normal;font-size:20px}.goals li.off i{filter:grayscale(1);opacity:.4}
+#stage.short .sheet .wbig{width:120px;font-size:60px} #stage.short .card{gap:8px;padding:12px 16px} #stage.short .card h2{font-size:24px}
+#stage.short .big-btn{font-size:20px;padding:8px 20px;min-width:160px} #stage.short .ghost-btn{padding:8px 14px;font-size:16px} #stage.short .goals li{font-size:14px}
+#stage.short .bigstar{font-size:46px} #stage.short .tally span{padding:5px 12px;font-size:16px}
+/* hero picker */
+.heroes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;width:100%}
+.hero{border:0;border-radius:20px;background:var(--night);padding:6px 4px 6px;display:flex;flex-direction:column;align-items:center;gap:2px;
+  box-shadow:0 0 0 3px var(--night-3),0 5px 0 rgba(0,0,0,.3);transition:transform .15s}
+.hero img{width:100%;aspect-ratio:3/4;object-fit:contain;object-position:bottom;display:block;border-radius:14px;background:radial-gradient(circle at 50% 70%,var(--c),transparent 70%)}
+.hero b{font-family:var(--display);font-weight:800;font-size:16px;line-height:1.15}
+.hero.on{background:#4a3f8c;box-shadow:0 0 0 4px var(--gold),0 5px 0 rgba(0,0,0,.3);transform:translateY(-5px)}
+.hero.on b{color:var(--gold)}
+#stage.short .hero b{font-size:14px}
+/* finish */
+.stars3{display:flex;gap:10px;direction:ltr;font-size:58px;line-height:1}
+.stars3 i{font-style:normal;transform:scale(0);animation:starPop .5s cubic-bezier(.2,1.6,.4,1) forwards;filter:drop-shadow(0 5px 0 rgba(0,0,0,.25))}
+.stars3 i.off{filter:grayscale(1) brightness(.6);opacity:.5}
+@keyframes starPop{to{transform:scale(1)}}
+#stage.short .stars3{font-size:42px}
+.newbest{color:var(--mint)!important;font-weight:800}
+/* online */
+.mp-cols{display:flex;gap:18px;width:100%;align-items:center;justify-content:center;flex-wrap:wrap}
+.mp-col{display:flex;flex-direction:column;align-items:center;gap:10px;flex:1 1 250px;min-width:0}
+.mp-code{display:flex;gap:8px;direction:ltr;justify-content:center;align-items:center}
+.mp-code b{width:54px;height:66px;border-radius:16px;background:var(--night);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:44px;line-height:1;color:var(--gold);box-shadow:inset 0 0 0 3px var(--night-3),0 4px 0 rgba(0,0,0,.3)}
+.mp-code b.cur{box-shadow:inset 0 0 0 3px var(--gold),0 4px 0 rgba(0,0,0,.3)}
+.mp-code .copy{width:54px;height:54px;border:0;border-radius:16px;background:var(--night-3);font-size:24px;box-shadow:0 4px 0 var(--wall-face);margin-inline-start:4px}
+.mp-lbl{font-weight:700;color:var(--muted);font-size:15px}
+.mp-msg{min-height:1.4em;font-weight:700;color:var(--pink)!important}
+.keypad{display:grid;grid-template-columns:repeat(3,68px);gap:8px;direction:ltr;flex:none}
+.keypad button{height:56px;border:0;border-radius:16px;background:var(--night-3);font-family:var(--display);font-weight:800;font-size:30px;line-height:1;box-shadow:0 4px 0 var(--wall-face)}
+.keypad button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--wall-face)}
+.keypad .ok{background:var(--mint);color:#063d2a;box-shadow:0 4px 0 #2a9c74}
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;max-width:360px}
+.slot{background:var(--night);border-radius:18px;padding:7px;display:flex;align-items:center;gap:8px;box-shadow:inset 0 0 0 3px var(--c);min-height:66px;position:relative;text-align:start}
+.slot img{width:52px;height:52px;border-radius:12px;flex:none;display:block;object-fit:cover;object-position:top;background:var(--night-3)}
+.slot b{font-family:var(--display);font-weight:800;font-size:18px;line-height:1.15;color:var(--c);display:block}
+.slot small{display:block;font-size:13px;color:var(--muted);font-weight:700}
+.slot .crown{position:absolute;top:-12px;inset-inline-end:-4px;font-size:22px}
+.slot.empty{box-shadow:none;outline:3px dashed var(--night-3);outline-offset:-3px;justify-content:center;opacity:.7;font-size:26px}
+.mpcd{position:absolute;inset:0;z-index:7;display:grid;place-items:center;pointer-events:none;font-family:var(--display);font-weight:800;font-size:120px;line-height:1;color:var(--gold);text-shadow:0 7px 0 var(--wall-face),0 0 30px rgba(0,0,0,.35)}
+.mpcd span{animation:pop2 .35s ease-out}
+@keyframes pop2{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;direction:ltr;width:100%}
+.pod{display:flex;flex-direction:column;align-items:center;gap:3px;width:112px;min-width:0}
+.pod img{width:62px;height:62px;border-radius:16px;box-shadow:0 0 0 3px var(--c);display:block;object-fit:cover;object-position:top;background:var(--night-3)}
+.pod b{font-family:var(--display);font-weight:800;font-size:17px;color:var(--c);line-height:1.2}
+.pod span{font-weight:700;font-size:16px}
+.pod .blk{width:100%;border-radius:14px 14px 6px 6px;background:var(--c);display:grid;place-items:center;font-size:30px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.rest{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;direction:ltr}
+.spin{display:inline-block;animation:spinL 1.2s linear infinite}
+@keyframes spinL{to{transform:rotate(360deg)}}
+#stage.short .mp-code b{width:44px;height:52px;font-size:34px;border-radius:13px} #stage.short .keypad{grid-template-columns:repeat(3,62px);gap:6px} #stage.short .keypad button{height:46px;font-size:26px}
+#stage.short .slot{min-height:54px;padding:5px} #stage.short .slot img{width:42px;height:42px} #stage.short .mpcd{font-size:90px} #stage.short .pod img{width:48px;height:48px} #stage.short .pod .blk{font-size:24px}
+#nogl{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:24px;text-align:center;background:var(--night);font-family:var(--display);font-size:22px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div id="stage">
+<div id="saProbe"></div>
+<canvas id="cv" aria-label="عوالم بوبو" data-en-aria="Bobo Worlds" data-tr-aria="Bobo Dünyaları"></canvas>
+<div id="touch"></div>
+<div id="flash"></div>
+<header class="hud" id="hud" hidden>
+  <button class="icon-btn" id="btnPause" aria-label="استراحة" data-en-aria="Pause" data-tr-aria="Mola">⏸️</button>
+  <div class="hud-mid">
+    <span class="chip timer" id="timer">0:00</span>
+    <div class="mpbar" id="mpBar" hidden></div>
+  </div>
+  <div class="chips">
+    <span class="chip" id="hudGems"></span>
+    <span class="chip" id="hudCp"></span>
+  </div>
+</header>
+<div class="joy" id="joy" hidden><div class="knob" id="knob"></div></div>
+<button class="jump" id="btnJump" hidden aria-label="نطّ" data-en-aria="Jump" data-tr-aria="Zıpla"><svg viewBox="0 0 24 24"><path d="M12 3 21 13h-5.5v8h-7v-8H3z"/></svg></button>
+<div class="guide" id="guide" hidden><img src="chars/laila.png" alt=""><p id="guideT"></p></div>
+<div class="mpcd" id="mpCd" hidden></div>
+<div class="overlay" id="overlay"><div class="card" id="card"></div></div>
+<div id="nogl" hidden><span data-en="Sorry, this phone can't show 3D games 😢" data-tr="Üzgünüz, bu telefon 3D oyunları gösteremiyor 😢">عذراً، هالتلفون ما بيقدر يشغّل ألعاب ثلاثية الأبعاد 😢</span></div>
+</div>
+
+<script src="../world.js"></script>
+<script type="module">
+import * as THREE from '../adventure3d/three.module.min.js';
+import { makeKit } from './kit.js';
+import { WORLDS } from './levels.js';
+
+const $ = s => document.querySelector(s);
+{ const md = document.querySelector('meta[name="description"]'), dl = window.I18N && md && md.getAttribute('data-' + I18N.lang); if(dl) md.setAttribute('content', dl); }
+const N = n => window.I18N ? I18N.num(n) : String(n);
+const rawGet = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+const rawSet = (k, v) => { try{ localStorage.setItem(k, v); }catch(e){} };
+const K = makeKit(THREE);
+const { Merge, G, canvasTex, glowTex, blobTex, HEROES, HERO_IDS, HERO_NAME, HERO_COLOR, poseHero } = K;
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp = (a, b, t) => a + (b - a) * t;
+const angDiff = (a, b) => { let d = a - b; while(d > Math.PI) d -= Math.PI * 2; while(d < -Math.PI) d += Math.PI * 2; return d; };
+let seed = 7;
+const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+const charImg = id => 'chars/' + (HEROES[id] ? id : 'sara') + '.png';
+
+/* ---------- progress (this device) ---------- */
+const SAVE_KEY = 'bobo_worlds';
+let SAVE = (() => { try{ const v = JSON.parse(rawGet(SAVE_KEY)); if(v && typeof v === 'object' && v.w) return v; }catch(e){} return { w:{}, seen:{} }; })();
+if(!SAVE.seen) SAVE.seen = {};
+function persist(){ rawSet(SAVE_KEY, JSON.stringify(SAVE)); }
+const rec = id => SAVE.w[id] || (SAVE.w[id] = { done:false, best:0, stars:[0, 0, 0], plays:0 });
+const isUnlocked = i => i === 0 || !!(SAVE.w[WORLDS[i - 1].id] && SAVE.w[WORLDS[i - 1].id].done);
+const starCount = id => { const r = SAVE.w[id]; return r ? r.stars.reduce((a, b) => a + (b ? 1 : 0), 0) : 0; };
+function fmtTime(ms){ const s = Math.max(0, ms) / 1000, m = Math.floor(s / 60), r = s - m * 60; const rs = r.toFixed(1); return N(m) + ':' + N((r < 10 ? '0' : '') + rs); }
+function fmtSec(s){ const m = Math.floor(s / 60), r = Math.round(s % 60); return N(m) + ':' + N((r < 10 ? '0' : '') + r); }
+
+/* ---------- Always-landscape stage (same approach as the 3D adventure) ---------- */
+const stage = $('#stage'), saProbe = $('#saProbe');
+let ROT = false, VW = innerWidth, SW = innerWidth, SH = innerHeight, SAL = 0, SAB = 0;
+function layout(){
+  VW = innerWidth; const vh = innerHeight; ROT = vh > VW;
+  SW = ROT ? vh : VW; SH = ROT ? VW : vh;
+  const st = stage.style;
+  st.width = SW + 'px'; st.height = SH + 'px';
+  st.transform = ROT ? `translateX(${VW}px) rotate(90deg)` : 'none';
+  st.setProperty('--sw', SW + 'px'); st.setProperty('--sh', SH + 'px');
+  stage.classList.toggle('rot', ROT); stage.classList.toggle('short', SH <= 520);
+  SAL = saProbe.offsetWidth; SAB = saProbe.offsetHeight;
+}
+function toLayer(cx, cy){ return ROT ? { x:cy, y:VW - cx } : { x:cx, y:cy }; }
+function tryLandscapeLock(){ try{ const o = screen.orientation; if(o && o.lock) o.lock('landscape').catch(() => {}); }catch(e){} }
+layout(); tryLandscapeLock();
+
+/* ---------- Sound (tiny synth, no files) ---------- */
+let actx = null, muted = rawGet('adv3d_muted') === 'true';
+function ac(){
+  if(!actx){ try{ actx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){ actx = null; } }
+  if(actx && actx.state === 'suspended') actx.resume().catch(() => {});
+  return actx;
+}
+function tone(freq, dur, type, vol, delay, toFreq){
+  if(muted) return; const a = ac(); if(!a) return;
+  const t0 = a.currentTime + (delay || 0), o = a.createOscillator(), g = a.createGain();
+  o.type = type || 'sine'; o.frequency.setValueAtTime(freq, t0);
+  if(toFreq) o.frequency.exponentialRampToValueAtTime(toFreq, t0 + dur);
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol || 0.15, t0 + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  o.connect(g).connect(a.destination); o.start(t0); o.stop(t0 + dur + 0.05);
+}
+const SFX = {
+  jump(){ tone(360, .16, 'sine', .1, 0, 720); }, djump(){ tone(520, .16, 'sine', .1, 0, 1040); },
+  gem(){ [1046, 1318, 1568, 2093].forEach((f, i) => tone(f, .1, 'triangle', .09, i * .05)); },
+  spring(){ tone(220, .35, 'sine', .13, 0, 990); }, bonk(){ tone(300, .14, 'square', .06, 0, 140); },
+  splash(){ tone(600, .3, 'sine', .07, 0, 90); tone(300, .25, 'triangle', .05, .05, 80); },
+  sizzle(){ tone(900, .25, 'sawtooth', .03, 0, 200); tone(200, .3, 'sine', .07, .02, 80); },
+  poof(){ tone(500, .2, 'sine', .06, 0, 1200); },
+  flag(){ [523, 659, 784].forEach((f, i) => tone(f, .16, 'triangle', .12, i * .08)); },
+  crack(){ tone(180, .12, 'square', .04, 0, 90); },
+  go(){ [440, 440, 880].forEach((f, i) => tone(f, .14, 'square', .07, i * .16)); },
+  win(){ [523, 659, 784, 1046, 784, 1046, 1318].forEach((f, i) => tone(f, .2, 'triangle', .14, i * .11)); },
+  star(){ [784, 988, 1175, 1568].forEach((f, i) => tone(f, .14, 'triangle', .13, i * .07)); },
+  help(){ [660, 880, 1100].forEach((f, i) => tone(f, .18, 'sine', .1, i * .1)); },
+  wind(){ tone(200, .5, 'sine', .04, 0, 420); },
+  tap(){ tone(520, .05, 'triangle', .08); }
+};
+
+/* ---------- Renderer ---------- */
+const canvas = $('#cv');
+let renderer;
+try{ renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' }); }
+catch(e){ $('#nogl').hidden = false; $('#overlay').hidden = true; throw e; }
+let dpr = Math.min(window.devicePixelRatio || 1, 1.75);
+renderer.setPixelRatio(dpr);
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xc8ecff, 60, 210);
+const camera = new THREE.PerspectiveCamera(58, 1, 0.1, 800);
+function resize(){
+  layout();
+  renderer.setSize(SW, SH, false);
+  camera.aspect = SW / SH; camera.fov = SW < SH ? 70 : 58; camera.updateProjectionMatrix();
+  placeJoyHome();
+}
+addEventListener('resize', resize);
+addEventListener('orientationchange', () => setTimeout(resize, 120));
+const hemi = new THREE.HemisphereLight(0xe4f6ff, 0x6a7a9c, 1.9); scene.add(hemi);
+const sun = new THREE.DirectionalLight(0xfff0d0, 2.0); sun.position.set(30, 60, 20); scene.add(sun);
+const sky = (() => {
+  const g = new THREE.SphereGeometry(600, 24, 16), col = new Float32Array(g.attributes.position.count * 3);
+  g.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors:true, side:THREE.BackSide, fog:false, depthWrite:false }));
+  m.renderOrder = -1; scene.add(m); return m;
+})();
+function paintSky(top, hor, bot){
+  const pa = sky.geometry.attributes.position, c = sky.geometry.attributes.color, a = new THREE.Color(top), h = new THREE.Color(hor), b = new THREE.Color(bot), t = new THREE.Color();
+  for(let i = 0; i < pa.count; i++){ const y = pa.getY(i) / 600; if(y >= 0) t.copy(h).lerp(a, clamp(Math.pow(y, .7) * 1.4, 0, 1)); else t.copy(h).lerp(b, clamp(-y * 2.2, 0, 1)); c.setXYZ(i, t.r, t.g, t.b); }
+  c.needsUpdate = true;
+}
+const sunGlow = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, fog:false, depthWrite:false, transparent:true, blending:THREE.AdditiveBlending, color:0xfff2c0 }));
+sunGlow.scale.set(140, 140, 1); scene.add(sunGlow);
+
+/* ---------- Particles + confetti (instanced) ---------- */
+const PMAX = 220, parts = [], pMesh = new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.1, 0), new THREE.MeshBasicMaterial(), PMAX);
+pMesh.frustumCulled = false; scene.add(pMesh);
+const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _v = new THREE.Vector3(), _c = new THREE.Color();
+for(let i = 0; i < PMAX; i++){ parts.push({ life:0, x:0, y:0, z:0, vx:0, vy:0, vz:0, s:1, g:12 }); pMesh.setColorAt(i, _c.set(0xffffff)); _m.makeScale(0, 0, 0); pMesh.setMatrixAt(i, _m); }
+let pNext = 0;
+const pick = a => a[Math.floor(Math.random() * a.length)];
+function burst(x, y, z, n, colors, speed = 4, size = 1, grav = 12, up = 2){
+  for(let k = 0; k < n; k++){
+    const p = parts[pNext], i = pNext; pNext = (pNext + 1) % PMAX;
+    const a = Math.random() * 6.28, u = Math.random() * 2 - 1, r = Math.sqrt(1 - u * u);
+    p.life = .6 + Math.random() * .5; p.x = x; p.y = y; p.z = z; p.vx = Math.cos(a) * r * speed; p.vz = Math.sin(a) * r * speed; p.vy = Math.abs(u) * speed + up; p.s = size * (.7 + Math.random() * .8); p.g = grav;
+    pMesh.setColorAt(i, _c.set(pick(colors)));
+  }
+  pMesh.instanceColor.needsUpdate = true;
+}
+function updateParts(dt){
+  for(let i = 0; i < PMAX; i++){
+    const p = parts[i]; if(p.life <= 0) continue;
+    p.life -= dt; p.vy -= p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.z += p.vz * dt;
+    const s = p.life > 0 ? p.s * Math.min(1, p.life * 3) : 0;
+    _m.compose(_v.set(p.x, p.y, p.z), _q.identity(), _s.set(s, s, s)); pMesh.setMatrixAt(i, _m);
+  }
+  pMesh.instanceMatrix.needsUpdate = true;
+}
+const CMAX = 160, confetti = [], cMesh = new THREE.InstancedMesh(new THREE.PlaneGeometry(.22, .13), new THREE.MeshBasicMaterial({ side:THREE.DoubleSide }), CMAX);
+cMesh.frustumCulled = false; scene.add(cMesh);
+for(let i = 0; i < CMAX; i++){ confetti.push({ life:0 }); cMesh.setColorAt(i, _c.set(0xffffff)); _m.makeScale(0, 0, 0); cMesh.setMatrixAt(i, _m); }
+const CONF_COL = [0xff5d73, 0xffcd4d, 0x5fe3b1, 0x5fb8ff, 0xb28dff, 0xffffff];
+function confettiAt(x, y, z, n = CMAX){
+  for(let i = 0; i < Math.min(n, CMAX); i++){
+    const c = confetti[i], a = Math.random() * 6.28, sp = 2 + Math.random() * 5;
+    Object.assign(c, { life:3 + Math.random() * 2, x, y, z, vx:Math.cos(a) * sp, vz:Math.sin(a) * sp, vy:6 + Math.random() * 7, rx:Math.random() * 6, ry:Math.random() * 6, sp:4 + Math.random() * 8 });
+    cMesh.setColorAt(i, _c.set(pick(CONF_COL)));
+  }
+  cMesh.instanceColor.needsUpdate = true;
+}
+function updateConfetti(dt){
+  for(let i = 0; i < CMAX; i++){
+    const c = confetti[i];
+    if(c.life <= 0){ continue; }
+    c.life -= dt; c.vy = Math.max(c.vy - 9 * dt, -2.2); c.vx *= 1 - dt * .8; c.vz *= 1 - dt * .8;
+    c.x += c.vx * dt + Math.sin(c.life * 3 + i) * dt; c.y += c.vy * dt; c.z += c.vz * dt; c.rx += c.sp * dt; c.ry += c.sp * .7 * dt;
+    const s = c.life > 0 ? Math.min(1, c.life) : 0;
+    _m.compose(_v.set(c.x, c.y, c.z), _q.setFromEuler(_e.set(c.rx, c.ry, 0)), _s.set(s, s, s)); cMesh.setMatrixAt(i, _m);
+  }
+  cMesh.instanceMatrix.needsUpdate = true;
+}
+
+/* ---------- Blob shadow ---------- */
+const blobGeo = new THREE.PlaneGeometry(1, 1).rotateX(-Math.PI / 2);
+const blobMat = new THREE.MeshBasicMaterial({ map:blobTex, transparent:true, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-4 });
+const pShadow = new THREE.Mesh(blobGeo, blobMat); pShadow.renderOrder = 2; scene.add(pShadow);
+
+/* ---------- Heroes ---------- */
+const heroes = {};
+function heroModel(id){ if(!heroes[id]){ heroes[id] = HEROES[id](); scene.add(heroes[id].grp); } return heroes[id]; }
+let heroId = HERO_IDS.includes(rawGet('worlds_hero')) ? rawGet('worlds_hero') : 'sara', hero = null;
+function setHero(id, save){
+  if(!HEROES[id]) return;
+  heroId = id; if(save) rawSet('worlds_hero', id);
+  for(const k in heroes) heroes[k].grp.visible = false;
+  hero = heroModel(id); hero.grp.visible = true;
+}
+setHero(heroId, false);
+
+/* ======================================================================
+   World building. Every world (levels.js) is built with this small kit:
+   platforms (box / round), movers, crumbling + blinking tiles, springs,
+   spinning bars, swinging logs, fans, conveyor belts, checkpoints, gems,
+   the finish pad. Platforms on the main route are "path" nodes, in order.
+   ====================================================================== */
+let WG = null;                 // THREE.Group with everything of the current world
+let WD = null;                 // world data (colliders, path, hazards…)
+let worldIdx = 0;
+const PR = .42;
+function blankWorld(){ return { cols:[], path:[], movers:[], tiles:[], bars:[], logs:[], fans:[], belts:[], cps:[], gems:[], signs:[], finish:null, start:null, sections:0, helps:[], anim:[], dispose:[] }; }
+
+function makeBuilder(def){
+  const W = new Merge(), B = { section:0, G, THREE, rnd, def, W };
+  const D = WD;
+  const theme = def.theme;
+  const capOf = c => new THREE.Color(c).lerp(new THREE.Color(0xffffff), .28).getHex();
+  function addCol(c){ c.solid = true; c.section = B.section; D.cols.push(c); return c; }
+  function pathNode(c, o){ if(o.path === false) return; c.pi = D.path.length; D.path.push(c); }
+  function boxMesh(M, x, top, z, w, d, h, col, cap){
+    M.add(G.box, x, top - h / 2 - .06, z, w, h - .12, d, 0, 0, 0, col);
+    M.add(G.box, x, top - .07, z, w + .12, .14, d + .12, 0, 0, 0, cap);
+  }
+  function roundMesh(M, x, top, z, r, h, col, cap){
+    M.add(G.cyl, x, top - h / 2 - .06, z, r, h - .12, r, 0, 0, 0, col);
+    M.add(G.cyl, x, top - .07, z, r + .07, .14, r + .07, 0, 0, 0, cap);
+  }
+  B.add = (geo, x, y, z, sx, sy, sz, rx, ry, rz, col) => { W.add(typeof geo === 'string' ? G[geo] : geo, x, y, z, sx, sy, sz, rx, ry, rz, col); return B; };
+  /* static platforms */
+  B.box = (x, top, z, w, d, o = {}) => {
+    const h = o.h || 1.2, col = o.col != null ? o.col : theme.plat, cap = o.cap != null ? o.cap : (o.kind === 'ice' ? 0xdff6ff : theme.cap != null ? theme.cap : capOf(col));
+    if(!o.invisible) boxMesh(W, x, top, z, w, d, h, col, cap);
+    const c = addCol({ type:'box', x0:x - w / 2, x1:x + w / 2, z0:z - d / 2, z1:z + d / 2, y0:top - h, y1:top, cx:x, cz:z, w, d, kind:o.kind || null, cam:!!o.cam });
+    pathNode(c, o); return c;
+  };
+  B.round = (x, top, z, r, o = {}) => {
+    const h = o.h || 1.2, col = o.col != null ? o.col : theme.plat, cap = o.cap != null ? o.cap : (theme.cap != null ? theme.cap : capOf(col));
+    if(!o.invisible) roundMesh(W, x, top, z, r, h, col, cap);
+    const c = addCol({ type:'cyl', x, z, cx:x, cz:z, r, y0:top - h, y1:top, kind:o.kind || null, cam:!!o.cam });
+    pathNode(c, o); return c;
+  };
+  /* moving platform: axis 'x' | 'y' | 'z', amp, speed (rad/s), ph */
+  B.mover = (x, top, z, w, d, o = {}) => {
+    const h = o.h || .7, col = o.col != null ? o.col : theme.mover, M = new Merge();
+    if(o.round) roundMesh(M, 0, 0, 0, w / 2, h, col, capOf(col)); else boxMesh(M, 0, 0, 0, w, d, h, col, capOf(col));
+    const mesh = new THREE.Mesh(M.geometry(), new THREE.MeshLambertMaterial({ vertexColors:true })); WG.add(mesh);
+    const c = addCol(o.round ? { type:'cyl', x, z, r:w / 2, y0:top - h, y1:top } : { type:'box', x0:0, x1:0, z0:0, z1:0, y0:top - h, y1:top, w, d });
+    Object.assign(c, { cx:x, cz:z, dx:0, dy:0, dz:0, moving:true, h, base:[x, top, z] });
+    const m = { c, mesh, axis:o.axis || 'x', amp:o.amp || 2, speed:o.speed || 1, ph:o.ph || 0, a:0, section:B.section, mult:1 };
+    D.movers.push(m); placeMover(m, true); pathNode(c, o); return c;
+  };
+  /* crumbling tile: shakes when stepped on, drops, comes back. blinking tile: on/off on a timer */
+  B.crumble = (x, top, z, w, d, o = {}) => {
+    const c = addCol({ type:'box', x0:x - w / 2, x1:x + w / 2, z0:z - d / 2, z1:z + d / 2, y0:top - .6, y1:top, cx:x, cz:z, w, d });
+    D.tiles.push({ c, kind:'crumble', x, top, z, w, d, st:0, t:0, col:o.col != null ? o.col : theme.crumble, section:B.section, mult:1 });
+    pathNode(c, o); return c;
+  };
+  B.blink = (x, top, z, w, d, o = {}) => {
+    const c = addCol({ type:'box', x0:x - w / 2, x1:x + w / 2, z0:z - d / 2, z1:z + d / 2, y0:top - .6, y1:top, cx:x, cz:z, w, d });
+    D.tiles.push({ c, kind:'blink', x, top, z, w, d, period:o.period || 4, on:o.on || 2.6, off:o.offset || 0, a:0, col:o.col != null ? o.col : theme.blink, section:B.section, mult:1 });
+    pathNode(c, o); return c;
+  };
+  /* bouncy pad (mushroom, jelly…): power = jump speed */
+  B.spring = (x, top, z, r, power, o = {}) => {
+    const M = new Merge(), col = o.col != null ? o.col : theme.spring, h = o.h || 1;
+    if(o.mushroom){
+      M.add(G.cyl, 0, -h * .5 - .2, 0, r * .32, h + .6, r * .32, 0, 0, 0, 0xfff1dc);
+      M.add(G.hemi, 0, -.36, 0, r, .62, r, 0, 0, 0, col);
+      for(let i = 0; i < 6; i++){ const a = i * 1.05 + .3, rr = r * (i % 2 ? .55 : .75); M.add(G.sph, Math.cos(a) * rr, -.36 + Math.sqrt(Math.max(0, 1 - (rr / r) ** 2)) * .62 - .02, Math.sin(a) * rr, .2 * r / 1.6, .07, .2 * r / 1.6, 0, 0, 0, 0xffffff); }
+      M.add(G.sph, 0, .2, 0, .25 * r / 1.6, .06, .25 * r / 1.6, 0, 0, 0, 0xffffff);
+    } else { roundMesh(M, 0, 0, 0, r, h, col, capOf(col)); }
+    const mesh = new THREE.Mesh(M.geometry(), new THREE.MeshLambertMaterial({ vertexColors:true })); mesh.position.set(x, top, z); WG.add(mesh);
+    const c = addCol({ type:'cyl', x, z, cx:x, cz:z, r, y0:top - h, y1:top, kind:'spring', power, mesh });
+    D.anim.push({ c, mesh, sq:0, sqv:0 });
+    pathNode(c, o); return c;
+  };
+  /* spinning bar hazard around (cx, cz) at height y; len = arm length; both = two arms */
+  B.bar = (cx, y, cz, len, speed, o = {}) => {
+    const grp = new THREE.Group(); grp.position.set(cx, y, cz); WG.add(grp);
+    const M = new Merge(), col = o.col != null ? o.col : theme.hazard;
+    M.add(G.cyl8, 0, -.25, 0, .35, .7, .35, 0, 0, 0, 0x5a5470);
+    const both = o.both !== false;
+    M.add(G.cyl, both ? 0 : len / 2, 0, 0, .26, both ? len * 2 : len, .26, 0, 0, Math.PI / 2, col);
+    for(const s of both ? [-1, 1] : [1]) M.add(G.sph, s * len, 0, 0, .34, .34, .34, 0, 0, 0, theme.hazard2 || 0xffffff);
+    grp.add(new THREE.Mesh(M.geometry(), new THREE.MeshLambertMaterial({ vertexColors:true })));
+    D.bars.push({ grp, cx, y, cz, len, speed, both, a:o.ph || 0, ph:o.ph || 0, section:B.section, mult:1 });
+  };
+  /* swinging log: pivot at (px, py, pz), rope length, swings across x by amp (rad); log lies along z with length len */
+  B.log = (px, py, pz, rope, amp, speed, o = {}) => {
+    const piv = new THREE.Group(); piv.position.set(px, py, pz); WG.add(piv);
+    const M = new Merge(), len = o.len || 2.4, axis = o.axis || 'x';
+    M.add(G.cyl8, 0, -rope / 2, 0, .05, rope, .05, 0, 0, 0, 0xc9b38a);
+    M.add(G.cyl, 0, -rope, 0, .42, len, .42, axis === 'x' ? Math.PI / 2 : 0, 0, axis === 'x' ? 0 : Math.PI / 2, o.col != null ? o.col : 0x9a6a3c);
+    for(const s of [-1, 1]) M.add(G.cyl, axis === 'x' ? 0 : s * len / 2, -rope, axis === 'x' ? s * len / 2 : 0, .38, .04, .38, axis === 'x' ? Math.PI / 2 : 0, 0, axis === 'x' ? 0 : Math.PI / 2, 0xe8c48a);
+    piv.add(new THREE.Mesh(M.geometry(), new THREE.MeshLambertMaterial({ vertexColors:true })));
+    W.add(G.cyl8, px, py, pz, .12, axis === 'x' ? .3 : len + 1, .12, axis === 'x' ? Math.PI / 2 : 0, 0, axis === 'x' ? 0 : Math.PI / 2, 0x6b4a2b);
+    D.logs.push({ piv, px, py, pz, rope, amp, speed, len, axis, a:o.ph || 0, ph:o.ph || 0, section:B.section, mult:1 });
+  };
+  /* updraft fan: round column of air from y up to y + height */
+  B.fan = (x, y, z, r, height, o = {}) => {
+    const blades = new THREE.Group(); blades.position.set(x, y + .12, z); WG.add(blades);
+    const M = new Merge(); for(let i = 0; i < 4; i++) M.add(G.box, Math.cos(i * 1.571) * r * .42, 0, Math.sin(i * 1.571) * r * .42, r * .75, .06, r * .28, 0, -i * 1.571, .25, 0xe8eef8);
+    M.add(G.cyl, 0, .02, 0, r * .18, .12, r * .18, 0, 0, 0, 0xffcd4d);
+    blades.add(new THREE.Mesh(M.geometry(), new THREE.MeshLambertMaterial({ vertexColors:true })));
+    W.add(G.cyl, x, y, z, r + .15, .24, r + .15, 0, 0, 0, 0x8b93b8);
+    const tex = canvasTex(64, 128, (c, w, h) => { c.clearRect(0, 0, w, h); c.strokeStyle = 'rgba(255,255,255,.8)'; c.lineWidth = 3; c.lineCap = 'round'; for(let i = 0; i < 9; i++){ const px = (i * 23) % 64, py = (i * 41) % 128; c.beginPath(); c.moveTo(px, py); c.lineTo(px, py + 26); c.stroke(); } });
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(3, height / 6);
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(r, r, height, 20, 1, true), new THREE.MeshBasicMaterial({ map:tex, transparent:true, opacity:.55, depthWrite:false, side:THREE.DoubleSide, color:0xdff4ff }));
+    col.position.set(x, y + height / 2, z); col.renderOrder = 5; WG.add(col);
+    D.fans.push({ x, y, z, r, top:y + height, power:o.power || 34, blades, tex, section:B.section });
+  };
+  /* conveyor belt: a box platform that carries you along (vx, vz) */
+  B.belt = (x, top, z, w, d, vx, vz, o = {}) => {
+    const h = o.h || .8;
+    W.add(G.box, x, top - h / 2 - .06, z, w + .3, h - .1, d + .3, 0, 0, 0, theme.beltSide || 0x6c7290);
+    const tex = canvasTex(64, 64, c => { c.fillStyle = '#3d4258'; c.fillRect(0, 0, 64, 64); c.fillStyle = '#ffcd4d'; c.beginPath(); c.moveTo(32, 10); c.lineTo(54, 34); c.lineTo(42, 34); c.lineTo(42, 54); c.lineTo(22, 54); c.lineTo(22, 34); c.lineTo(10, 34); c.closePath(); c.fill(); });
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    const along = Math.abs(vx) > Math.abs(vz) ? 'x' : 'z', L2 = along === 'x' ? w : d, Wd = along === 'x' ? d : w;
+    tex.repeat.set(Math.max(1, Math.round(Wd / 1.4)), Math.max(1, Math.round(L2 / 1.4)));
+    const geo = new THREE.PlaneGeometry(Wd, L2).rotateX(-Math.PI / 2);
+    // arrows point toward -z in plane space; rotate so they point along the belt direction
+    geo.rotateY(Math.atan2(-vx, -vz));
+    const top2 = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map:tex })); top2.position.set(x, top + .005, z); WG.add(top2);
+    const c = addCol({ type:'box', x0:x - w / 2, x1:x + w / 2, z0:z - d / 2, z1:z + d / 2, y0:top - h, y1:top, cx:x, cz:z, w, d, kind:'belt', belt:[vx, vz] });
+    D.belts.push({ c, tex, speed:Math.hypot(vx, vz) });
+    pathNode(c, o); return c;
+  };
+  /* checkpoint: a platform with a glowing pad + flag */
+  B.cp = (x, top, z, w, d, o = {}) => {
+    const c = o.round ? B.round(x, top, z, w / 2, o) : B.box(x, top, z, w, d, o);
+    B.section++; c.section = B.section; c.cp = D.cps.length;
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, .1, 24), new THREE.MeshLambertMaterial({ color:0xbfb8d6, emissive:0x222033 }));
+    pad.position.set(x, top + .04, z); pad.scale.set(1.15, 1, 1.15); WG.add(pad);
+    W.add(G.cyl8, x + 1.2, top + 1.3, z - .2, .07, 2.6, .07, 0, 0, 0, 0xfff2d6);
+    const fgeo = new THREE.BufferGeometry(); fgeo.setAttribute('position', new THREE.Float32BufferAttribute([0, 0, 0, 1.1, -.32, 0, 0, -.64, 0], 3)); fgeo.computeVertexNormals();
+    const flag = new THREE.Mesh(fgeo, new THREE.MeshLambertMaterial({ color:0xbfb8d6, side:THREE.DoubleSide })); flag.position.set(x + 1.24, top + 2.55, z - .2); WG.add(flag);
+    D.cps.push({ c, x, z, top, pad, flag, yaw:o.yaw });
+    return c;
+  };
+  B.start = (x, top, z, w, d, o = {}) => {
+    const c = o.round ? B.round(x, top, z, w / 2, o) : B.box(x, top, z, w, d, o);
+    c.cp = 0; D.cps.push({ c, x, z, top, pad:null, flag:null, yaw:o.yaw || 0, start:true }); D.start = c; return c;
+  };
+  /* finish: round pad with a checkered (black/white) ring and an arch with checkered flags */
+  B.finish = (x, top, z, r, o = {}) => {
+    const c = B.round(x, top, z, r, o); c.finish = true;
+    const ring = canvasTex(256, 32, cx => { for(let i = 0; i < 32; i++) for(let j = 0; j < 4; j++){ cx.fillStyle = (i + j) % 2 ? '#1f1f26' : '#ffffff'; cx.fillRect(i * 8, j * 8, 8, 8); } });
+    ring.wrapS = THREE.RepeatWrapping; ring.repeat.set(3, 1);
+    const rm = new THREE.Mesh(new THREE.RingGeometry(r * .62, r * .94, 48, 1).rotateX(-Math.PI / 2), new THREE.MeshLambertMaterial({ map:ring }));
+    rm.position.set(x, top + .02, z); WG.add(rm);
+    const yaw = o.yaw || 0, ax = Math.cos(yaw), az = -Math.sin(yaw), ah = 4.2, aw = r * .95;
+    for(const s of [-1, 1]) W.add(G.cyl, x + ax * aw * s, top + ah / 2, z + az * aw * s, .28, ah, .28, 0, 0, 0, 0xfff2d6);
+    W.add(G.box, x, top + ah, z, aw * 2 + .8, .5, .5, 0, yaw, 0, 0xfff2d6);
+    const chk = canvasTex(96, 64, cx => { for(let r2 = 0; r2 < 4; r2++) for(let q = 0; q < 6; q++){ cx.fillStyle = (r2 + q) % 2 ? '#1f1f26' : '#fff'; cx.fillRect(q * 16, r2 * 16, 16, 16); } });
+    const banner = new THREE.Mesh(new THREE.PlaneGeometry(aw * 2 - .2, .9), new THREE.MeshLambertMaterial({ map:chk, side:THREE.DoubleSide }));
+    banner.position.set(x, top + ah - .62, z); banner.rotation.y = yaw; WG.add(banner);
+    const flags = [];
+    for(const s of [-1, 1]){
+      W.add(G.cyl8, x + ax * (aw + .2) * s, top + ah + 1, z + az * (aw + .2) * s, .06, 2, .06, 0, 0, 0, 0xfff2d6);
+      const f = new THREE.Mesh(new THREE.PlaneGeometry(1.2, .8, 6, 1), new THREE.MeshLambertMaterial({ map:chk, side:THREE.DoubleSide }));
+      f.geometry.translate(.6, 0, 0); f.position.set(x + ax * (aw + .2) * s, top + ah + 1.6, z + az * (aw + .2) * s); WG.add(f); flags.push(f);
+    }
+    D.finish = { c, x, z, top, r, flags }; return c;
+  };
+  B.gem = (x, y, z) => { D.gems.push({ x, y, z, got:false }); };
+  B.sign = (x, z, r, key, o = {}) => { D.signs.push({ x, z, r, key, y:o.y, done:false }); };
+  return B;
+}
+
+/* gems: one instanced mesh */
+const gemGeo = (() => { const g = new THREE.OctahedronGeometry(.42, 0); g.scale(1, 1.35, 1); return g; })();
+const gemMat = new THREE.MeshLambertMaterial({ color:0x59e0ff, emissive:0x0a5a8a });
+let gemMesh = null, tileMesh = null;
+const helpMat = new THREE.MeshLambertMaterial({ color:0xffd84a, emissive:0x8a5a00, transparent:true, opacity:.92 });
+const arrowSpr = new THREE.Sprite(new THREE.SpriteMaterial({ map:canvasTex(128, 128, x => { x.font = '110px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText('⬇️', 64, 70); }), depthTest:false, transparent:true }));
+arrowSpr.scale.set(1.6, 1.6, 1); arrowSpr.renderOrder = 9; arrowSpr.visible = false; scene.add(arrowSpr);
+let floorMesh = null, floorTex = null;
+
+function disposeWorld(){
+  if(!WG) return;
+  scene.remove(WG);
+  WG.traverse(o => { if(o.geometry) o.geometry.dispose(); if(o.material){ const ms = Array.isArray(o.material) ? o.material : [o.material]; ms.forEach(m => { if(m.map && m.map !== glowTex) m.map.dispose(); m.dispose(); }); } });
+  WG = null; WD = null; gemMesh = tileMesh = null; floorMesh = null; floorTex = null;
+}
+function buildWorld(i){
+  disposeWorld();
+  worldIdx = i; const def = WORLDS[i];
+  WG = new THREE.Group(); scene.add(WG); WD = blankWorld(); WD.def = def;
+  seed = 1000 + i * 77;
+  const th = def.theme;
+  paintSky(th.skyTop, th.skyHor, th.skyBot);
+  scene.fog.color.set(th.skyHor); scene.fog.near = th.fogNear || 70; scene.fog.far = th.fogFar || 230;
+  hemi.color.set(th.hemiSky || 0xeaf6ff); hemi.groundColor.set(th.hemiGround || 0x6a7a9c); hemi.intensity = th.hemiI || 1.9;
+  sun.color.set(th.sunCol || 0xfff0d0); sun.intensity = th.sunI || 2.0;
+  sunGlow.material.color.set(th.glow || 0xfff2c0);
+  // the floor below the course (sea, lava, cloud sea, swamp…)
+  const fl = th.floor;
+  floorTex = canvasTex(128, 128, fl.draw);
+  floorTex.wrapS = floorTex.wrapT = THREE.RepeatWrapping; floorTex.repeat.set(fl.rep || 60, fl.rep || 60);
+  const fmat = fl.glow ? new THREE.MeshBasicMaterial({ map:floorTex, color:fl.color, fog:true }) : new THREE.MeshLambertMaterial({ map:floorTex, color:fl.color, transparent:fl.opacity != null, opacity:fl.opacity != null ? fl.opacity : 1 });
+  floorMesh = new THREE.Mesh(new THREE.PlaneGeometry(1000, 1000).rotateX(-Math.PI / 2), fmat);
+  floorMesh.position.y = fl.y; floorMesh.renderOrder = 1; WG.add(floorMesh);
+  WD.killY = def.killY != null ? def.killY : fl.y + .2; WD.fallLimit = def.fallLimit || 0; WD.death = def.death || 'splash';
+  const B = makeBuilder(def);
+  def.build(B);
+  WD.sections = B.section + 1;
+  if(!B.W.empty) WG.add(new THREE.Mesh(B.W.geometry(), new THREE.MeshLambertMaterial({ vertexColors:true, flatShading:!!th.flat })));
+  // tiles: one instanced mesh, per-instance colour
+  if(WD.tiles.length){
+    const tg = new Merge().add(G.box, 0, -.32, 0, 1, .52, 1, 0, 0, 0, 0xdddddd).add(G.box, 0, -.06, 0, 1.06, .12, 1.06, 0, 0, 0, 0xffffff).geometry();
+    tileMesh = new THREE.InstancedMesh(tg, new THREE.MeshLambertMaterial({ vertexColors:true }), WD.tiles.length);
+    WD.tiles.forEach((t, k) => tileMesh.setColorAt(k, _c.set(t.col)));
+    tileMesh.frustumCulled = false; WG.add(tileMesh);
+  }
+  if(WD.gems.length){ gemMesh = new THREE.InstancedMesh(gemGeo, gemMat, WD.gems.length); gemMesh.frustumCulled = false; WG.add(gemMesh); }
+  WD.T = 0; resetDynamics(0);
+  return WD;
+}
+
+/* ---------- dynamic pieces ---------- */
+function placeMover(m, init){
+  const o = Math.sin(m.a + m.ph) * m.amp, c = m.c, [bx, by, bz] = c.base;
+  const nx = bx + (m.axis === 'x' ? o : 0), ny = by + (m.axis === 'y' ? o : 0), nz = bz + (m.axis === 'z' ? o : 0);
+  if(init){ c.dx = c.dy = c.dz = 0; } else { c.dx = nx - c.cx; c.dy = ny - c.y1; c.dz = nz - c.cz; }
+  c.cx = nx; c.cz = nz; c.y1 = ny; c.y0 = ny - c.h;
+  if(c.type === 'cyl'){ c.x = nx; c.z = nz; } else { c.x0 = nx - c.w / 2; c.x1 = nx + c.w / 2; c.z0 = nz - c.d / 2; c.z1 = nz + c.d / 2; }
+  m.mesh.position.set(nx, ny, nz);
+}
+function resetDynamics(t){
+  if(!WD) return;
+  WD.T = t;
+  WD.movers.forEach(m => { m.a = t * m.speed; placeMover(m, true); });
+  WD.bars.forEach(b => { b.a = b.ph + t * b.speed; });
+  WD.logs.forEach(l => { l.a = l.ph + t * l.speed; });
+  WD.tiles.forEach(k => { k.st = 0; k.t = 0; k.a = t; k.c.solid = true; });
+  updateDyn(0);
+}
+function updateDyn(dt){
+  WD.T += dt;
+  for(const m of WD.movers){ m.a += dt * m.speed * m.mult; placeMover(m, false); }
+  for(const b of WD.bars){ b.a += dt * b.speed * b.mult; b.grp.rotation.y = b.a; }
+  for(const l of WD.logs){ l.a += dt * l.speed * l.mult; const ang = Math.sin(l.a) * l.amp; if(l.axis === 'x') l.piv.rotation.z = ang; else l.piv.rotation.x = ang; l.ang = ang; }
+  for(const k of WD.tiles){
+    if(k.kind === 'crumble'){
+      if(k.st === 1){ k.t += dt; if(k.t > .75 / k.mult){ k.st = 2; k.t = 0; k.c.solid = false; } }
+      else if(k.st === 2){ k.t += dt; if(k.t > 2.6){ k.st = 0; k.t = 0; k.c.solid = true; } }
+    } else {
+      k.a += dt * k.mult;
+      const ph = ((k.a + k.off) % k.period + k.period) % k.period;
+      k.c.solid = ph < k.on;
+      k.warn = ph > k.on - .7 && ph < k.on;
+    }
+  }
+}
+/* visuals for the dynamic pieces (per frame) */
+function animWorld(dt, T){
+  if(tileMesh){
+    WD.tiles.forEach((k, i) => {
+      let y = k.top, s = 1, rx = 0, rz = 0;
+      if(k.kind === 'crumble'){
+        if(k.st === 1){ rx = Math.sin(T * 60) * .04; rz = Math.cos(T * 53) * .04; }
+        else if(k.st === 2){ y -= Math.min(30, k.t * k.t * 9); s = k.t > 2.2 ? 0 : 1; if(k.t > 2.2) y = k.top; }
+      } else {
+        if(!k.c.solid) s = 0; else if(k.warn) rx = Math.sin(T * 40) * .03;
+      }
+      if(s === 0) _m.makeScale(0, 0, 0);
+      else _m.compose(_v.set(k.x, y, k.z), _q.setFromEuler(_e.set(rx, 0, rz)), _s.set(k.w, 1, k.d));
+      tileMesh.setMatrixAt(i, _m);
+      if(k.kind === 'blink'){ tileMesh.setColorAt(i, _c.set(k.warn && Math.floor(T * 8) % 2 ? 0xffffff : k.col)); }
+    });
+    tileMesh.instanceMatrix.needsUpdate = true; if(tileMesh.instanceColor) tileMesh.instanceColor.needsUpdate = true;
+  }
+  if(gemMesh){
+    WD.gems.forEach((g, i) => {
+      if(g.got) _m.makeScale(0, 0, 0);
+      else _m.compose(_v.set(g.x, g.y + Math.sin(T * 2.5 + i) * .15, g.z), _q.setFromEuler(_e.set(0, T * 2 + i, 0)), _s.set(1, 1, 1));
+      gemMesh.setMatrixAt(i, _m);
+    });
+    gemMesh.instanceMatrix.needsUpdate = true;
+  }
+  for(const a of WD.anim){ a.sqv += (-a.sq * 160 - a.sqv * 9) * dt; a.sq += a.sqv * dt; a.mesh.scale.set(1 - a.sq * .5, 1 + a.sq, 1 - a.sq * .5); }
+  for(const f of WD.fans){ f.blades.rotation.y += dt * 14; f.tex.offset.y -= dt * 1.6; }
+  for(const b of WD.belts){ b.tex.offset.y -= dt * b.speed / 1.4; }
+  WD.cps.forEach((c, i) => { if(!c.flag) return; const on = i <= cp; c.flag.material.color.setHex(on ? 0xffcd4d : 0xbfb8d6); c.pad.material.color.setHex(on ? 0x8ff0c4 : 0xbfb8d6); c.flag.rotation.y = Math.sin(T * 3 + i) * .25; });
+  if(WD.finish) WD.finish.flags.forEach((f, i) => { f.rotation.y = Math.sin(T * 2.6 + i * 2) * .25 + (i ? Math.PI : 0); });
+  if(floorTex && WD.def.theme.floor.flow) floorTex.offset.set(T * WD.def.theme.floor.flow[0], T * WD.def.theme.floor.flow[1]);
+  WD.helps.forEach((h, i) => { h.mesh.material.emissiveIntensity = .7 + Math.sin(T * 4 + i) * .3; });
+  if(WD.def.anim) WD.def.anim(T, dt);
+}
+
+/* ---------- collisions ---------- */
+function onTop(c, x, z, m){
+  if(c.type === 'box') return x > c.x0 - m && x < c.x1 + m && z > c.z0 - m && z < c.z1 + m;
+  const dx = x - c.x, dz = z - c.z; return dx * dx + dz * dz < (c.r + m) ** 2;
+}
+function groundInfo(x, z, y, r){
+  let h = -1e9, ref = null; const m = r * .6;
+  for(const c of WD.cols){ if(!c.solid) continue; if(c.y1 <= y + .45 && c.y1 > h && onTop(c, x, z, c.type === 'box' ? m : r * .35)){ h = c.y1; ref = c; } }
+  return { h, ref };
+}
+function pushOut(){
+  for(const c of WD.cols){
+    if(!c.solid || c.y1 <= P.y + .45 || c.y0 >= P.y + 1.0) continue;
+    if(c.type === 'box'){
+      const cx = clamp(P.x, c.x0, c.x1), cz = clamp(P.z, c.z0, c.z1), dx = P.x - cx, dz = P.z - cz, d2 = dx * dx + dz * dz;
+      if(d2 >= PR * PR) continue;
+      if(d2 > 1e-8){ const d = Math.sqrt(d2); P.x = cx + dx / d * PR; P.z = cz + dz / d * PR; }
+      else { const l = P.x - c.x0, r = c.x1 - P.x, f = P.z - c.z0, k = c.z1 - P.z, mm = Math.min(l, r, f, k);
+        if(mm === l) P.x = c.x0 - PR; else if(mm === r) P.x = c.x1 + PR; else if(mm === f) P.z = c.z0 - PR; else P.z = c.z1 + PR; }
+    } else {
+      const dx = P.x - c.x, dz = P.z - c.z, d = Math.hypot(dx, dz), mm = c.r + PR;
+      if(d < mm){ if(d > 1e-5){ P.x = c.x + dx / d * mm; P.z = c.z + dz / d * mm; } else P.x = c.x + mm; }
+    }
+  }
+}
+function ceiling(prevY){
+  if(P.vy <= 0) return;
+  for(const c of WD.cols){ if(!c.solid || c.y0 < prevY + .95 || P.y + 1 <= c.y0) continue; if(onTop(c, P.x, P.z, -.1)){ P.y = c.y0 - 1; P.vy = 0; } }
+}
+
+/* ---------- player ---------- */
+const PHYS = { speed:6.6, grav:28, jump:11, djump:9.6, coyote:.16, buffer:.16, accG:14, accA:6.5, accIce:2.2 };
+const P = { x:0, y:0, z:0, vx:0, vy:0, vz:0, face:0, ground:null, grounded:false, coyote:0, jumps:0, buf:0, sq:0, sqv:0, flip:0, move:0, knock:0, usedDouble:false };
+let cp = 0, state = 'boot', T = 0;
+const inp = { x:0, z:0, m:0 };
+let jumpQueued = false, jumpHeld = false;
+const run = { t:0, started:false, falls:0, secFalls:[], helped:[], gems:0, over:false, lastFallT:-9, maxPi:0 };
+
+function spawnAt(i){
+  const c = WD.cps[i], col = c.c;
+  P.x = col.cx; P.z = col.cz; P.y = col.y1 + .05; P.vx = P.vy = P.vz = 0; P.ground = null; P.jumps = 0; P.flip = 0; P.knock = 0;
+  // face the next platform on the route
+  const nxt = WD.path[Math.min(WD.path.length - 1, (col.pi || 0) + 1)];
+  let yaw = c.yaw;
+  if(yaw == null && nxt){ yaw = Math.atan2(nxt.cx - P.x, nxt.cz - P.z); }
+  P.face = yaw || 0;
+  cam.yaw = Math.atan2(-Math.sin(P.face), -Math.cos(P.face));
+  if(WD.def.camOrbit) cam.yaw = orbitYaw();
+  snapCam = true;
+}
+function respawn(kind){
+  const x = P.x, z = P.z, y = Math.max(P.y, WD.killY);
+  if(kind === 'lava'){ SFX.sizzle(); burst(x, y + .3, z, 16, [0xff7a1a, 0xffd23f, 0x5a5470], 4); }
+  else if(kind === 'poof'){ SFX.poof(); burst(x, y + .3, z, 16, [0xffffff, 0xdff4ff], 4); }
+  else { SFX.splash(); burst(x, y + .2, z, 16, WD.def.theme.splash || [0x7fd0ff, 0xffffff], 4); }
+  run.falls++; run.secFalls[cp] = (run.secFalls[cp] || 0) + 1;
+  const fl = $('#flash'); fl.classList.add('on'); void fl.offsetWidth; fl.classList.remove('on');
+  spawnAt(cp);
+  burst(P.x, P.y + .6, P.z, 12, [0xffffff, 0xffcd4d, 0xff8fb8], 3, .8);
+  P.sq = .35; P.sqv = 0;
+  if(!mpActive() && run.secFalls[cp] >= 5 && !run.helped[cp]) giveHelp(cp);
+  else if(run.secFalls[cp] === 1 || run.secFalls[cp] === 3) say(pick(LINES.fall));
+}
+
+function step(dt){
+  T += dt;
+  updateDyn(dt);
+  const SPEED = PHYS.speed;
+  const ice = P.ground && P.ground.kind === 'ice';
+  const acc = P.grounded ? (ice ? PHYS.accIce : PHYS.accG) : PHYS.accA;
+  const wx = inp.x, wz = inp.z, m = inp.m;
+  if(P.knock > 0){ P.knock -= dt; }
+  else {
+    P.vx += (wx * SPEED - P.vx) * Math.min(1, acc * dt);
+    P.vz += (wz * SPEED - P.vz) * Math.min(1, acc * dt);
+  }
+  P.move = m;
+  if(m > 0) P.face += angDiff(Math.atan2(wx, wz), P.face) * Math.min(1, 12 * dt);
+  if(m > 0 || jumpQueued){ if(!run.started && state === 'play' && !mpActive()){ run.started = true; } }
+  // ride moving platforms + belts
+  if(P.ground && P.ground.moving){ P.x += P.ground.dx; P.y += P.ground.dy; P.z += P.ground.dz; }
+  if(P.grounded && P.ground && P.ground.kind === 'belt'){ P.x += P.ground.belt[0] * dt; P.z += P.ground.belt[1] * dt; }
+  P.x += P.vx * dt; P.z += P.vz * dt;
+  pushOut();
+  // jump: buffered, coyote time, double jump
+  P.coyote -= dt; P.buf -= dt;
+  if(jumpQueued){ P.buf = PHYS.buffer; jumpQueued = false; }
+  if(P.buf > 0){
+    if(P.grounded || (P.coyote > 0 && P.jumps === 0)){ P.vy = PHYS.jump; P.jumps = 1; P.grounded = false; P.ground = null; P.coyote = 0; P.buf = 0; P.sq = .25; P.sqv = 0; SFX.jump(); }
+    else if(P.jumps < 2){ P.vy = PHYS.djump; P.jumps = 2; P.buf = 0; P.flip = 1; P.usedDouble = true; SFX.djump(); burst(P.x, P.y + .2, P.z, 6, [0xffffff, 0xfff2b0], 2.5, .8); }
+  }
+  // fans
+  for(const f of WD.fans){
+    const dx = P.x - f.x, dz = P.z - f.z;
+    if(dx * dx + dz * dz < f.r * f.r && P.y > f.y - .5 && P.y < f.top){
+      P.vy = Math.min(P.vy + f.power * dt + PHYS.grav * dt, 8.5);
+      if(P.jumps === 0) P.jumps = 1;
+      if(!P.inFan){ P.inFan = true; SFX.wind(); }
+    } else if(P.inFan && !(dx * dx + dz * dz < f.r * f.r)) P.inFan = false;
+  }
+  const prevY = P.y;
+  P.vy = Math.max(P.vy - PHYS.grav * dt, -30);
+  P.y += P.vy * dt;
+  ceiling(prevY);
+  const gi = groundInfo(P.x, P.z, Math.max(prevY, P.y), PR), wasG = P.grounded;
+  if(P.vy <= 0 && (P.y <= gi.h || (wasG && P.y - gi.h < .5 && !(P.ground && P.ground.kind === 'spring')))){
+    if(!wasG && P.vy < -5){ P.sq = -clamp(-P.vy / 40, .1, .3); P.sqv = 0; }
+    P.y = gi.h; P.vy = 0; P.grounded = true; P.jumps = 0; P.ground = gi.ref; P.coyote = PHYS.coyote; P.usedDouble = false;
+    const g = gi.ref;
+    if(g.kind === 'spring'){
+      P.vy = g.power + (jumpHeld || P.buf > 0 ? 2.5 : 0); P.buf = 0; P.grounded = false; P.jumps = 1; P.ground = null; P.sq = .35; SFX.spring();
+      burst(P.x, P.y, P.z, 10, [0xff5d8f, 0xffffff], 4);
+      const a = WD.anim.find(a => a.c === g); if(a){ a.sq = -.35; a.sqv = 0; }
+    }
+    if(g.cp != null && g.cp > cp && !mpActive()) reachCp(g.cp);
+    else if(g.cp != null && g.cp > cp) reachCp(g.cp);
+    if(g.pi != null && g.pi > run.maxPi) run.maxPi = g.pi;
+    if(g.finish) reachFinish();
+    for(const k of WD.tiles) if(k.c === g && k.kind === 'crumble' && k.st === 0){ k.st = 1; k.t = 0; SFX.crack(); }
+  } else { P.grounded = false; P.ground = null; }
+  // hazards: spinning bars, swinging logs
+  hazards();
+  // falling
+  if(P.y < WD.killY || (WD.fallLimit && P.y < WD.cps[cp].top - WD.fallLimit)) respawn(WD.death);
+  interact();
+}
+function knock(dx, dz, up){
+  const d = Math.hypot(dx, dz) || 1;
+  P.vx = dx / d * 9; P.vz = dz / d * 9; P.vy = Math.max(P.vy, up || 6); P.grounded = false; P.ground = null; P.knock = .35; P.jumps = 1;
+  SFX.bonk(); burst(P.x, P.y + .7, P.z, 8, [0xffffff, 0xffd23f], 3, .8);
+}
+function hazards(){
+  for(const b of WD.bars){
+    if(P.y > b.y + .3 || P.y + 1.05 < b.y - .3) continue;
+    const ax = Math.cos(b.a), az = -Math.sin(b.a);   // arm direction (rotation.y = a rotates +x toward -z)
+    const dx = P.x - b.cx, dz = P.z - b.cz;
+    let t = dx * ax + dz * az; t = clamp(t, b.both ? -b.len : 0, b.len);
+    const px = b.cx + ax * t, pz = b.cz + az * t, ex = P.x - px, ez = P.z - pz;
+    if(ex * ex + ez * ez < (PR + .3) ** 2 && t !== 0){
+      const s = Math.sign(b.speed) * Math.sign(t || 1);     // tangential push direction
+      knock(-az * s * 1 + ex * .5, ax * s * 1 + ez * .5, 6.5);
+    }
+  }
+  for(const l of WD.logs){
+    const s = Math.sin(l.ang), c = Math.cos(l.ang);
+    const lx = l.axis === 'x' ? l.px - s * l.rope : l.px, lz = l.axis === 'x' ? l.pz : l.pz + s * l.rope, ly = l.py - c * l.rope;
+    if(P.y > ly + .5 || P.y + 1.05 < ly - .5) continue;
+    if(l.axis === 'x'){
+      if(Math.abs(P.z - lz) > l.len / 2 + PR || Math.abs(P.x - lx) > .45 + PR) continue;
+      const v = Math.cos(l.a) * l.speed;                 // swing velocity sign
+      knock(-(v === 0 ? 1 : Math.sign(v)) * 1, 0, 6);
+    } else {
+      if(Math.abs(P.x - lx) > l.len / 2 + PR || Math.abs(P.z - lz) > .45 + PR) continue;
+      const v = Math.cos(l.a) * l.speed;
+      knock(0, (v === 0 ? 1 : Math.sign(v)), 6);
+    }
+  }
+}
+function interact(){
+  const cy = P.y + .6;
+  WD.gems.forEach((g, i) => {
+    if(g.got) return;
+    const dx = g.x - P.x, dy = g.y - cy, dz = g.z - P.z;
+    if(dx * dx + dy * dy + dz * dz < 1.5){ g.got = true; run.gems++; SFX.gem(); burst(g.x, g.y, g.z, 14, [0x59e0ff, 0xffffff, 0xb28dff], 4); hud(); if(!mpActive()) say(run.gems === 3 ? LINES.allGems : LINES.gem); }
+  });
+  if(!mpActive()) for(const s of WD.signs){
+    if(s.done) continue;
+    if((s.x - P.x) ** 2 + (s.z - P.z) ** 2 < s.r * s.r){ s.done = true; say(LINES[s.key] || s.key); }
+  }
+}
+function reachCp(i){
+  cp = i; const c = WD.cps[i];
+  SFX.flag(); burst(c.x, c.top + 2.6, c.z, 14, [0xffcd4d, 0xffffff, 0x8ff0c4], 3);
+  if(!mpActive()) say(i === 1 && worldIdx === 0 ? LINES.cp1 : pick(LINES.cp));
+  hud();
+}
+
+/* ---------- auto-help: after 5 falls in one section, golden stepping stones appear + a hint arrow ---------- */
+function giveHelp(sec){
+  run.helped[sec] = true;
+  const nodes = WD.path.filter(c => c.section === sec);
+  const next = WD.path.find(c => c.section === sec + 1); if(next) nodes.push(next);
+  let made = 0;
+  const M = new Merge();
+  for(let k = 0; k + 1 < nodes.length; k++){
+    const a = nodes[k], b = nodes[k + 1];
+    const ax = a.moving ? a.base[0] : a.cx, az = a.moving ? a.base[2] : a.cz, at = a.moving ? a.base[1] : a.y1;
+    const bx = b.moving ? b.base[0] : b.cx, bz = b.moving ? b.base[2] : b.cz, bt = b.moving ? b.base[1] : b.y1;
+    const gap = Math.hypot(bx - ax, bz - az) - halfSize(a) - halfSize(b);
+    if(gap < 1.0 && Math.abs(bt - at) < 1.2) continue;
+    const n = gap > 4 ? 2 : 1;
+    for(let j = 1; j <= n; j++){
+      const t = j / (n + 1), x = lerp(ax, bx, t), z = lerp(az, bz, t), top = lerp(at, bt, t) - (a.kind === 'spring' ? 0 : 0);
+      const w = 1.9;
+      if(WD.cols.some(c => c.solid && Math.abs(c.y1 - top) < 1.2 && overlaps(c, x, z, w / 2))) continue;
+      M.add(G.box, x, top - .25, z, w, .5, w, 0, 0, 0, 0xffffff);
+      const c = { type:'box', x0:x - w / 2, x1:x + w / 2, z0:z - w / 2, z1:z + w / 2, y0:top - .5, y1:top, cx:x, cz:z, w, d:w, solid:true, section:sec, help:true };
+      WD.cols.push(c); made++;
+    }
+  }
+  if(made){ const mesh = new THREE.Mesh(M.geometry(), helpMat.clone()); WG.add(mesh); WD.helps.push({ mesh }); }
+  [...WD.movers, ...WD.bars, ...WD.logs, ...WD.tiles].forEach(o => { if(o.section === sec) o.mult = .55; });
+  run.hint = true;
+  SFX.help(); say(LINES.help, 4200);
+}
+function halfSize(c){ return c.type === 'cyl' ? c.r : Math.min(c.w, c.d) / 2; }
+function overlaps(c, x, z, h){
+  if(c.type === 'box') return x + h > c.x0 && x - h < c.x1 && z + h > c.z0 && z - h < c.z1;
+  return Math.hypot(clamp(c.x, x - h, x + h) - c.x, clamp(c.z, z - h, z + h) - c.z) < c.r && Math.hypot(x - c.x, z - c.z) < c.r + h;
+}
+
+/* ---------- Input ---------- */
+const keys = {};
+const joy = { x:0, y:0, id:null, ox:0, oy:0 }, look = { id:null, x:0, y:0 };
+const joyEl = $('#joy'), knob = $('#knob'), jumpBtn = $('#btnJump');
+let joyHome = [90, 0];
+function placeJoyHome(){ joyHome = [Math.max(84, SAL + 78), SH - Math.max(92, SH * .16) - SAB * .5]; if(joy.id == null) setJoy(joyHome[0], joyHome[1]); }
+function setJoy(x, y){ joyEl.style.left = x + 'px'; joyEl.style.top = y + 'px'; }
+const touch = $('#touch');
+touch.addEventListener('pointerdown', e => {
+  if(state !== 'play') return;
+  e.preventDefault();
+  const p = toLayer(e.clientX, e.clientY);
+  if(p.x < SW * .45 && joy.id == null){
+    joy.id = e.pointerId; joy.ox = clamp(p.x, Math.max(70, SAL + 64), SW * .45); joy.oy = clamp(p.y, 140, SH - 70);
+    setJoy(joy.ox, joy.oy); joyEl.classList.add('on'); moveJoy(p.x, p.y);
+  } else if(look.id == null){ look.id = e.pointerId; look.x = p.x; look.y = p.y; }
+  try{ touch.setPointerCapture(e.pointerId); }catch(err){}
+});
+function moveJoy(x, y){
+  let dx = x - joy.ox, dy = y - joy.oy; const d = Math.hypot(dx, dy), m = 52;
+  if(d > m){ dx *= m / d; dy *= m / d; }
+  knob.style.transform = `translate(${dx}px,${dy}px)`;
+  joy.x = dx / m; joy.y = dy / m;
+}
+touch.addEventListener('pointermove', e => {
+  const p = toLayer(e.clientX, e.clientY);
+  if(e.pointerId === joy.id) moveJoy(p.x, p.y);
+  else if(e.pointerId === look.id){ cam.yaw -= (p.x - look.x) * .0075; cam.pitch = clamp(cam.pitch + (p.y - look.y) * .004, .08, 1.1); look.x = p.x; look.y = p.y; cam.dragT = T; }
+});
+function endPtr(e){
+  if(e.pointerId === joy.id){ joy.id = null; joy.x = joy.y = 0; knob.style.transform = ''; joyEl.classList.remove('on'); setJoy(...joyHome); }
+  if(e.pointerId === look.id) look.id = null;
+}
+touch.addEventListener('pointerup', endPtr); touch.addEventListener('pointercancel', endPtr);
+jumpBtn.addEventListener('pointerdown', e => { e.preventDefault(); jumpQueued = true; jumpHeld = true; jumpBtn.classList.add('on'); ac(); });
+['pointerup', 'pointercancel', 'pointerleave'].forEach(t => jumpBtn.addEventListener(t, () => { jumpBtn.classList.remove('on'); jumpHeld = false; }));
+const KEYMAP = { KeyW:'f', ArrowUp:'f', KeyS:'b', ArrowDown:'b', KeyA:'l', ArrowLeft:'l', KeyD:'r', ArrowRight:'r', KeyQ:'cl', KeyE:'cr' };
+addEventListener('keydown', e => {
+  if(KEYMAP[e.code]){ keys[KEYMAP[e.code]] = true; e.preventDefault(); }
+  if(e.code === 'Space'){ if(!e.repeat) jumpQueued = true; jumpHeld = true; e.preventDefault(); }
+  if((e.code === 'Escape' || e.code === 'KeyP') && state === 'play') showPause();
+});
+addEventListener('keyup', e => { if(KEYMAP[e.code]) keys[KEYMAP[e.code]] = false; if(e.code === 'Space') jumpHeld = false; });
+addEventListener('blur', () => { for(const k in keys) keys[k] = false; });
+document.addEventListener('visibilitychange', () => { if(document.hidden && state === 'play') showPause(); });
+function clearInput(){ joy.id = null; joy.x = joy.y = 0; look.id = null; knob.style.transform = ''; joyEl.classList.remove('on'); for(const k in keys) keys[k] = false; jumpQueued = false; jumpHeld = false; }
+function readInput(dt){
+  let ix = joy.x + (keys.r ? 1 : 0) - (keys.l ? 1 : 0), iy = joy.y + (keys.b ? 1 : 0) - (keys.f ? 1 : 0);
+  let m = Math.hypot(ix, iy); if(m > 1){ ix /= m; iy /= m; m = 1; } if(m < .12){ ix = iy = 0; m = 0; }
+  if(keys.cl) cam.yaw += 2.2 * dt; if(keys.cr) cam.yaw -= 2.2 * dt;
+  const fx = -Math.sin(cam.yaw), fz = -Math.cos(cam.yaw), rx = Math.cos(cam.yaw), rz = -Math.sin(cam.yaw);
+  inp.x = rx * ix - fx * iy; inp.z = rz * ix - fz * iy; inp.m = m;
+}
+
+/* ---------- Camera ---------- */
+const cam = { yaw:0, pitch:.38, dist:7.6, dragT:-9, tx:0, ty:0, tz:0 };
+let snapCam = true;
+const camPos = new THREE.Vector3();
+function orbitYaw(){ const o = WD.def.camOrbit; return Math.atan2(P.x - o.x, P.z - o.z) - (o.lead || .8); }
+function rayBlock(ox, oy, oz, dx, dy, dz, max){
+  let best = max;
+  for(const c of WD.cols){
+    if(!c.cam) continue;
+    let lo, hi;
+    if(c.type === 'box'){ lo = [c.x0, c.y0, c.z0]; hi = [c.x1, c.y1, c.z1]; } else { lo = [c.x - c.r * .8, c.y0, c.z - c.r * .8]; hi = [c.x + c.r * .8, c.y1, c.z + c.r * .8]; }
+    let tmin = 0, tmax = best; const o = [ox, oy, oz], d = [dx, dy, dz]; let ok = true;
+    for(let a = 0; a < 3; a++){
+      if(Math.abs(d[a]) < 1e-8){ if(o[a] < lo[a] || o[a] > hi[a]){ ok = false; break; } }
+      else { let t1 = (lo[a] - o[a]) / d[a], t2 = (hi[a] - o[a]) / d[a]; if(t1 > t2){ const s = t1; t1 = t2; t2 = s; } tmin = Math.max(tmin, t1); tmax = Math.min(tmax, t2); if(tmin > tmax){ ok = false; break; } }
+    }
+    if(ok && tmin > .05 && tmin < best) best = tmin;
+  }
+  return best;
+}
+function updateCamera(dt){
+  if(T - cam.dragT > 1.4){
+    if(WD.def.camOrbit){ cam.yaw += angDiff(orbitYaw(), cam.yaw) * Math.min(1, dt * 2.2); }
+    else if(P.move > .3){
+      const want = Math.atan2(-Math.sin(P.face), -Math.cos(P.face)), d = angDiff(want, cam.yaw);
+      if(Math.abs(d) < 2.4) cam.yaw += d * Math.min(1, dt * 1.2 * P.move);
+    }
+  }
+  const k = snapCam ? 1 : 1 - Math.exp(-10 * dt);
+  cam.tx = lerp(cam.tx, P.x, k); cam.ty = lerp(cam.ty, P.y + 1.1, snapCam ? 1 : 1 - Math.exp(-6 * dt)); cam.tz = lerp(cam.tz, P.z, k);
+  const pitch = cam.pitch, dist = cam.dist;
+  const dx = Math.sin(cam.yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(cam.yaw) * Math.cos(pitch);
+  const t = rayBlock(cam.tx, cam.ty, cam.tz, dx, dy, dz, dist), dd = Math.max(1.4, t - .35);
+  const x = cam.tx + dx * dd, y = cam.ty + dy * dd, z = cam.tz + dz * dd;
+  if(snapCam){ camPos.set(x, y, z); snapCam = false; } else camPos.lerp(_v.set(x, y, z), 1 - Math.exp(-12 * dt));
+  camera.position.copy(camPos); camera.lookAt(cam.tx, cam.ty + .25, cam.tz);
+}
+
+/* ---------- per-frame visuals ---------- */
+function animate(dt){
+  if(hero){
+    hero.grp.position.set(P.x, P.y, P.z); hero.grp.rotation.y = P.face;
+    P.sqv += (-P.sq * 180 - P.sqv * 14) * dt; P.sq += P.sqv * dt;
+    if(P.flip > 0) P.flip = Math.max(0, P.flip - dt * 2.4);
+    poseHero(hero, { t:T, dt, run:P.move, grounded:P.grounded, vy:P.vy, sq:P.sq, flip:P.flip });
+    if(state === 'won'){ hero.grp.rotation.y = P.face + T * 3; }
+  }
+  if(WD){
+    const gh = groundInfo(P.x, P.z, P.y + .1, 0).h, hh = P.y - gh, ss = clamp(1.15 - hh * .07, .4, 1.15);
+    pShadow.position.set(P.x, gh + .03, P.z); pShadow.scale.set(ss, 1, ss); pShadow.visible = gh > -1e8 && hh < 30 && (state === 'play' || state === 'pause' || state === 'won');
+    animWorld(dt, T);
+    // hint arrow over the next platform on the route
+    if(run.hint && state === 'play'){
+      const near = nearestPathIdx(), nx = WD.path[Math.min(WD.path.length - 1, near + 1)];
+      if(nx){ arrowSpr.visible = true; arrowSpr.position.set(nx.cx, nx.y1 + 1.9 + Math.sin(T * 5) * .25, nx.cz); }
+    } else arrowSpr.visible = false;
+  }
+  updateParts(dt); updateConfetti(dt);
+}
+function nearestPathIdx(){
+  let bi = 0, bd = 1e9;
+  WD.path.forEach((c, i) => { const d = (c.cx - P.x) ** 2 + (c.cz - P.z) ** 2 + ((c.y1 - P.y) * 1.5) ** 2; if(d < bd){ bd = d; bi = i; } });
+  return bi;
+}
+
+/* ---------- Aunt Laila's lines (fixed text only) ---------- */
+const LINES = {
+  hub:L('أهلا يا حبيبي! اختار عالم ويلّا نلعب 🌍', 'Hello, sweetie! Pick a world and let\'s play 🌍', 'Merhaba tatlım! Bir dünya seç, hadi oynayalım 🌍'),
+  locked:L('خلّص العالم اللي قبله لينفتح 🔒', 'Finish the world before it to open this one 🔒', 'Bunu açmak için önceki dünyayı bitir 🔒'),
+  walk:L('اسحب الدائرة عالشمال لتمشي 🕹️', 'Drag the circle on the left to walk 🕹️', 'Yürümek için soldaki daireyi kaydır 🕹️'),
+  jump:L('يلّا يا حبيبي! اقفز عالمنصة 🌟', 'Come on, sweetie! Jump onto the platform 🌟', 'Hadi tatlım! Platforma zıpla 🌟'),
+  jumpBtn:L('اكبس الزر الأصفر لتنطّ ⬆️', 'Tap the yellow button to jump ⬆️', 'Zıplamak için sarı düğmeye bas ⬆️'),
+  up:L('نطّ لفوق، درجة درجة 🪜', 'Jump up, one step at a time 🪜', 'Yukarı zıpla, adım adım 🪜'),
+  cp1:L('شايف العلم؟ إذا وقعت بترجع لهون 🚩', 'See the flag? If you fall, you come back here 🚩', 'Bayrağı gördün mü? Düşersen buraya dönersin 🚩'),
+  cp:[L('برافو! حفظنا مكانك 🚩', 'Well done! Checkpoint saved 🚩', 'Aferin! Kontrol noktası 🚩'), L('شاطر! كمّل هيك 🌟', 'Great job! Keep going 🌟', 'Harika! Devam et 🌟'), L('يا سلام عليك! 🚩', 'Wonderful! 🚩', 'Muhteşem! 🚩')],
+  gem:L('جوهرة! 💎 اجمع التلاتة لنجمة', 'A gem! 💎 Collect all 3 for a star', 'Bir mücevher! 💎 Yıldız için 3\'ünü topla'),
+  allGems:L('لقيت الجواهر التلاتة! ⭐', 'You found all 3 gems! ⭐', '3 mücevheri de buldun! ⭐'),
+  gemHint:L('شايف الجوهرة اللامعة؟ روح جيبها 💎', 'See the shiny gem? Go get it 💎', 'Parlak mücevheri gördün mü? Git al 💎'),
+  mover:L('استنّى المنصة تقرّب، وبعدين نطّ ⏳', 'Wait for the platform to come close, then jump ⏳', 'Platform yaklaşsın, sonra zıpla ⏳'),
+  djump:L('اكبس مرتين بالهوا لنطّة عالية ⬆️⬆️', 'Tap twice in the air for a high jump ⬆️⬆️', 'Yüksek zıplama için havada iki kez bas ⬆️⬆️'),
+  finishSoon:L('شايف خط النهاية؟ يلّا! 🏁', 'See the finish line? Go go go! 🏁', 'Bitiş çizgisini gördün mü? Hadi! 🏁'),
+  help:L('ولا يهمك! حطّيتلك منصّات ذهبية تساعدك ✨', 'No worries! I added golden steps to help you ✨', 'Merak etme! Sana yardım için altın basamaklar koydum ✨'),
+  fall:[L('ولا يهمك، جرّب كمان مرة 💪', 'No worries, try again 💪', 'Sorun değil, tekrar dene 💪'), L('بتقدر! أنا معك 🌟', 'You can do it! I\'m with you 🌟', 'Yapabilirsin! Ben yanındayım 🌟'), L('شوي شوي، وبتوصل 😊', 'Slowly does it, you\'ll get there 😊', 'Yavaş yavaş, başaracaksın 😊')],
+  win:L('برافو عليك يا بطل! 🌟', 'Bravo, champion! 🌟', 'Bravo şampiyon! 🌟'),
+  candy:L('اطلع لفوق عالبرج! 🍭', 'Climb to the top of the tower! 🍭', 'Kulenin tepesine tırman! 🍭'),
+  moving:L('المنصات بتتحرك، انطر لحظة وبعدين نطّ 🍬', 'The platforms move — wait a moment, then jump 🍬', 'Platformlar hareket ediyor, bekle sonra zıpla 🍬'),
+  lava:L('انتبه! الأرض حمم 🔥 لا تلمسها', 'Careful! The floor is lava 🔥 Don\'t touch it', 'Dikkat! Yer lav 🔥 Dokunma'),
+  crumble:L('البلاط بيوقع! اركض بسرعة 🏃', 'The tiles fall! Run fast 🏃', 'Fayanslar düşüyor! Hızlı koş 🏃'),
+  bars:L('نطّ فوق العصاية اللي بتلفّ 🌀', 'Jump over the spinning bar 🌀', 'Dönen çubuğun üstünden zıpla 🌀'),
+  blink:L('البلاط بيختفي ويرجع، استنّى يبين ⏱️', 'These tiles vanish and come back — wait for them ⏱️', 'Bu fayanslar kaybolup geri geliyor, bekle ⏱️'),
+  mush:L('نطّ عالفطر الزهري، بيطيّرك! 🍄', 'Land on the pink mushrooms — they bounce you! 🍄', 'Pembe mantarlara zıpla, seni uçurur! 🍄'),
+  logs:L('استنّى الجذع يروح، وبعدين مرّ 🪵', 'Wait for the log to swing away, then go 🪵', 'Kütük uzaklaşsın, sonra geç 🪵'),
+  clouds:L('أهلا بمدينة الغيوم! ☁️', 'Welcome to Cloud City! ☁️', 'Bulut Şehri\'ne hoş geldin! ☁️'),
+  belt:L('الحزام بيمشّيك! امشِ عكسه 🔁', 'The belt moves you! Walk against it 🔁', 'Bant seni taşıyor! Tersine yürü 🔁'),
+  fan:L('المراوح بتطيّرك لفوق 🌬️', 'The fans blow you up high 🌬️', 'Vantilatörler seni yukarı uçurur 🌬️'),
+  ice:L('الأرض زلقة! امشِ على مهلك ⛸️', 'The floor is slippery! Go slowly ⛸️', 'Yer kaygan! Yavaş git ⛸️'),
+  race:L('سباق! أول واحد بيوصل بيربح 🏁', 'Race! First to the finish wins 🏁', 'Yarış! İlk varan kazanır 🏁')
+};
+let guideTimer = 0;
+function say(text, ms){
+  const g = $('#guide'); if(!text) return;
+  $('#guideT').textContent = text; g.classList.toggle('hub', state !== 'play' && state !== 'won');
+  g.hidden = false; g.style.animation = 'none'; void g.offsetWidth; g.style.animation = '';
+  clearTimeout(guideTimer); guideTimer = setTimeout(() => { g.hidden = true; }, ms || 3600);
+}
+function hush(){ clearTimeout(guideTimer); $('#guide').hidden = true; }
+
+/* ---------- HUD ---------- */
+const hudEl = $('#hud'), timerEl = $('#timer');
+function hud(){
+  if(!WD) return;
+  $('#hudGems').textContent = '💎 ' + N(run.gems) + '/' + N(WD.gems.length);
+  $('#hudCp').textContent = '🚩 ' + N(cp) + '/' + N(Math.max(0, WD.cps.length - 1));
+  const mp = mpActive(); $('#mpBar').hidden = !mp; $('#hudGems').hidden = mp;
+  if(mp) mpHud();
+}
+function hudFrame(){
+  const ms = mpActive() ? Math.max(0, performance.now() - MP.match.cdEnd) : run.t * 1000;
+  const txt = '⏱️ ' + fmtTime(MP.match && MP.match.myFin ? MP.match.myFin : ms);
+  if(timerEl.textContent !== txt) timerEl.textContent = txt;
+}
+
+/* ---------- Screens ---------- */
+const overlay = $('#overlay'), card = $('#card');
+function setPlayUI(on){ card.className = 'card'; overlay.className = 'overlay'; hudEl.hidden = !on; joyEl.hidden = !on; jumpBtn.hidden = !on; overlay.hidden = on; }
+let hubPick = 0, hubCamT = 0;
+const W_NAME = w => w.name[I18N.lang] || w.name.en;
+const W_SUB = w => w.sub[I18N.lang] || w.sub.en;
+function starsHtml(st){ return [0, 1, 2].map(i => `<i class="${st && st[i] ? '' : 'off'}">⭐</i>`).join(''); }
+function showHub(focus){
+  if(MP.t && state !== 'mp') { MP.tok++; mpClose(); }
+  state = 'hub'; setPlayUI(false); overlay.classList.add('clear'); card.className = 'card bare';
+  clearInput(); hush();
+  if(focus != null) hubPick = focus;
+  if(!WD || worldIdx !== hubPick) buildWorld(hubPick);
+  pShadow.visible = false; if(hero) hero.grp.visible = false;
+  const coins = window.World ? World.coins : 0, rotHint = ROT && !rawGet('worlds_rothint');
+  card.innerHTML = `<div class="hub">
+    <div class="hub-top"><h1>${L('عوالم بوبو', 'Bobo Worlds', 'Bobo Dünyaları')} 🌍<small>${L('سباقات حواجز ثلاثية الأبعاد', '3D obstacle courses', '3D engelli parkurlar')}</small></h1>
+      ${rotHint ? `<div class="rothint"><i aria-hidden="true">📱</i><span>${L('لفّ الجوال على جنب', 'Turn your phone sideways', 'Telefonu yan çevir')}</span></div>` : ''}
+      <button class="hero-btn" id="bHero" style="--c:${HERO_COLOR[heroId]}"><img src="${charImg(heroId)}" alt=""><span>${HERO_NAME[heroId]} 🔄</span></button>
+      <span class="coins">🪙 ${N(coins)}</span></div>
+    <div class="worlds" id="worlds">${WORLDS.map((w, i) => {
+      const r = SAVE.w[w.id], open = isUnlocked(i), fresh = open && !(r && r.plays);
+      return `<button class="wcard${open ? '' : ' locked'}${i === hubPick ? ' sel' : ''}" data-i="${i}" style="--a:${w.card[0]};--b:${w.card[1]};--d:${w.card[2]};--i:${i}" aria-label="${W_NAME(w)}">
+        <span class="wem">${w.emoji}</span>${fresh ? `<span class="wnew">${L('جديد', 'New', 'Yeni')}</span>` : ''}
+        <span class="wnm">${W_NAME(w)}</span><span class="wst">${starsHtml(r && r.stars)}</span>
+        <span class="wbt">${r && r.best ? '⏱️ ' + fmtTime(r.best) : (open ? '▶️ ' + L('العب', 'Play', 'Oyna') : '🔒')}</span>
+        ${open ? '' : '<span class="wlock">🔒</span>'}</button>`; }).join('')}</div></div>`;
+  card.querySelectorAll('.wcard').forEach(b => b.onclick = () => {
+    const i = +b.dataset.i; ac(); SFX.tap(); tryLandscapeLock();
+    if(!isUnlocked(i)){ SFX.bonk(); b.animate([{ transform:'translateX(-6px)' }, { transform:'translateX(6px)' }, { transform:'none' }], { duration:300 }); say(LINES.locked); return; }
+    showSheet(i);
+  });
+  $('#bHero').onclick = () => { ac(); SFX.tap(); showSelect('hub'); };
+  const wl = $('#worlds'), sel = wl.querySelector('.sel'); if(sel) wl.scrollLeft = sel.offsetLeft - wl.clientWidth / 2 + sel.offsetWidth / 2;
+  if(!SAVE.seen.hub || focus == null) say(LINES.hub, 4000);
+  SAVE.seen.hub = 1; persist();
+}
+function showSheet(i){
+  state = 'sheet'; hubPick = i; setPlayUI(false); overlay.classList.add('dim'); card.className = 'card wide';
+  if(worldIdx !== i || !WD) buildWorld(i);
+  const w = WORLDS[i], r = SAVE.w[w.id];
+  card.innerHTML = `<div class="sheet" style="--a:${w.card[0]};--b:${w.card[1]};--d:${w.card[2]}">
+    <div class="wbig">${w.emoji}</div>
+    <div class="info"><h2>${W_NAME(w)}</h2><p>${W_SUB(w)}</p>
+      <ul class="goals">
+        <li class="${r && r.stars[0] ? '' : 'off'}"><i>⭐</i>${L('وصّل لخط النهاية', 'Reach the finish', 'Bitişe ulaş')} 🏁</li>
+        <li class="${r && r.stars[1] ? '' : 'off'}"><i>⭐</i>${L('خلّص بأقل من', 'Finish in under', 'Şu süreden kısa bitir:')} ⏱️ ${fmtSec(w.par)}</li>
+        <li class="${r && r.stars[2] ? '' : 'off'}"><i>⭐</i>${L('اجمع الجواهر التلاتة', 'Collect all 3 gems', '3 mücevheri topla')} 💎</li>
+      </ul>
+      ${r && r.best ? `<p>🏆 ${L('أحسن وقت', 'Best time', 'En iyi süre')}: <b style="color:var(--gold)">${fmtTime(r.best)}</b></p>` : ''}
+      <div class="row" style="justify-content:flex-start"><button class="big-btn" id="bGo">▶️ ${L('يلّا نلعب', "Let's play", 'Hadi oynayalım')}</button>
+      <button class="big-btn alt" id="bMp">👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</button></div>
+      <div class="row" style="justify-content:flex-start"><button class="ghost-btn" id="bHero2"><img src="${charImg(heroId)}" alt="" style="width:26px;height:26px;border-radius:8px;vertical-align:middle;object-fit:cover;object-position:top"> ${HERO_NAME[heroId]} 🔄</button></div>
+    </div></div>`;
+  $('#bGo').onclick = () => { ac(); SFX.tap(); tryLandscapeLock(); startWorld(i); };
+  $('#bMp').onclick = () => { ac(); SFX.tap(); tryLandscapeLock(); mpMenu(); };
+  $('#bHero2').onclick = () => { SFX.tap(); showSelect('sheet'); };
+}
+function startWorld(i, mpSpawnIdx){
+  if(worldIdx !== i || !WD) buildWorld(i); else resetDynamics(0);
+  if(ROT) rawSet('worlds_rothint', '1');
+  WD.gems.forEach(g => g.got = false); WD.signs.forEach(s => s.done = false);
+  WD.helps.forEach(h => { WG.remove(h.mesh); h.mesh.geometry.dispose(); }); WD.helps = [];
+  WD.cols = WD.cols.filter(c => !c.help);
+  [...WD.movers, ...WD.bars, ...WD.logs, ...WD.tiles].forEach(o => o.mult = 1);
+  Object.assign(run, { t:0, started:false, falls:0, secFalls:[], helped:[], gems:0, over:false, hint:false, maxPi:0 });
+  cp = 0; T = 0;
+  setHero(heroId, false);
+  spawnAt(0);
+  if(mpSpawnIdx != null){ const c = WD.cps[0].c, a = (mpSpawnIdx - 1.5) * 1.1; P.x = c.cx + Math.cos(P.face) * a; P.z = c.cz - Math.sin(P.face) * a; }
+  state = 'play'; setPlayUI(true); clearInput(); placeJoyHome(); hud(); hudFrame();
+  const r = rec(WORLDS[i].id); if(!mpSpawnIdx && mpSpawnIdx !== 0){ r.plays = (r.plays || 0) + 1; persist(); }
+  if(mpActive()) say(LINES.race);
+  else if(WORLDS[i].intro) say(LINES[WORLDS[i].intro], 4000);
+}
+function showPause(){
+  if(state !== 'play') return;
+  state = 'pause'; setPlayUI(false); overlay.classList.add('dim'); clearInput(); hush();
+  const mp = mpActive();
+  card.innerHTML = `<h2>⏸️ ${L('استراحة', 'Paused', 'Mola')}</h2>
+    ${mp ? `<p>${L('السباق لسّا ماشي!', 'The race is still going!', 'Yarış devam ediyor!')}</p>` : `<div class="tally"><span>⏱️ ${fmtTime(run.t * 1000)}</span><span>💎 ${N(run.gems)}/${N(WD.gems.length)}</span><span>🚩 ${N(cp)}/${N(WD.cps.length - 1)}</span></div>`}
+    <button class="big-btn" id="bRes">▶️ ${L('كمّل', 'Resume', 'Devam')}</button>
+    <div class="row">${mp ? '' : `<button class="ghost-btn" id="bRestart">🔁 ${L('من الأول', 'Restart', 'Yeniden başla')}</button>
+    <button class="ghost-btn" id="bHeroP">🦸 ${L('غيّر الشخصية', 'Change hero', 'Kahramanı değiştir')}</button>`}
+    <button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button>
+    <button class="ghost-btn" id="bHub">🌍 ${mp ? L('اطلع من السباق', 'Leave the race', 'Yarıştan ayrıl') : L('العوالم', 'Worlds', 'Dünyalar')}</button></div>`;
+  $('#bRes').onclick = () => { SFX.tap(); resume(); };
+  if(!mp){
+    $('#bRestart').onclick = () => { SFX.tap(); startWorld(worldIdx); };
+    $('#bHeroP').onclick = () => { SFX.tap(); showSelect('pause'); };
+  }
+  $('#bSnd').onclick = () => { muted = !muted; rawSet('adv3d_muted', String(muted)); $('#bSnd').innerHTML = (muted ? '🔇' : '🔊') + ' ' + L('الصوت', 'Sound', 'Ses'); SFX.tap(); };
+  $('#bHub').onclick = () => { SFX.tap(); if(mp) mpLeave(); else showHub(worldIdx); };
+}
+function resume(){ if(MP.match && MP.match.over) return; state = 'play'; setPlayUI(true); hud(); placeJoyHome(); }
+$('#btnPause').onclick = () => { SFX.tap(); showPause(); };
+
+let selFrom = 'hub', selPick = heroId;
+function showSelect(from){
+  selFrom = from; state = 'select'; setPlayUI(false); overlay.classList.add('dim'); card.className = 'card wide';
+  selPick = heroId;
+  card.innerHTML = `<h2>🦸 ${L('اختار شخصيتك', 'Pick your hero', 'Kahramanını seç')}</h2>
+    <div class="heroes">${HERO_IDS.map(id => `<button class="hero${id === selPick ? ' on' : ''}" data-id="${id}" style="--c:${HERO_COLOR[id]}" aria-pressed="${id === selPick}"><img src="${charImg(id)}" alt=""><b>${HERO_NAME[id]}</b></button>`).join('')}</div>
+    <button class="big-btn" id="bOkHero">✅ ${L('تمام', 'OK', 'Tamam')}</button>`;
+  const btns = [...card.querySelectorAll('.hero')];
+  btns.forEach(b => b.onclick = () => {
+    selPick = b.dataset.id; SFX.jump();
+    btns.forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+    if(selPick === 'laila') say(L('أنا كمان بلعب معك! 👵🌟', "I'll play with you too! 👵🌟", 'Ben de seninle oynarım! 👵🌟'));
+  });
+  $('#bOkHero').onclick = () => {
+    SFX.tap(); setHero(selPick, true);
+    if(selFrom === 'pause'){ hero.grp.visible = true; state = 'pause'; resume(); }
+    else if(selFrom === 'sheet') showSheet(hubPick);
+    else if(selFrom === 'mp') mpMenu();
+    else if(selFrom === 'lobby') mpHeroChanged();
+    else showHub(hubPick);
+  };
+}
+
+/* ---------- finishing a world ---------- */
+function reachFinish(){
+  if(state !== 'play' || run.over) return;
+  if(mpActive()){ mpFinish(); return; }
+  run.over = true; state = 'won'; clearInput(); P.vx = P.vz = 0; P.move = 0;
+  const f = WD.finish; confettiAt(f.x, f.top + 1.5, f.z); SFX.win(); say(LINES.win, 2600);
+  burst(P.x, P.y + 1, P.z, 30, [0xffd23f, 0xffffff, 0xff8fb8, 0x5fe3b1], 6, 1.2);
+  const w = WORLDS[worldIdx], r = rec(w.id), ms = Math.round(run.t * 1000);
+  const got = [1, run.t <= w.par ? 1 : 0, run.gems >= WD.gems.length ? 1 : 0];
+  const newStars = got.reduce((a, g, i) => a + (g && !r.stars[i] ? 1 : 0), 0);
+  const first = !r.done, newBest = !r.best || ms < r.best;
+  const wasLocked = worldIdx + 1 < WORLDS.length && !isUnlocked(worldIdx + 1);
+  r.stars = r.stars.map((s, i) => s || got[i] ? 1 : 0); r.done = true; if(newBest) r.best = ms;
+  persist();
+  const coins = (first ? 6 : 2) + newStars * 4;
+  if(window.World){ World.addCoins(coins, L('من ' + W_NAME(w), 'for ' + W_NAME(w), W_NAME(w) + ' için')); if(first) World.track('win', 'worlds_' + w.id); }
+  const unlockedNext = wasLocked && isUnlocked(worldIdx + 1);
+  setTimeout(() => showFinish({ ms, got, newBest, coins, unlockedNext }), 1700);
+}
+function showFinish(o){
+  if(state !== 'won') return;
+  state = 'finish'; setPlayUI(false); overlay.classList.add('dim');
+  const w = WORLDS[worldIdx], r = rec(w.id), nxt = WORLDS[worldIdx + 1];
+  card.innerHTML = `<div class="bigstar">🏁</div><h2>${L('وصلت!', 'You made it!', 'Başardın!')} ${w.emoji}</h2>
+    <div class="stars3">${o.got.map((g, i) => `<i class="${g ? '' : 'off'}" style="animation-delay:${.15 + i * .25}s">⭐</i>`).join('')}</div>
+    <div class="tally"><span>⏱️ ${fmtTime(o.ms)}</span><span>🏆 ${fmtTime(r.best)}</span><span>💎 ${N(run.gems)}/${N(WD.gems.length)}</span><span>+${N(o.coins)} 🪙</span></div>
+    ${o.newBest && r.plays > 1 ? `<p class="newbest">🎉 ${L('أحسن وقت جديد!', 'New best time!', 'Yeni rekor!')}</p>` : ''}
+    ${o.unlockedNext ? `<p class="newbest">🔓 ${L('فتحت عالم جديد', 'You opened a new world', 'Yeni bir dünya açtın')}: ${nxt.emoji} ${W_NAME(nxt)}</p>` : ''}
+    <div class="row">${nxt && isUnlocked(worldIdx + 1) ? `<button class="big-btn" id="bNext">▶️ ${W_NAME(nxt)} ${nxt.emoji}</button>` : ''}
+    <button class="${nxt && isUnlocked(worldIdx + 1) ? 'ghost-btn' : 'big-btn'}" id="bAgain">🔁 ${L('كمان مرة', 'Again', 'Tekrar')}</button>
+    <button class="ghost-btn" id="bHubF">🌍 ${L('العوالم', 'Worlds', 'Dünyalar')}</button></div>`;
+  [0, 1, 2].forEach(i => { if(o.got[i]) setTimeout(() => SFX.star(), 200 + i * 250); });
+  const bn = $('#bNext'); if(bn) bn.onclick = () => { SFX.tap(); hubPick = worldIdx + 1; showSheet(worldIdx + 1); };
+  $('#bAgain').onclick = () => { SFX.tap(); startWorld(worldIdx); };
+  $('#bHubF').onclick = () => { SFX.tap(); showHub(nxt && isUnlocked(worldIdx + 1) ? worldIdx + 1 : worldIdx); };
+}
+
+/* ======================================================================
+   Online race with friends («👫 العب مع أصحابك»): realtime only, nothing stored.
+   Same room system as the 3D adventure (Supabase Broadcast + Presence; ?mp=local
+   uses a BroadcastChannel for tests). Rooms are separate: channel `bobo-worlds-<code>`.
+   No names, no chat, no free text: a player is a hero + a colour badge.
+   Events: pos (positions), start (host starts the race in a world), fin (a player
+   reached the finish), end (host ends with the result).
+   ====================================================================== */
+const MP_URL = 'https://vgpwtrzplggvlsuvqsas.supabase.co', MP_KEY = 'sb_publishable_D9thEhZlZnfn0t06j8h1Rw_H-LVF786';
+const MP_EVENTS = ['pos', 'start', 'fin', 'end'];
+const MP_MAX = 4, MP_CD = 3, MP_LIMIT = 300, MP_AFTER = 45;
+const MP_COLORS = ['#ff5d73', '#5fb8ff', '#5fe3b1', '#ffd23f'];
+const MP_LOCAL = new URLSearchParams(location.search).get('mp') === 'local';
+function loadSupabase(){
+  if(window.supabase && window.supabase.createClient) return Promise.resolve();
+  if(loadSupabase.p) return loadSupabase.p;
+  return (loadSupabase.p = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = '../supabase.js';
+    s.onload = () => (window.supabase && window.supabase.createClient) ? res() : rej(new Error('no client'));
+    s.onerror = () => { loadSupabase.p = null; s.remove(); rej(new Error('load')); };
+    document.head.appendChild(s);
+  }));
+}
+class SupabaseTransport{
+  async open(code, id, h){
+    if(navigator.onLine === false) throw new Error('offline');
+    await loadSupabase();
+    if(!SupabaseTransport.client) SupabaseTransport.client = window.supabase.createClient(MP_URL, MP_KEY, {
+      auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:40 } } });
+    const sb = SupabaseTransport.client;
+    const ch = this.ch = sb.channel('bobo-worlds-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id } } });
+    ch.on('presence', { event:'sync' }, () => {
+      const st = ch.presenceState(), list = [];
+      for(const k in st){ const m = st[k]; if(m && m.length) list.push(Object.assign({}, m[m.length - 1], { id:k })); }
+      h.presence(list);
+    });
+    MP_EVENTS.forEach(ev => ch.on('broadcast', { event:ev }, m => h.msg(ev, m && m.payload)));
+    await new Promise((res, rej) => {
+      let first = true;
+      const to = setTimeout(() => { if(first){ first = false; rej(new Error('timeout')); } }, 9000);
+      ch.subscribe(status => {
+        if(status === 'SUBSCRIBED'){ if(first){ first = false; clearTimeout(to); res(); } else h.status('up'); }
+        else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
+          if(first){ first = false; clearTimeout(to); rej(new Error(status)); } else if(!this.closed) h.status('down');
+        }
+      });
+    });
+  }
+  track(meta){ try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
+  send(ev, payload){ try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
+  close(){
+    this.closed = true; const ch = this.ch, sb = SupabaseTransport.client; this.ch = null;
+    if(!ch || !sb) return;
+    try{ const p = ch.untrack(); if(p && p.catch) p.catch(() => {}); }catch(e){}
+    try{ const p = sb.removeChannel(ch); if(p && p.catch) p.catch(() => {}); }catch(e){}
+  }
+}
+class LocalTransport{
+  open(code, id, h){
+    this.id = id; this.h = h; this.meta = null; this.peers = new Map(); this.ready = false;
+    const bc = this.bc = new BroadcastChannel('bobo-worlds-' + code);
+    bc.onmessage = e => {
+      const m = e.data || {};
+      if(m.k === 'hb'){ const old = this.peers.get(m.from), js = JSON.stringify(m.meta); this.peers.set(m.from, { meta:m.meta, js, last:Date.now() }); if(!old || old.js !== js) this.sync(); }
+      else if(m.k === 'hello'){ if(this.meta) this.beat(); }
+      else if(m.k === 'bye'){ if(this.peers.delete(m.from)) this.sync(); }
+      else if(m.k === 'b') h.msg(m.ev, m.p);
+    };
+    this.iv = setInterval(() => {
+      if(this.meta) this.beat();
+      const now = Date.now(); let ch = false;
+      for(const [k, p] of this.peers) if(now - p.last > 3500){ this.peers.delete(k); ch = true; }
+      if(ch) this.sync();
+    }, 1000);
+    bc.postMessage({ k:'hello', from:id });
+    return new Promise(res => setTimeout(() => { this.ready = true; res(); this.sync(); }, 400));
+  }
+  sync(){
+    if(!this.ready || !this.bc) return;
+    const list = [...this.peers].map(([k, p]) => Object.assign({}, p.meta, { id:k }));
+    if(this.meta) list.push(Object.assign({}, this.meta, { id:this.id }));
+    this.h.presence(list);
+  }
+  beat(){ if(this.bc) this.bc.postMessage({ k:'hb', from:this.id, meta:this.meta }); }
+  track(meta){ this.meta = Object.assign({}, meta); this.beat(); setTimeout(() => this.sync(), 0); }
+  send(ev, p){ if(this.bc) this.bc.postMessage({ k:'b', ev, p }); }
+  close(){ clearInterval(this.iv); if(this.bc){ if(this.meta) this.bc.postMessage({ k:'bye', from:this.id }); this.bc.close(); this.bc = null; } }
+}
+const MP = { t:null, id:null, code:null, list:[], players:[], meta:null, isHost:false, synced:false, screen:'off', match:null, remotes:new Map(), tok:0, clock:0, lastEnd:null, iv:0 };
+const mpActive = () => !!(MP.match && !MP.match.over);
+const mpFrozen = () => mpActive() && performance.now() < MP.match.cdEnd;
+const mpLabel = c => L('لاعب ' + N(c + 1), 'Player ' + (c + 1), 'Oyuncu ' + (c + 1));
+const mpNewId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const mpSort = (a, b) => ((a.o || 0) - (b.o || 0)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+const heroImg = (id, cls) => `<img${cls ? ` class="${cls}"` : ''} src="${charImg(id)}" alt="">`;
+const okHero = id => HEROES[id] ? id : 'sara';
+
+/* remote players: hero model (pooled), coloured ring, numbered badge */
+const ringGeo = new THREE.RingGeometry(.5, .74, 32).rotateX(-Math.PI / 2);
+const ringMats = MP_COLORS.map(c => new THREE.MeshBasicMaterial({ color:c, transparent:true, opacity:.92, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-3 }));
+const badgeMats = MP_COLORS.map((c, i) => new THREE.SpriteMaterial({ depthTest:false, transparent:true, map:canvasTex(64, 64, x => {
+  x.fillStyle = c; x.beginPath(); x.arc(32, 32, 28, 0, 6.28); x.fill(); x.lineWidth = 5; x.strokeStyle = '#fff7e8'; x.stroke();
+  x.fillStyle = '#1c1838'; x.font = 'bold 34px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(N(i + 1), 32, 35);
+}) }));
+const modelPool = {};
+function takeModel(type){ const p = modelPool[type] || (modelPool[type] = []); const h = p.pop() || HEROES[type](); if(!h.grp.parent) scene.add(h.grp); h.grp.visible = false; return h; }
+function giveModel(h){ h.grp.visible = false; (modelPool[h.type] || (modelPool[h.type] = [])).push(h); }
+const myRing = new THREE.Mesh(ringGeo, ringMats[0]); myRing.renderOrder = 3; myRing.visible = false; scene.add(myRing);
+function mpRemote(id){
+  let r = MP.remotes.get(id);
+  const p = MP.players.find(x => x.id === id) || (MP.match && MP.match.pl.find(x => x.id === id));
+  if(!p) return r || null;
+  const hid = okHero(p.hero), c = clamp(p.c | 0, 0, 3);
+  if(r && r.hero !== hid){ giveModel(r.h); r.h = takeModel(hid); r.hero = hid; }
+  if(!r){
+    const ring = new THREE.Mesh(ringGeo, ringMats[c]); ring.renderOrder = 3; scene.add(ring);
+    const badge = new THREE.Sprite(badgeMats[c]); badge.scale.set(.55, .55, 1); badge.renderOrder = 4; scene.add(badge);
+    r = { id, hero:hid, c, h:takeModel(hid), ring, badge, buf:[], off:null, ph:Math.random() * 5, pi:0 };
+    MP.remotes.set(id, r);
+  }
+  if(r.c !== c){ r.c = c; r.ring.material = ringMats[c]; r.badge.material = badgeMats[c]; }
+  return r;
+}
+function mpDropRemote(id){ const r = MP.remotes.get(id); if(!r) return; giveModel(r.h); scene.remove(r.ring); scene.remove(r.badge); MP.remotes.delete(id); }
+function mpHideRemotes(){ for(const r of MP.remotes.values()){ r.h.grp.visible = r.ring.visible = r.badge.visible = false; r.buf.length = 0; } }
+function mpUpdateRemotes(dt){
+  const now = performance.now();
+  for(const r of MP.remotes.values()){
+    const b = r.buf, show = mpActive() && b.length > 0;
+    r.h.grp.visible = r.ring.visible = r.badge.visible = show;
+    if(!show) continue;
+    const rt = now - r.off - 180;
+    while(b.length > 2 && b[1].t < rt - 400) b.shift();
+    let a = b[0], c = b[0];
+    if(rt > b[0].t){ for(let i = b.length - 1; i >= 0; i--) if(b[i].t <= rt){ a = b[i]; c = b[i + 1] || b[i]; break; } }
+    const k = c === a ? 0 : clamp((rt - a.t) / (c.t - a.t), 0, 1), n = k < .5 ? a : c;
+    const x = lerp(a.x, c.x, k), y = lerp(a.y, c.y, k), z = lerp(a.z, c.z, k);
+    r.h.grp.position.set(x, y, z); r.h.grp.rotation.y = a.f + angDiff(c.f, a.f) * k;
+    poseHero(r.h, { t:MP.clock + r.ph, dt, run:lerp(a.m, c.m, k), grounded:!!n.g, vy:lerp(a.vy, c.vy, k), sq:0, flip:n.fl || 0 });
+    const gh = groundInfo(x, z, y + .1, 0).h;
+    r.ring.position.set(x, gh + .05, z); r.ring.visible = gh > -1e8 && y - gh < 20;
+    r.badge.position.set(x, y + 1.85, z);
+  }
+}
+function mpClose(){
+  clearInterval(MP.iv); MP.iv = 0;
+  if(MP.t){ try{ MP.t.close(); }catch(e){} }
+  MP.t = null; MP.meta = null; MP.list = []; MP.players = []; MP.isHost = false; MP.synced = false;
+  for(const id of [...MP.remotes.keys()]) mpDropRemote(id);
+  if(MP.match) MP.match.over = true;
+  MP.match = null; myRing.visible = false; $('#mpCd').hidden = true;
+}
+async function mpOpen(code, mode){
+  mpClose();
+  const t = MP_LOCAL ? new LocalTransport() : new SupabaseTransport(), tok = ++MP.tok;
+  MP.t = t; MP.code = code; MP.id = MP.id || mpNewId();
+  const live = () => MP.t === t && MP.tok === tok;
+  try{
+    await t.open(code, MP.id, {
+      presence:list => { if(live()) mpPresence(list); },
+      msg:(ev, p) => { if(live() && p && typeof p === 'object') mpMsg(ev, p); },
+      status:s => { if(live()) mpStatus(s); }
+    });
+  }catch(e){ if(live()) mpClose(); throw e; }
+  if(!live()) throw new Error('cancelled');
+  const t0 = performance.now();
+  await new Promise(res => { const chk = () => (MP.synced || performance.now() - t0 > 1500 || !live()) ? res() : setTimeout(chk, 40); chk(); });
+  if(!live()) throw new Error('cancelled');
+  const others = MP.list.filter(p => p.id !== MP.id);
+  if(mode === 'create' && others.length){ mpClose(); return 'busy'; }
+  if(mode === 'join' && !others.length){ mpClose(); return 'nobody'; }
+  if(others.length >= MP_MAX){ mpClose(); return 'full'; }
+  const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
+  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0, w:hubPick };
+  t.track(MP.meta);
+  mpPresence(MP.list);
+  return 'ok';
+}
+function mpTrack(){ if(MP.t && MP.meta) MP.t.track(MP.meta); }
+function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+function mpPresence(list){
+  MP.list = list; MP.synced = true;
+  if(!MP.meta) return;
+  const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
+  const me = all.findIndex(p => p.id === MP.id);
+  if(me >= MP_MAX && !mpActive()){ mpClose(); mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈'); return; }
+  const clash = all.find((p, i) => i < me && p.c === MP.meta.c);
+  if(clash){ const used = new Set(all.filter(p => p.id !== MP.id).map(p => p.c)); let c = 0; while(used.has(c)) c++; if(c < MP_MAX){ MP.meta.c = c; all[me].c = c; mpTrack(); } }
+  const before = MP.players.map(p => p.id), hadHost = before.length > 0;
+  MP.players = all.slice(0, MP_MAX);
+  MP.isHost = MP.players[0].id === MP.id;
+  for(const id of [...MP.remotes.keys()]) if(!MP.players.some(p => p.id === id)) mpDropRemote(id);
+  for(const r of MP.remotes.values()) mpRemote(r.id);
+  const joined = MP.players.filter(p => p.id !== MP.id && !before.includes(p.id));
+  if(mpActive()){ mpHud(); }
+  if(joined.length && hadHost && MP.screen === 'lobby') SFX.flag();
+  if(MP.screen === 'lobby') mpRenderLobby();
+  else if(MP.screen === 'end' && state === 'mp' && MP.lastEnd) mpRenderEnd();
+}
+function mpStatus(s){ if(s === 'up') mpTrack(); }
+function mpMsg(ev, p){
+  const M = MP.match;
+  if(ev === 'pos'){
+    if(!M || M.over || p.mid !== M.mid || p.id === MP.id || !M.pl.some(x => x.id === p.id)) return;
+    const r = mpRemote(p.id); if(!r) return;
+    const t = +p.t, now = performance.now();
+    if(!isFinite(t) || (r.buf.length && t <= r.buf[r.buf.length - 1].t)) return;
+    const d = now - t; r.off = r.off == null || d < r.off ? d : r.off + (d - r.off) * .02;
+    r.buf.push({ t, x:+p.x || 0, y:+p.y || 0, z:+p.z || 0, f:+p.f || 0, m:clamp(+p.m || 0, 0, 1), g:p.g ? 1 : 0, vy:+p.vy || 0, fl:clamp(+p.fl || 0, 0, 1) });
+    if(r.buf.length > 40) r.buf.shift();
+    r.pi = Math.max(r.pi, p.pi | 0);
+  } else if(ev === 'start'){
+    if(Array.isArray(p.pl) && p.pl.some(x => x.id === MP.id) && (!M || M.mid !== p.mid)) mpBegin(p);
+  } else if(ev === 'fin'){
+    if(M && p.mid === M.mid && M.pl.some(x => x.id === p.id) && !(p.id in M.fins)){
+      M.fins[p.id] = clamp(+p.ms || 0, 0, MP_LIMIT * 1000); if(!M.firstAt) M.firstAt = performance.now();
+      if(!M.myFin) say(L('في حدا وصل! يلّا أسرع 🏃', 'Someone finished! Hurry up 🏃', 'Biri bitirdi! Acele et 🏃'));
+      mpHud();
+    }
+  } else if(ev === 'end'){
+    if(M && p.mid === M.mid && !M.over) mpShowEnd(p);
+  }
+}
+function mpStart(){
+  if(!MP.isHost || MP.players.length < 2) return;
+  const p = { mid:Math.floor(Math.random() * 1e9) + 1, w:hubPick, cd:MP_CD * 1000,
+    pl:MP.players.map(x => ({ id:x.id, hero:okHero(x.hero), c:x.c | 0 })) };
+  mpSend('start', p); mpBegin(p);
+}
+function mpBegin(p){
+  const now = performance.now(), w = clamp(p.w | 0, 0, WORLDS.length - 1);
+  const M = MP.match = { mid:p.mid, w, cdEnd:now + (+p.cd || 0), endAt:now + (+p.cd || 0) + MP_LIMIT * 1000, pl:p.pl.map(x => ({ id:x.id, hero:okHero(x.hero), c:clamp(x.c | 0, 0, 3) })),
+    fins:{}, firstAt:0, myFin:0, over:false, lastSend:0, lastSent:null, cdShown:-1, rewarded:false };
+  MP.lastEnd = null;
+  if(MP.meta){ MP.meta.ph = 'match'; MP.meta.mid = M.mid; mpTrack(); }
+  for(const r of MP.remotes.values()){ r.buf.length = 0; r.pi = 0; }
+  M.pl.forEach(x => { if(x.id !== MP.id) mpRemote(x.id); });
+  const mine = M.pl.find(x => x.id === MP.id); myRing.material = ringMats[mine ? mine.c : 0];
+  if(mine) heroId = mine.hero;
+  MP.screen = 'match'; hubPick = w;
+  startWorld(w, mine ? mine.c : 0);
+  clearInterval(MP.iv); MP.iv = setInterval(() => mpSendPos(false), 150);
+}
+function mpSendPos(force){
+  const M = MP.match; if(!M || M.over || !MP.t) return;
+  const now = performance.now(), r2 = v => Math.round(v * 100) / 100;
+  const s = { mid:M.mid, t:Math.round(now), x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.face), m:r2(P.move), g:P.grounded ? 1 : 0, vy:Math.round(P.vy * 10) / 10, fl:r2(P.flip), pi:run.maxPi };
+  const o = M.lastSent;
+  const changed = !o || Math.abs(o.x - s.x) + Math.abs(o.y - s.y) + Math.abs(o.z - s.z) > .01 || Math.abs(o.f - s.f) > .01 || s.m > 0 || s.fl > 0 || o.g !== s.g;
+  if(!force && !changed && now - M.lastSend < 1000) return;
+  M.lastSent = s; M.lastSend = now; mpSend('pos', s);
+}
+function mpFinish(){
+  const M = MP.match; if(!M || M.myFin) return;
+  M.myFin = Math.max(1, Math.round(performance.now() - M.cdEnd)); M.fins[MP.id] = M.myFin; if(!M.firstAt) M.firstAt = performance.now();
+  mpSend('fin', { mid:M.mid, ms:M.myFin });
+  const place = Object.keys(M.fins).length;
+  SFX.win(); confettiAt(WD.finish.x, WD.finish.top + 1.5, WD.finish.z, 80);
+  say(place === 1 ? L('إنت الأول! 🥇', 'You are first! 🥇', 'Birincisin! 🥇') : L('وصلت! برافو 🏁', 'You finished! Bravo 🏁', 'Bitirdin! Bravo 🏁'));
+  mpHud();
+}
+function mpHostEnd(){
+  const M = MP.match; if(!M || M.over) return;
+  const pres = new Set(MP.players.map(p => p.id)); pres.add(MP.id);
+  const pl = M.pl.filter(p => pres.has(p.id)), pi = {};
+  pl.forEach(p => { pi[p.id] = p.id === MP.id ? run.maxPi : (MP.remotes.get(p.id) || {}).pi || 0; });
+  const p = { mid:M.mid, fins:Object.assign({}, M.fins), pi, pl };
+  mpSend('end', p); mpShowEnd(p);
+}
+function mpHud(){
+  const M = MP.match; if(!M) return;
+  const pres = new Set(MP.players.map(p => p.id)); pres.add(MP.id);
+  const html = M.pl.filter(p => pres.has(p.id)).sort((a, b) => a.c - b.c).map(p =>
+    `<span class="chip ps${p.id === MP.id ? ' me' : ''}${p.id in M.fins ? ' done' : ''}" style="--c:${MP_COLORS[p.c]}">${heroImg(p.hero)}<span>${p.id in M.fins ? '🏁' : N(p.c + 1)}</span></span>`).join('');
+  const el = $('#mpBar'); if(el.innerHTML !== html) el.innerHTML = html;
+}
+function mpFrame(dt){
+  MP.clock += dt;
+  const M = MP.match; if(!M || M.over) return;
+  const now = performance.now(), cdl = M.cdEnd - now, cdEl = $('#mpCd');
+  const cdN = cdl > 0 ? Math.ceil(cdl / 1000) : (cdl > -900 ? 0 : -1);
+  if(cdN !== M.cdShown){
+    M.cdShown = cdN;
+    if(cdN < 0) cdEl.hidden = true;
+    else { cdEl.hidden = false; cdEl.innerHTML = `<span>${cdN > 0 ? N(cdN) : L('يلّا!', 'Go!', 'Başla!')}</span>`; if(cdN > 0) tone(520, .1, 'square', .06); else SFX.go(); }
+  }
+  if(MP.isHost){
+    const pres = new Set(MP.players.map(p => p.id)); pres.add(MP.id);
+    const live = M.pl.filter(p => pres.has(p.id)), allDone = live.length && live.every(p => p.id in M.fins);
+    if(now >= M.endAt || allDone || (M.firstAt && now - M.firstAt > MP_AFTER * 1000)) mpHostEnd();
+  }
+  if(!MP.match || MP.match.over) return;
+  const gh = groundInfo(P.x, P.z, P.y + .1, 0).h;
+  myRing.position.set(P.x, gh + .05, P.z); myRing.visible = gh > -1e8;
+  mpUpdateRemotes(dt);
+}
+function mpRank(p){
+  const fins = p.fins || {}, pi = p.pi || {};
+  const rows = (p.pl || []).map(x => ({ id:x.id, hero:x.hero, c:x.c, ms:fins[x.id] || 0, pi:pi[x.id] || 0 }))
+    .sort((a, b) => (a.ms ? 0 : 1) - (b.ms ? 0 : 1) || (a.ms && b.ms ? a.ms - b.ms : b.pi - a.pi) || a.c - b.c);
+  rows.forEach((r, i) => { r.place = i + 1; });
+  return rows;
+}
+function mpShowEnd(p){
+  const M = MP.match; if(!M) return;
+  M.over = true; clearInterval(MP.iv); MP.iv = 0; mpHideRemotes(); myRing.visible = false; $('#mpCd').hidden = true;
+  MP.lastEnd = { mid:p.mid, fins:p.fins || {}, pi:p.pi || {}, pl:(p.pl || M.pl) };
+  const rows = mpRank(MP.lastEnd), me = rows.find(r => r.id === MP.id);
+  MP.lastEnd.rows = rows;
+  MP.lastEnd.coins = me ? (!me.ms ? 2 : me.place === 1 ? 8 : me.place === 2 ? 5 : 3) : 0;
+  if(MP.meta){ MP.meta.ph = 'end'; mpTrack(); }
+  if(me && !M.rewarded){ M.rewarded = true; if(window.World) World.addCoins(MP.lastEnd.coins, L('من سباق العوالم', 'for the worlds race', 'dünya yarışı için')); }
+  if(me && me.place === 1) SFX.win(); else SFX.flag();
+  MP.screen = 'end'; state = 'mp'; setPlayUI(false); overlay.classList.add('dim'); card.className = 'card wide';
+  hush(); mpRenderEnd();
+}
+const MEDAL = ['🥇', '🥈', '🥉'];
+function mpRenderEnd(){
+  const E = MP.lastEnd; if(!E || MP.screen !== 'end') return;
+  const rows = E.rows, me = rows.find(r => r.id === MP.id);
+  const pod = r => r ? `<div class="pod" style="--c:${MP_COLORS[r.c]}">${heroImg(r.hero)}<b>${mpLabel(r.c)}</b><span>${r.ms ? '⏱️ ' + fmtTime(r.ms) : '🏃'}</span>
+    <div class="blk" style="height:${[0, 88, 62, 42][Math.min(r.place, 3)]}px">${MEDAL[r.place - 1] || N(r.place)}</div></div>` : '';
+  const top = [rows[1], rows[0], rows[2]].filter(Boolean);
+  const rest = rows.slice(3).map(r => `<span class="chip ps" style="--c:${MP_COLORS[r.c]}">${heroImg(r.hero)}<span>${N(r.place)}</span></span>`).join('');
+  card.innerHTML = `<h2>🏁 ${L('خلص السباق!', 'Race over!', 'Yarış bitti!')}</h2>
+    <div class="podium">${top.map(pod).join('')}</div>${rest ? `<div class="rest">${rest}</div>` : ''}
+    ${me ? `<div class="tally"><span>${MEDAL[me.place - 1] || N(me.place)}</span><span>+${N(E.coins)} 🪙</span></div>` : ''}
+    <div class="row">${MP.isHost ? `<button class="big-btn" id="bAgain"${MP.players.length < 2 ? ' disabled' : ''}>🔁 ${L('كمان مرة', 'Play again', 'Tekrar oyna')}</button>` : `<p>${L('استنّى صاحب الغرفة يبلّش ⏳', 'Waiting for the room owner to start ⏳', 'Oda sahibinin başlatmasını bekle ⏳')}</p>`}
+    <button class="ghost-btn" id="bLobby">👫 ${L('الغرفة', 'Room', 'Oda')}</button><button class="ghost-btn" id="bLeave">🚪 ${L('اطلع', 'Leave', 'Ayrıl')}</button></div>`;
+  if(MP.isHost) $('#bAgain').onclick = () => { SFX.tap(); mpStart(); };
+  $('#bLobby').onclick = () => { SFX.tap(); mpLobby(); };
+  $('#bLeave').onclick = () => { SFX.tap(); mpLeave(); };
+}
+function mpLeave(){ MP.tok++; mpClose(); MP.screen = 'off'; MP.lastEnd = null; showHub(hubPick); }
+function mpCard(wide){ state = 'mp'; setPlayUI(false); overlay.classList.add('dim'); card.className = 'card' + (wide ? ' wide' : ''); }
+function mpMenu(){
+  MP.tok++; mpClose(); MP.screen = 'menu'; mpCard(false);
+  const w = WORLDS[hubPick];
+  card.innerHTML = `<h2>👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</h2>
+    <p><b style="color:var(--gold)">${w.emoji} ${W_NAME(w)}</b> · ${L('مين بيوصل لخط النهاية أوّل؟', 'Who reaches the finish first?', 'Bitişe ilk kim varacak?')}</p>
+    <button class="hero-btn" id="bMyHero" style="--c:${HERO_COLOR[heroId]}"><img src="${charImg(heroId)}" alt=""><span>${HERO_NAME[heroId]} 🔄</span></button>
+    <div class="row"><button class="big-btn" id="bCreate">🏠 ${L('اعمل غرفة', 'Create room', 'Oda kur')}</button>
+    <button class="big-btn mint" id="bJoin">🔢 ${L('فوت على غرفة', 'Join room', 'Odaya katıl')}</button></div>
+    <div class="row"><button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>`;
+  $('#bMyHero').onclick = () => { SFX.tap(); showSelect('mp'); };
+  $('#bCreate').onclick = () => { SFX.tap(); mpCreate(); };
+  $('#bJoin').onclick = () => { SFX.tap(); mpKeypad(''); };
+  $('#bBack').onclick = () => { SFX.tap(); showSheet(hubPick); };
+}
+function mpConnecting(){
+  MP.screen = 'connecting'; mpCard(false);
+  card.innerHTML = `<div class="bigstar"><span class="spin">⏳</span></div><h2>${L('عم نتصل…', 'Connecting…', 'Bağlanıyor…')}</h2>
+    <button class="ghost-btn" id="bCancel">↩️ ${L('رجوع', 'Back', 'Geri')}</button>`;
+  $('#bCancel').onclick = () => { SFX.tap(); mpMenu(); };
+}
+function mpError(retry){
+  MP.screen = 'error'; mpCard(false);
+  card.innerHTML = `<div class="bigstar">📡</div><h2>${L('ما في إنترنت؟ جرّب كمان مرة', 'No internet? Try again', 'İnternet yok mu? Tekrar dene')}</h2>
+    <div class="row"><button class="big-btn" id="bRetry">🔄 ${L('جرّب كمان مرة', 'Try again', 'Tekrar dene')}</button><button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>`;
+  $('#bRetry').onclick = () => { SFX.tap(); retry(); };
+  $('#bBack').onclick = () => { SFX.tap(); mpMenu(); };
+}
+async function mpCreate(){
+  mpConnecting();
+  try{
+    for(let i = 0; i < 4; i++){
+      const code = String(1000 + Math.floor(Math.random() * 9000));
+      const r = await mpOpen(code, 'create');
+      if(r === 'ok'){ mpLobby(); return; }
+    }
+    throw new Error('busy');
+  }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(mpCreate); }
+}
+async function mpJoin(code){
+  mpConnecting();
+  try{
+    const r = await mpOpen(code, 'join');
+    if(MP.screen !== 'connecting') return;
+    if(r === 'ok') mpLobby();
+    else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
+    else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
+  }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpJoin(code)); }
+}
+function mpKeypad(msg){
+  MP.screen = 'keypad'; MP.typed = ''; mpCard(true);
+  const keys9 = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-k="${d}">${N(d)}</button>`).join('');
+  card.innerHTML = `<h2>🔢 ${L('اكتب رقم الغرفة', 'Type the room number', 'Oda numarasını yaz')}</h2>
+    <div class="mp-cols"><div class="mp-col"><div class="mp-code" id="kpCode"></div><p class="mp-msg" id="kpMsg">${msg || ''}</p>
+      <button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>
+    <div class="keypad" id="keypad">${keys9}<button data-k="del" aria-label="${L('امسح', 'Delete', 'Sil')}">⌫</button><button data-k="0">${N(0)}</button><button class="ok" data-k="ok" aria-label="${L('تمام', 'OK', 'Tamam')}">✅</button></div></div>`;
+  card.querySelectorAll('#keypad button').forEach(b => b.onclick = () => mpKey(b.dataset.k));
+  $('#bBack').onclick = () => { SFX.tap(); mpMenu(); };
+  mpKeyDraw();
+}
+function mpKeyDraw(){ const el = $('#kpCode'); if(!el) return; el.innerHTML = [0, 1, 2, 3].map(i => `<b class="${i === MP.typed.length ? 'cur' : ''}">${MP.typed[i] != null ? N(MP.typed[i]) : ''}</b>`).join(''); }
+function mpKey(k){
+  if(MP.screen !== 'keypad') return;
+  if(k === 'del'){ MP.typed = MP.typed.slice(0, -1); SFX.tap(); }
+  else if(k === 'ok'){ if(MP.typed.length === 4) mpJoin(MP.typed); else SFX.bonk(); return; }
+  else if(/^\d$/.test(k) && MP.typed.length < 4){ MP.typed += k; SFX.tap(); }
+  const m = $('#kpMsg'); if(m) m.textContent = '';
+  mpKeyDraw();
+  if(MP.typed.length === 4){ const code = MP.typed; setTimeout(() => { if(MP.screen === 'keypad' && MP.typed === code) mpJoin(code); }, 300); }
+}
+addEventListener('keydown', e => {
+  if(state !== 'mp' || MP.screen !== 'keypad') return;
+  if(/^\d$/.test(e.key)) mpKey(e.key); else if(e.key === 'Backspace') mpKey('del'); else if(e.key === 'Enter') mpKey('ok');
+});
+function mpLobby(){ MP.screen = 'lobby'; mpCard(true); if(MP.meta){ MP.meta.ph = 'lobby'; MP.meta.w = hubPick; mpTrack(); } mpRenderLobby(); }
+function mpHeroChanged(){ if(MP.meta){ MP.meta.hero = heroId; mpTrack(); } if(MP.t) mpLobby(); else mpMenu(); }
+function mpRenderLobby(){
+  if(MP.screen !== 'lobby' || state !== 'mp') return;
+  const pl = MP.players, host = pl[0];
+  const busy = host && host.id !== MP.id && host.ph === 'match' && !(MP.match && MP.match.mid === host.mid);
+  const hw = WORLDS[clamp((host && host.w) | 0, 0, WORLDS.length - 1)];
+  const slots = [0, 1, 2, 3].map(c => {
+    const p = pl.find(x => x.c === c);
+    if(!p) return `<div class="slot empty" style="--c:${MP_COLORS[c]}">❔</div>`;
+    return `<div class="slot" style="--c:${MP_COLORS[c]}">${p === host ? '<span class="crown">👑</span>' : ''}${heroImg(okHero(p.hero))}
+      <span><b>${mpLabel(c)}</b><small>${p.id === MP.id ? L('إنت', 'You', 'Sen') : HERO_NAME[okHero(p.hero)]}</small></span></div>`;
+  }).join('');
+  let status;
+  if(busy) status = L('في سباق شغّال هلّق، استنّى يخلص ⏳', 'A race is on right now — wait for it to finish ⏳', 'Şu an bir yarış var, bitmesini bekle ⏳');
+  else if(MP.isHost) status = pl.length < 2 ? L('استنّى أصحابك يفوتوا…', 'Waiting for friends to join…', 'Arkadaşlarının katılmasını bekle…') : L('كلّ شي جاهز؟ بلّش!', 'Everyone ready? Start!', 'Herkes hazır mı? Başla!');
+  else status = L('استنّى صاحب الغرفة يبلّش ⏳', 'Waiting for the room owner to start ⏳', 'Oda sahibinin başlatmasını bekle ⏳');
+  card.innerHTML = `<h2>👫 ${hw.emoji} ${W_NAME(hw)}</h2>
+    <div class="mp-cols"><div class="mp-col"><span class="mp-lbl">${L('رقم الغرفة', 'Room number', 'Oda numarası')}</span>
+      <div class="mp-code" id="roomCode">${[...MP.code].map(d => `<b>${N(d)}</b>`).join('')}<button class="copy" id="bCopy" aria-label="${L('انسخ', 'Copy', 'Kopyala')}">📋</button></div>
+      <p>${L('قول لأصحابك هالرقم 👆', 'Tell your friends this number 👆', 'Bu numarayı arkadaşlarına söyle 👆')}</p></div>
+    <div class="mp-col"><div class="slots">${slots}</div><p>${status}</p></div></div>
+    <div class="row">${MP.isHost && !busy ? `<button class="big-btn" id="bStart"${pl.length < 2 ? ' disabled' : ''}>▶️ ${L('يلّا نبلّش', 'Start', 'Başla')}</button>` : ''}
+    <button class="ghost-btn" id="bHeroL">🦸 ${L('غيّر الشخصية', 'Change hero', 'Kahramanı değiştir')}</button>
+    <button class="ghost-btn" id="bLeave">🚪 ${L('اطلع', 'Leave', 'Ayrıl')}</button></div>`;
+  const bs = $('#bStart'); if(bs) bs.onclick = () => { SFX.tap(); mpStart(); };
+  $('#bHeroL').onclick = () => { SFX.tap(); showSelect('lobby'); };
+  $('#bLeave').onclick = () => { SFX.tap(); mpLeave(); };
+  $('#bCopy').onclick = () => {
+    SFX.tap(); const b = $('#bCopy'), done = () => { if(b.isConnected){ b.textContent = '✅'; setTimeout(() => { if(b.isConnected) b.textContent = '📋'; }, 1500); } };
+    try{ navigator.clipboard.writeText(MP.code).then(done, done); }catch(e){ done(); }
+  };
+}
+
+/* ---------- Main loop ---------- */
+let last = performance.now(), fpsN = 0, fpsT = 0, fps = 60, slowT = 0;
+function frame(now){
+  requestAnimationFrame(frame);
+  let dt = (now - last) / 1000; last = now; if(dt > .05) dt = .05; if(dt <= 0) dt = .001;
+  fpsN++; fpsT += dt;
+  if(fpsT >= 1){
+    fps = fpsN / fpsT; fpsN = 0; fpsT = 0;
+    if(state === 'play' && fps < 42 && dpr > 1){ slowT++; if(slowT >= 2){ dpr = Math.max(1, dpr - .25); renderer.setPixelRatio(dpr); renderer.setSize(SW, SH, false); slowT = 0; } } else slowT = 0;
+  }
+  if(!WD){ renderer.render(scene, camera); return; }
+  if(state === 'play'){
+    if(mpFrozen()){ P.move = 0; T += dt; updateDyn(dt); }
+    else {
+      readInput(dt);
+      let rest = dt; while(rest > 0){ const h = Math.min(rest, 1 / 60); step(h); rest -= h; }
+      if(run.started && !run.over) run.t += dt;
+    }
+    updateCamera(dt); hudFrame();
+  } else if(state === 'won'){
+    T += dt; updateDyn(dt);
+    const f = WD.finish, a = T * .5;
+    camPos.lerp(_v.set(f.x + Math.sin(a) * 9, f.top + 4.5, f.z + Math.cos(a) * 9), 1 - Math.exp(-3 * dt));
+    camera.position.copy(camPos); camera.lookAt(P.x, P.y + 1, P.z);
+  } else if(state === 'pause' || (state === 'select' && selFrom === 'pause') || (state === 'mp' && MP.screen === 'end')){
+    // frozen game behind the menu
+  } else {
+    // hub / sheet / menus: slow fly-around of the world
+    T += dt; updateDyn(dt); hubCamT += dt;
+    const o = WD.def.view, a = hubCamT * .08 + (o.a || 0);
+    camera.position.set(o.x + Math.sin(a) * o.r, o.y, o.z + Math.cos(a) * o.r); camera.lookAt(o.x, o.ly, o.z);
+  }
+  animate(dt);
+  mpFrame(dt);
+  sky.position.copy(camera.position);
+  sunGlow.position.copy(camera.position).add(_v.set(160, 200, -280));
+  renderer.render(scene, camera);
+}
+
+/* ---------- test hook ---------- */
+function simJump(i, opts = {}){
+  /* Bot check with the real physics: stand on path node i, walk toward node i+1, jump at the edge (double jump only if needed).
+     Tries several start times (moving pieces). Returns { ok, wait, dbl } */
+  const A = WD.path[i], Bn = WD.path[i + 1]; if(!A || !Bn) return { ok:false, err:'no node' };
+  const saved = { st:state, T, cp, run:JSON.stringify(run) };
+  state = 'sim';
+  const waits = opts.waits || [0, .4, .8, 1.2, 1.6, 2, 2.5, 3, 3.5, 4, 5, 6];
+  let res = { ok:false };
+  for(const w0 of waits){
+    resetDynamics(0); T = 0;
+    // stand on A
+    const ac0 = A.moving ? A : A;
+    P.x = ac0.cx; P.z = ac0.cz; P.y = ac0.y1 + .02; P.vx = P.vy = P.vz = 0; P.grounded = false; P.ground = null; P.jumps = 0; P.knock = 0; P.usedDouble = false; jumpQueued = false;
+    inp.x = inp.z = inp.m = 0;
+    let t = 0, dbl = false, landed = false, fell = false;
+    const dt = 1 / 60;
+    const killed = () => P.y < WD.killY - .1;
+    while(t < w0){ stepSim(dt); t += dt; if(killed()){ fell = true; break; } }
+    if(fell) continue;
+    let tt = 0;
+    while(tt < 4.5){
+      const bx = Bn.cx, bz = Bn.cz, dx = bx - P.x, dz = bz - P.z, d = Math.hypot(dx, dz);
+      const inFan = WD.fans.some(f => (P.x - f.x) ** 2 + (P.z - f.z) ** 2 < f.r * f.r && P.y < Bn.y1 + .6 && P.y > f.y - .6);
+      if(inFan && A.fanAssist){ const f = WD.fans.find(f => (P.x - f.x) ** 2 + (P.z - f.z) ** 2 < f.r * f.r); const fx = f.x - P.x, fz = f.z - P.z, fd = Math.hypot(fx, fz); inp.x = fd > .3 ? fx / fd : 0; inp.z = fd > .3 ? fz / fd : 0; inp.m = fd > .3 ? 1 : 0; }
+      else if(d > .15){ inp.x = dx / d; inp.z = dz / d; inp.m = 1; } else { inp.x = inp.z = inp.m = 0; }
+      if(P.grounded && P.ground === A && A.kind !== 'spring' && !A.fanAssist){
+        const ex = P.x + inp.x * .55, ez = P.z + inp.z * .55;
+        const off = !onTop(A, ex, ez, 0);
+        const near = rectDist(Bn, P.x, P.z) < 1.6 && Bn.y1 > P.y + .35;
+        if(off || near) jumpQueued = true;
+      }
+      if(!P.grounded && P.jumps === 1 && !dbl && P.vy < 1.5 && P.y < Bn.y1 + .25 && rectDist(Bn, P.x, P.z) > .2 && !A.fanAssist && A.kind !== 'spring'){ jumpQueued = true; dbl = true; }
+      stepSim(dt); tt += dt;
+      if(P.grounded && P.ground === Bn){ landed = true; break; }
+      if(killed()) break;
+    }
+    if(landed){ res = { ok:true, wait:w0, dbl }; if(!dbl) break; }
+  }
+  state = saved.st; T = saved.T; cp = saved.cp; Object.assign(run, JSON.parse(saved.run)); inp.x = inp.z = inp.m = 0; jumpQueued = false; resetDynamics(0);
+  return res;
+}
+function stepSim(dt){ const st = state; state = 'sim'; step(dt); state = st; }
+function rectDist(c, x, z){ if(c.type === 'box'){ const dx = Math.max(c.x0 - x, 0, x - c.x1), dz = Math.max(c.z0 - z, 0, z - c.z1); return Math.hypot(dx, dz); } return Math.max(0, Math.hypot(x - c.x, z - c.z) - c.r); }
+window.__worlds = {
+  get state(){ return state; }, get world(){ return WD ? WD.def.id : null; }, get worldIdx(){ return worldIdx; }, get hero(){ return heroId; }, get rot(){ return ROT; }, get stage(){ return [SW, SH]; },
+  get fps(){ return fps; }, get dpr(){ return dpr; }, P, cam, PHYS, get cp(){ return cp; }, get run(){ return JSON.parse(JSON.stringify(run)); }, save:() => JSON.parse(JSON.stringify(SAVE)), toLayer,
+  worlds:() => WORLDS.map((w, i) => ({ id:w.id, unlocked:isUnlocked(i), stars:starCount(w.id) })),
+  state2:() => ({ state, world:WD && WD.def.id, cp, gems:run.gems, t:run.t, falls:run.falls, helped:run.helped.slice(), x:P.x, y:P.y, z:P.z, grounded:P.grounded }),
+  go:i => startWorld(i), hub:i => showHub(i), sheet:i => showSheet(i), setHero:id => setHero(id, true),
+  teleport(x, y, z){ P.x = x; P.z = z; P.y = y; P.vx = P.vz = P.vy = 0; P.grounded = false; snapCam = true; },
+  teleportCp(i){ const c = WD.cps[i].c; this.teleport(c.cx, c.y1 + .3, c.cz); },
+  finish(){ const f = WD.finish; this.teleport(f.x, f.top + .3, f.z); },
+  path:() => WD.path.map((c, i) => ({ i, type:c.type, kind:c.kind, moving:!!c.moving, section:c.section, cp:c.cp, finish:!!c.finish, cx:c.cx, cz:c.cz, top:c.y1, w:c.w, d:c.d, r:c.r })),
+  cps:() => WD.cps.map(c => ({ x:c.x, z:c.z, top:c.top })), gems:() => WD.gems.map(g => ({ x:g.x, y:g.y, z:g.z, got:g.got })),
+  sim:(i, o) => simJump(i, o), fall(){ P.y = WD.killY - 1; }, takeGems(){ WD.gems.forEach((g, i) => { if(!g.got){ g.got = true; run.gems++; } }); hud(); },
+  setTime(s){ run.t = s; run.started = true; }, unlockAll(){ WORLDS.forEach(w => { const r = rec(w.id); r.done = true; }); persist(); },
+  reset(){ SAVE = { w:{}, seen:{} }; persist(); },
+  info:() => renderer.info.render,
+  mp:{ get screen(){ return MP.screen; }, get code(){ return MP.code; }, get id(){ return MP.id; }, get isHost(){ return MP.isHost; }, get players(){ return MP.players.map(p => ({ id:p.id, hero:p.hero, c:p.c })); },
+    get active(){ return mpActive(); }, get end(){ return MP.lastEnd; }, skipCountdown(){ if(MP.match) MP.match.cdEnd = performance.now(); },
+    remotes(){ return [...MP.remotes.values()].map(r => ({ id:r.id, hero:r.hero, visible:r.h.grp.visible, x:r.h.grp.position.x, z:r.h.grp.position.z })); } }
+};
+
+/* ---------- boot ---------- */
+resize();
+{
+  const q = new URLSearchParams(location.search), wid = q.get('w');
+  const wi = WORLDS.findIndex(w => w.id === wid);
+  let first = 0; WORLDS.forEach((w, i) => { if(isUnlocked(i)) first = i; });
+  if(wi >= 0 && isUnlocked(wi)) { hubPick = wi; buildWorld(wi); showSheet(wi); }
+  else { showHub(first); if(wi >= 0) setTimeout(() => say(LINES.locked), 600); }
+}
+requestAnimationFrame(frame);
+</script>
+<script src="../back.js"></script>
+<script>BoboBack.init({
+  visible: () => { const o = document.getElementById('overlay'); return !o.hidden && window.__worlds && ['hub', 'sheet', 'select'].includes(window.__worlds.state); },
+  onBack: () => { const w = window.__worlds; if(!w || w.state === 'hub') location.href = '../'; else w.hub(); },
+  mount: document.getElementById('stage')
+});</script>
+</body>
+</html>
