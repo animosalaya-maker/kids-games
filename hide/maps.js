@@ -7,7 +7,7 @@
    - nav: waypoint graph for the bots; every edge is checked by simulating a bot walking/jumping it */
 import { makeTextures } from './textures.js';
 
-export const PHYS = { G:22, JUMP:8.4, STEP:.45, R:.42, H:1.2 };
+export const PHYS = { G:22, JUMP:8.8, STEP:.45, R:.42, H:1.2 };
 
 export function makeMaps(THREE, K, renderer){
   const L = window.L || (a => a);
@@ -15,12 +15,12 @@ export function makeMaps(THREE, K, renderer){
   const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _v = new THREE.Vector3(), _c = new THREE.Color();
   function roundBox(seg = 5, rad = .22){
-    const g = new THREE.BoxGeometry(1, 1, 1, seg, seg, seg), p = g.attributes.position, inner = .5 - rad;
+    const g = new THREE.BoxGeometry(1, 1, 1, seg, seg, seg), p = g.attributes.position, n = g.attributes.normal, inner = .5 - rad;
     for(let i = 0; i < p.count; i++){
       _v.set(p.getX(i), p.getY(i), p.getZ(i)); _s.set(clamp(_v.x, -inner, inner), clamp(_v.y, -inner, inner), clamp(_v.z, -inner, inner));
-      _v.sub(_s); if(_v.lengthSq() > 1e-9) _v.setLength(rad); _v.add(_s); p.setXYZ(i, _v.x, _v.y, _v.z);
+      _v.sub(_s).normalize(); p.setXYZ(i, _s.x + _v.x * rad, _s.y + _v.y * rad, _s.z + _v.z * rad); n.setXYZ(i, _v.x, _v.y, _v.z);
     }
-    g.computeVertexNormals(); return g;
+    return g;
   }
   const GEO = {
     box:new THREE.BoxGeometry(1, 1, 1), rbox:roundBox(), soft:roundBox(6, .4),
@@ -121,10 +121,10 @@ export function makeMaps(THREE, K, renderer){
       o.moved = Math.hypot(o.x - px, o.z - pz);
     }
     /* is the straight line a→b free of solid boxes? (vision and the camera) */
-    function rayHit(ax, ay, az, bx, by, bz, ignoreLow = 0){
+    function rayHit(ax, ay, az, bx, by, bz, cam = false){
       const dx = bx - ax, dy = by - ay, dz = bz - az; let tmin = 1;
       for(const b of boxes){
-        if(b.y1 - b.y0 < ignoreLow) continue;
+        if(cam && b.nocam) continue;
         let t0 = 0, t1 = tmin, ok = true;
         for(const [o, d, lo, hi] of [[ax, dx, b.x0, b.x1], [ay, dy, b.y0, b.y1], [az, dz, b.z0, b.z1]]){
           if(Math.abs(d) < 1e-9){ if(o < lo || o > hi){ ok = false; break; } continue; }
@@ -145,6 +145,7 @@ export function makeMaps(THREE, K, renderer){
     if(d > .05){ const v = Math.min(speed, d * 6); wx = dx / d * v; wz = dz / d * v; }
     const up = ty - o.y;
     if(o.gr && up > .5 && (d < 2.6 || (o.hit && o.moved < speed * dt * .4))) jump = true;
+    if(o.gr && up > .3 && d > .8){ const lx = o.x + dx / d * .7, lz = o.z + dz / d * .7; if(P.support(lx, lz, o.y) < o.y - .3) jump = true; }   // a ledge: jump across, don't fall
     if(o.gr && o.hit && o.moved < speed * dt * .2 && up > -.3 && d > .6) jump = true;
     P.step(o, wx, wz, jump, dt);
     return d;
@@ -156,7 +157,7 @@ export function makeMaps(THREE, K, renderer){
   function build(id){
     const W = { id, boxes:[], ramps:[], conts:[], spots:[], navPts:[], group:new THREE.Group(), bx0:-30, bx1:30, bz0:-22, bz1:22 };
     const bags = {};
-    const bag = k => bags[k] || (bags[k] = new Bag(k));
+    const bag = k => { if(bags[k]) return bags[k]; const b = new Bag(k.replace('wall:', '')); if(k.startsWith('wall:')) b.noCast = true; return (bags[k] = b); };
     const solid = (x0, y0, z0, x1, y1, z1, o = {}) => { const b = Object.assign({ x0:Math.min(x0, x1), x1:Math.max(x0, x1), y0:Math.min(y0, y1), y1:Math.max(y0, y1), z0:Math.min(z0, z1), z1:Math.max(z0, z1) }, o); W.boxes.push(b); return b; };
     /* a box from corner to corner */
     function box(x0, y0, z0, x1, y1, z1, col, m = 'plain', o = {}){
@@ -171,6 +172,7 @@ export function makeMaps(THREE, K, renderer){
       if(!o.nocol){ const s = r * (o.cs || .82); return solid(x - s, y0, z - s, x + s, y0 + h, z + s); }
       return null;
     }
+    const ball = (x, z, y0, r, col, m = 'plain') => { bag(m).add(GEO.sph, x, y0 + r, z, r, r, r, 0, 0, 0, col); return solid(x - r * .72, y0, z - r * .72, x + r * .72, y0 + r * 1.9, z + r * .72); };
     const deco = (geo, x, y, z, sx, sy, sz, col, m = 'plain', rx = 0, ry = 0, rz = 0) => bag(m).add(geo, x, y, z, sx, sy, sz, rx, ry, rz, col);
     function ramp(x0, x1, z0, z1, ax, a0, a1, ya, yb, col, m = 'wood', th = .5){
       const r = { x0, x1, z0, z1, ax, a0, a1, ya, yb, ylo:Math.min(ya, yb) }; W.ramps.push(r);
@@ -195,10 +197,11 @@ export function makeMaps(THREE, K, renderer){
     /* walls: room box, paint texture, a white skirting board */
     function walls(col, m, h = 30, skirt = 0xffffff){
       const { bx0, bx1, bz0, bz1 } = W;
-      box(bx0 - 1, 0, bz0 - 1, bx1 + 1, h, bz0, col, m);
-      box(bx0 - 1, 0, bz1, bx1 + 1, h, bz1 + 1, col, m);
-      box(bx0 - 1, 0, bz0, bx0, h, bz1, col, m);
-      box(bx1, 0, bz0, bx1 + 1, h, bz1, col, m);
+      const wm = 'wall:' + m;
+      box(bx0 - 1, 0, bz0 - 1, bx1 + 1, h, bz0, col, wm);
+      box(bx0 - 1, 0, bz1, bx1 + 1, h, bz1 + 1, col, wm);
+      box(bx0 - 1, 0, bz0, bx0, h, bz1, col, wm);
+      box(bx1, 0, bz0, bx1 + 1, h, bz1, col, wm);
       deco(GEO.box, 0, .6, bz0 + .15, bx1 - bx0, 1.2, .3, skirt); deco(GEO.box, 0, .6, bz1 - .15, bx1 - bx0, 1.2, .3, skirt);
       deco(GEO.box, bx0 + .15, .6, 0, .3, 1.2, bz1 - bz0, skirt); deco(GEO.box, bx1 - .15, .6, 0, .3, 1.2, bz1 - bz0, skirt);
     }
@@ -240,10 +243,10 @@ export function makeMaps(THREE, K, renderer){
       toybox:(col) => M => { M.add(K.G.box, 0, 2.6, 0, 8, 5.2, 5.6, 0, 0, 0, col); M.add(K.G.box, 0, 5.22, 0, 7.4, .05, 5, 0, 0, 0, 0x7a4a2a); M.add(K.G.box, 0, 7.4, -3.1, 8.2, 4.6, .5, -.25, 0, 0, col);
         M.add(K.G.sph, -2, 5.6, .8, 1, 1, 1, 0, 0, 0, 0xff6f91); M.add(K.G.box, 2, 5.6, -.5, 1.4, 1.4, 1.4, 0, .4, 0, 0x6cc4ff); M.add(K.G.cyl, .4, 5.7, 1.5, .5, 2, .5, .3, 0, 1.2, 0xffc23d);
         for(const sx of [-1, 1]) M.add(K.G.box, sx * 4.02, 2.6, 0, .1, 1, 2.8, 0, 0, 0, 0xffffff); },
-      drawer:(col) => M => { M.add(K.G.box, 0, .3, 0, 10, .6, 4.4, 0, 0, 0, col); M.add(K.G.box, 0, 1.6, 2.1, 10, 3.2, .4, 0, 0, 0, col); M.add(K.G.box, 0, 1.6, -2.1, 10, 3.2, .4, 0, 0, 0, col);
-        M.add(K.G.box, -4.8, 1.6, 0, .4, 3.2, 4.4, 0, 0, 0, col); M.add(K.G.box, 4.8, 1.6, 0, .4, 3.2, 4.4, 0, 0, 0, col); M.add(K.G.box, 0, 2, 2.4, 2, .5, .5, 0, 0, 0, 0xffffff);
+      drawer:(col) => M => { M.add(K.G.box, 0, .2, 0, 10, .4, 7, 0, 0, 0, col); M.add(K.G.box, 0, 1, 3.3, 10, 2, .4, 0, 0, 0, col); M.add(K.G.box, 0, 1, -3.3, 10, 2, .4, 0, 0, 0, col);
+        M.add(K.G.box, -4.8, 1, 0, .4, 2, 7, 0, 0, 0, col); M.add(K.G.box, 4.8, 1, 0, .4, 2, 7, 0, 0, 0, col); M.add(K.G.box, 0, 1.1, 3.6, 2, .5, .5, 0, 0, 0, 0xffffff);
         const sc = [0xff8fb1, 0x6cc4ff, 0xffc23d, 0x5ed6a0, 0xffffff, 0xb48cff];
-        for(let i = 0; i < 9; i++) M.add(K.G.sph, -3.6 + (i % 5) * 1.8, 1.4 + Math.floor(i / 5) * .8, -1 + (i % 2) * 1.6, 1, .7, 1.2, 0, i, 0, sc[i % 6]); },
+        for(let i = 0; i < 12; i++) M.add(K.G.sph, -3.6 + (i % 5) * 1.8, 1.3 + (i % 3) * .2, -2.4 + Math.floor(i / 5) * 2.2 + (i % 2) * .5, 1, .6, 1.2, 0, i, 0, sc[i % 6]); },
       jewel:(col) => M => { M.add(K.G.box, 0, 1, 0, 3.4, 2, 2.6, 0, 0, 0, col); M.add(K.G.box, 0, 2.6, -1.2, 3.4, 1.8, .3, -.5, 0, 0, col); M.add(K.G.sph, 0, 1.9, 0, .5, .5, .5, 0, 0, 0, 0xffe066); M.add(K.G.box, 0, 2.02, 0, 3, .04, 2.2, 0, 0, 0, 0xb4436a); },
       pencils:(col) => M => { M.add(K.G.cyl, 0, 1.6, 0, 1.4, 3.2, 1.4, 0, 0, 0, col); const pc = [0xffc23d, 0x6cc4ff, 0xff6f91, 0x5ed6a0];
         for(let i = 0; i < 4; i++){ const a = i * 1.6; M.add(K.G.cyl8, Math.cos(a) * .6, 3.8, Math.sin(a) * .6, .22, 3, .22, Math.sin(a) * .2, 0, Math.cos(a) * .2, pc[i]); } },
@@ -288,14 +291,13 @@ export function makeMaps(THREE, K, renderer){
       ramp(4, 9, -15.6, -2, 'z', -2, -15.6, 0, 9.2, 0xe2b07a, 'wood', .6);
       deco(GEO.cyl, 6.5, 1, -1.2, 1, .7, 1, 0xe2b07a, 'wood', Math.PI / 2);
       // on the worktop
-      cont('mug', -25, -18.6, 9.2, 1.6, 3, L('الكاسة الزهرية', 'the pink mug', 'pembe kupa'), C.mug(0xff8fb1), { az:3.2 });
-      cont('teapot', -9.5, -19, 9.2, 2.2, 3.5, L('إبريق الشاي', 'the teapot', 'çaydanlık'), C.teapot(0x6cc4ff), { az:3.6 });
-      cont('jar', 4.5, -19.5, 9.2, 1.8, 4, L('مرطبان البسكوت', 'the cookie jar', 'kurabiye kavanozu'), C.jar(0xffe9b8), { az:3.6, ax:-1 });
-      box(-15, 9.2, -18.6, -11, 12.6, -16.3, 0xff9a6c, 'plain', { round:true }); deco(GEO.box, -14, 12.62, -17.45, .8, .1, 1.6, 0x333333); deco(GEO.box, -12, 12.62, -17.45, .8, .1, 1.6, 0x333333);
-      spot(-13, -20.6, 9.2, L('ورا التوستر', 'behind the toaster', 'tost makinesinin arkası'));
+      cont('mug', -25, -19.2, 9.2, 1.6, 3, L('الكاسة الزهرية', 'the pink mug', 'pembe kupa'), C.mug(0xff8fb1), { az:2.7 });
+      cont('teapot', -9.5, -19.6, 9.2, 2.2, 3.5, L('إبريق الشاي', 'the teapot', 'çaydanlık'), C.teapot(0x6cc4ff), { az:2.9 });
+      cont('jar', 4.5, -19.8, 9.2, 1.8, 4, L('مرطبان البسكوت', 'the cookie jar', 'kurabiye kavanozu'), C.jar(0xffe9b8), { az:2.3, ax:-1 });
+      box(-15, 9.2, -19.6, -11, 12.6, -17.3, 0xff9a6c, 'plain', { round:true }); deco(GEO.box, -14, 12.62, -18.45, .8, .1, 1.6, 0x333333); deco(GEO.box, -12, 12.62, -18.45, .8, .1, 1.6, 0x333333);
+      spot(-13, -20.8, 9.2, L('ورا التوستر', 'behind the toaster', 'tost makinesinin arkası'));
       box(-2, 9.2, -21.5, 0, 16, -19.5, 0xffd34d, 'plain'); box(.2, 9.2, -21.6, 2.4, 14, -19.4, 0xff8fb1, 'plain'); // cereal and flour boxes
-      nav(-25, -15.4, 9.2); nav(-18, -16.8, 9.2); nav(-9.5, -15.6, 9.2); nav(-3, -17, 9.2); nav(1, -17.4, 9.2); nav(6.5, -17.5, 9.2); nav(-13, -20.6, 9.2); nav(-28, -17, 9.2); nav(-21.5, -20, 9.2);
-      nav(6.5, -12, 7.4); nav(6.5, -7, 4.1);
+      nav(-25, -16.4, 9.2); nav(-18, -16.8, 9.2); nav(-9.5, -16.4, 9.2); nav(-3, -17, 9.2); nav(1, -17.4, 9.2); nav(6.5, -17.5, 9.2); nav(-13, -20.8, 9.2); nav(-13, -16.4, 9.2); nav(-28, -17, 9.2); nav(-21.5, -20, 9.2);
       // crawl space under the cupboards
       spot(-22, -17.6, 0, L('تحت الخزانة', 'under the cupboard', 'dolabın altı')); spot(-6, -17.6, 0, L('تحت الخزانة', 'under the cupboard', 'dolabın altı')); spot(6, -17.6, 0, L('تحت الخزانة', 'under the cupboard', 'dolabın altı'));
       nav(-26, -17.6); nav(-14, -17.6); nav(0, -17.6); nav(8.5, -17.6);
@@ -303,18 +305,18 @@ export function makeMaps(THREE, K, renderer){
       texPlane(TX.rug, 26, 26, 0, .03, 7, 0, { rx:-Math.PI / 2 });
       box(-9, 7.2, 1, 9, 7.9, 12, 0xd99a5b, 'wood');
       for(const [x, z] of [[-8.2, 1.8], [8.2, 1.8], [-8.2, 11.2], [8.2, 11.2]]) box(x - .55, 0, z - .55, x + .55, 7.2, z + .55, 0xc4884e, 'wood');
-      chairAt(-5, 13.4, 's', 0xff9a6c);
+      chairAt(-6.5, 13.4, 's', 0xff9a6c);
       chairAt(3.5, 13.4, 's', 0xff9a6c);
       chairAt(-4, -6.4, 'n', 0xff9a6c);
-      box(-3.2, 4.6, 14.2, -.2, 6.2, 16.6, 0xffffff, 'knit');                   // a folded napkin pile on the chair
-      box(-12, 0, 13, -8, 1.6, 17, 0x5aa9e6, 'paper'); box(-12, 1.6, 13.4, -8.3, 3.1, 16.6, 0xff6f91, 'paper');  // cookbooks: steps up to the chair
-      nav(-10, 15, 3.1); nav(-2, 17, 4.6); nav(-1.7, 15.4, 6.2); nav(-6, 6, 7.9); nav(0, 3, 7.9); nav(6, 6, 7.9); nav(-3, 10, 7.9); nav(6.5, 16, 4.6);
+      box(-4.7, 4.6, 14.2, -1.7, 6.2, 16.6, 0xffffff, 'knit');                   // a folded napkin pile on the chair
+      box(-15, 0, 13, -11.5, 1.6, 17, 0x5aa9e6, 'paper'); box(-11.5, 0, 13.4, -7.5, 3.1, 16.6, 0xff6f91, 'paper');  // cookbooks: steps up to the chair
+      nav(-13.2, 15, 1.6); nav(-9.5, 15, 3.1); nav(-3.5, 17.7, 4.6); nav(-3.2, 15.4, 6.2); nav(-6, 6, 7.9); nav(0, 3, 7.9); nav(6, 6, 7.9); nav(-3, 10, 7.9); nav(5, 3, 7.9); nav(3, 10.8, 7.9);
       cont('bowl', -4.5, 4, 7.9, 1.7, 2, L('صحن السكر', 'the sugar bowl', 'şekerlik'), C.bowl(0xffffff), { az:2.6 });
       cont('mug', 6, 9.5, 7.9, 1.6, 3, L('الكاسة الصفرا', 'the yellow mug', 'sarı kupa'), C.mug(0xffc23d), { az:-2.6, ax:-1.6 });
       // fruit bowl (open hiding among the apples)
-      deco(GEO.hemi, 2, 8.9, 5, 3.2, -1, 3.2, 0x6cc4ff);
-      for(const [dx, dz, c] of [[-2.2, 0, 0xe8463e], [2.2, .4, 0xe8463e], [0, -2.2, 0xffc23d], [.6, 2.2, 0x7ccf5a]]) cyl(2 + dx, 5 + dz, 7.9, 2, 1.1, c, 'plain', { geo:GEO.sph, cs:.7 });
-      spot(2, 5, 7.9, L('بين التفاح', 'among the apples', 'elmaların arasında'));
+      deco(GEO.hemi, 1, 8.9, 7, 3.2, -1, 3.2, 0x6cc4ff);
+      for(const [dx, dz, c] of [[-2.2, 0, 0xe8463e], [2.2, .4, 0xe8463e], [0, -2.2, 0xffc23d], [.6, 2.2, 0x7ccf5a]]) ball(1 + dx, 7 + dz, 7.9, 1.1, c);
+      spot(1, 7, 7.9, L('بين التفاح', 'among the apples', 'elmaların arasında'));
       spot(0, 7, 0, L('تحت الطاولة', 'under the table', 'masanın altı')); nav(-4, 4); nav(4, 9); nav(0, 7);
       // floor things
       cont('plant', -25.5, 17.5, 0, 3, 5, L('أصيص الزرع', 'the plant pot', 'saksı'), C.plant(0xd9825b), { az:-4.2 });
@@ -326,11 +328,11 @@ export function makeMaps(THREE, K, renderer){
       spot(28.2, 0, 0, L('ورا الكتب', 'behind the books', 'kitapların arkası')); nav(28.2, -5.5); nav(28.2, 9);
       // a basket of oranges and a rolling pin
       cont('basket', 24.5, 16, 0, 2.6, 3.4, L('سلة البرتقال', 'the orange basket', 'portakal sepeti'), C.basket(0xd9a35b), { az:-3.8 });
-      cyl(14, 4, 0, 1.2, 1.2, 0xe2b07a, 'wood', { geo:GEO.cyl, rz:Math.PI / 2, cs:.9 });
-      deco(GEO.cyl, 14, 1.2, 4, 1.2, 9, 1.2, 0xe2b07a, 'wood', 0, 0, Math.PI / 2);
-      solid(9.5, 0, 2.9, 18.5, 2.4, 5.1);
+      deco(GEO.cyl, 14, 1, 4, 1, 9, 1, 0xe2b07a, 'wood', 0, 0, Math.PI / 2);
+      for(const sx of [-1, 1]) deco(GEO.cyl, 14 + sx * 5.6, 1, 4, .45, 2.2, .45, 0xc98f58, 'wood', 0, 0, Math.PI / 2);
+      solid(9.5, 0, 3, 18.5, 2, 5);
       spot(-27.5, 12.5, 0, L('ورا الأصيص', 'behind the plant', 'saksının arkası'));
-      W.spawn = { seeker:[0, -9], hiders:[[-3, 19], [3, 19], [0, 20.5], [-6, 19.5]] };
+      W.spawn = { seeker:[0, -9], hiders:[[-3, 20.8], [3, 20.8], [10, 20], [-10, 20.5]] };
       W.podium = { x:16, z:13, f:Math.PI * .85 };
       W.disg = ['cookie', 'apple', 'sugar'];
     }
@@ -346,15 +348,15 @@ export function makeMaps(THREE, K, renderer){
       // window + curtains on the left wall (hide behind the curtain)
       texPlane(TX.window, 11, 10, -29.85, 16, 6, Math.PI / 2);
       deco(GEO.box, -29.6, 16, 6, .4, 11, 12, 0xffffff); deco(GEO.box, -29.4, 16, 6, .4, 10, 11, 0xbfe8ff);
-      box(-28.8, 0, -1, -28.3, 22, 4.4, 0xff9ab8, 'knit', { cam:false }); box(-28.8, 0, 7.6, -28.3, 22, 13, 0xff9ab8, 'knit', { cam:false });
+      box(-28.8, 0, 0, -28.3, 22, 5, 0xff9ab8, 'knit', { cam:false }); box(-28.8, 0, 7, -28.3, 22, 12, 0xff9ab8, 'knit', { cam:false });
       deco(GEO.cyl, -28.5, 22.4, 6, .3, 16, .3, 0xd9a35b, 'wood', Math.PI / 2);
-      spot(-29.3, 1, 0, L('ورا البرداية', 'behind the curtain', 'perdenin arkası')); nav(-29.3, -3); nav(-29.3, 1); nav(-29.3, 15);
+      spot(-29.3, 2.5, 0, L('ورا البرداية', 'behind the curtain', 'perdenin arkası')); nav(-29.2, -.9); nav(-29.3, 9.5); nav(-29.2, 13.4);
       // the bed (crawl under it; climb up with the toy blocks)
       box(-29, 0, -21.5, -27.6, 2.6, -20.1, 0xb07a4a, 'wood'); box(-11.4, 0, -21.5, -10, 2.6, -20.1, 0xb07a4a, 'wood');
       box(-29, 0, -3.4, -27.6, 2.6, -2, 0xb07a4a, 'wood'); box(-11.4, 0, -3.4, -10, 2.6, -2, 0xb07a4a, 'wood');
       box(-29, 2.2, -21.5, -10, 3, -2, 0xc98f58, 'wood');
       box(-28.6, 3, -21.2, -10.4, 5.2, -2.4, 0xffffff, 'knit', { round:'soft' });
-      box(-28.9, 5.2, -14, -10.1, 5.7, -1.9, 0x8cc8f2, 'dots', { nocol:true, round:true });     // the blanket
+      box(-28.9, 5.2, -14, -10.1, 5.36, -1.9, 0x8cc8f2, 'dots', { nocol:true, round:true });     // the blanket
       box(-29, 0, -22, -10, 12, -21.3, 0xc98f58, 'wood');                                        // headboard
       box(-26, 5.2, -20.6, -19.5, 7.4, -16.6, 0xffffff, 'dots', { round:'soft' }); box(-18.5, 5.2, -20.6, -12.5, 7.2, -16.6, 0xffe9a8, 'dots', { round:'soft' });
       spot(-19.2, -12, 0, L('تحت التخت', 'under the bed', 'yatağın altı')); spot(-24, -6, 0, L('تحت التخت', 'under the bed', 'yatağın altı'));
@@ -365,58 +367,60 @@ export function makeMaps(THREE, K, renderer){
       deco(GEO.sph, -14.6, 10.9, -7.6, .16, .16, .1, 0x2a1608); deco(GEO.sph, -13.4, 10.9, -7.6, .16, .16, .1, 0x2a1608);
       solid(-15.6, 5.2, -10.4, -12.4, 10, -7.6);
       spot(-14, -11.6, 5.2, L('ورا الدبدوب', 'behind the teddy', 'ayıcığın arkası'));
-      nav(-22, -12, 5.2); nav(-16, -5, 5.2); nav(-25, -6, 5.2); nav(-14, -11.6, 5.2); nav(-18, -15, 5.2);
+      nav(-22, -12, 5.2); nav(-18, -11, 5.2); nav(-12.2, -4.2, 5.2); nav(-16, -5, 5.2); nav(-25, -6, 5.2); nav(-14, -11.6, 5.2); nav(-18, -15, 5.2);
       // toy blocks: steps up to the bed
       const blk = [0xff6f91, 0x6cc4ff, 0xffc23d, 0x5ed6a0];
       box(-9.4, 0, -1.6, -5.8, 1.7, 2, blk[0], 'plain', { round:true }); box(-9.6, 0, -6, -6, 3.5, -2.4, blk[1], 'plain', { round:true });
       for(const [x, y, z, c] of [[-7.6, 1.72, .2, 0xffffff], [-7.8, 3.52, -4.2, 0xffffff]]) deco(GEO.cyl, x, y, z, .9, .05, .9, c);
-      nav(-7.6, 3.5, 1.7); nav(-7.8, -4.2, 3.5);
+      nav(-7.6, .2, 1.7); nav(-7.8, -4.2, 3.5);
       // chest of drawers: the drawers are pulled out like stairs; the bottom one is the sock drawer
-      box(10, 0, -22, 26, 13, -15.5, 0xf2b8c6, 'wood');
-      deco(GEO.box, 18, 13.2, -18.7, 16.6, .4, 7, 0xffffff);
-      cont('drawer', 18, -13.1, 0, 2.2, 3.2, L('جارور الكلسات', 'the sock drawer', 'çorap çekmecesi'), C.drawer(0xf7cbd6), { nocol:true, az:3.6 });
-      solid(13, 0, -15.4, 23, 3.2, -10.9);
-      for(const [i, y, zf] of [[1, 5, -12.4], [2, 6.8, -13.6], [3, 8.6, -14.6], [4, 10.4, -15.4]]){ box(13, y - 1.8, -15.5, 23, y, zf, 0xf7cbd6, 'wood'); deco(GEO.box, 18, y - .9, zf + .1, 2, .5, .4, 0xffffff); }
-      deco(GEO.cyl, 22.5, 14.2, -19, 1.6, 2, 1.6, 0xffc23d); deco(GEO.cyl, 22.5, 18, -19, .3, 6, .3, 0xffffff); deco(GEO.tub, 22.5, 22, -19, 3, 3, 3, 0xfff1c4);
-      cont('jewel', 14, -18, 13, 1.7, 2.2, L('علبة المجوهرات', 'the jewellery box', 'mücevher kutusu'), C.jewel(0xb48cff), { az:2.8 });
-      nav(18, -10, 3.2); nav(18, -11.6, 5); nav(18, -13, 6.8); nav(18, -14.1, 8.6); nav(18, -15, 10.4); nav(17, -16.8, 13); nav(20, -19, 13);
+      box(10, 0, -22, 26, 11, -15.5, 0xf2b8c6, 'wood');
+      deco(GEO.box, 18, 11.2, -18.7, 16.6, .4, 7, 0xffffff);
+      cont('drawer', 18, -12, 0, 2.2, 2, L('جارور الكلسات', 'the sock drawer', 'çorap çekmecesi'), C.drawer(0xf7cbd6), { nocol:true, az:4.9 });
+      solid(13, 0, -15.5, 23, 2, -8.5);
+      for(const [y, zf] of [[3.8, -10], [5.6, -11.4], [7.4, -12.8], [9.2, -14.2]]){ box(13, y - 1.8, -15.5, 23, y, zf, 0xf7cbd6, 'wood'); deco(GEO.box, 18, y - .9, zf + .1, 2, .5, .4, 0xffffff); }
+      deco(GEO.cyl, 22.5, 12.2, -19, 1.6, 2, 1.6, 0xffc23d); deco(GEO.cyl, 22.5, 16, -19, .3, 6, .3, 0xffffff); deco(GEO.tub, 22.5, 20, -19, 3, 3, 3, 0xfff1c4);
+      solid(21, 11, -20.5, 24, 13.2, -17.5);
+      cont('jewel', 14, -18.4, 11, 1.7, 2.2, L('علبة المجوهرات', 'the jewellery box', 'mücevher kutusu'), C.jewel(0xb48cff), { az:2.4 });
+      nav(18, -9.2, 2); nav(18, -10.7, 3.8); nav(18, -12.1, 5.6); nav(18, -13.5, 7.4); nav(18, -14.85, 9.2); nav(17, -16.8, 11); nav(19, -19.5, 11);
       spot(25, -12, 0, L('جنب الجارور', 'beside the drawers', 'çekmecelerin yanı')); nav(25, -12);
       // toy box
-      cont('toybox', 0, -18.5, 0, 4, 5.2, L('صندوق الألعاب', 'the toy box', 'oyuncak sandığı'), C.toybox(0xff8a5a), { az:4.2, cs:1 });
+      cont('toybox', 0, -18.5, 0, 4, 5.2, L('صندوق الألعاب', 'the toy box', 'oyuncak sandığı'), C.toybox(0xff8a5a), { az:4.9, cs:1 });
       // bookshelf on the right wall: books on the bottom shelf, a gap behind them
       box(25.6, 0, -9, 30, .8, 7, 0xffffff, 'wood'); box(25.6, 0, -9.6, 30, 17, -9, 0xffffff, 'wood'); box(25.6, 0, 7, 30, 17, 7.6, 0xffffff, 'wood');
       box(25.6, 6, -9, 30, 6.6, 7, 0xffffff, 'wood'); box(25.6, 11.6, -9, 30, 12.2, 7, 0xffffff, 'wood'); box(25.6, 16.6, -9.6, 30, 17.2, 7.6, 0xffffff, 'wood');
       books(25.8, -8.6, 'z', 9, .8, [0x6cc4ff, 0xff6f91, 0x5ed6a0, 0xffc23d, 0xb48cff], 4.4, 1.3, 1.7);
       books(26, -8, 'z', 10, 6.6, [0xffc23d, 0x5ed6a0, 0xb48cff, 0x6cc4ff, 0xff6f91], 4.2, 1.2, 3.6, { nocol:true });
       solid(26, 6.6, -8, 29.6, 11, 4.6);
-      spot(28.7, -2, .8, L('ورا الكتب', 'behind the books', 'kitapların arkası')); nav(28.6, 4.4, .8); nav(28.6, -2, .8);
+      spot(28.7, -2, .8, L('ورا الكتب', 'behind the books', 'kitapların arkası')); nav(27, 5.8, .8); nav(28.7, 4.4, .8); nav(28.7, -6.5, .8);
       // round rug, big ball, toy train, bean bag
       texPlane(TX.rug, 22, 22, 2, .03, 4, 0, { rx:-Math.PI / 2 });
-      cyl(-4, 9, 0, 6, 3, 0xff6f91, 'plain', { geo:GEO.sph, cs:.75 });
-      deco(GEO.sph, -4, 3, 9, 3.02, 3.02, 3.02, 0xffffff, 'plain', 0, 0, 0); deco(GEO.sph, -4, 3, 9, 3.05, 1.2, 3.05, 0xff6f91);
+      ball(-4, 9, 0, 3, 0xff6f91);
+      for(let i = 0; i < 7; i++){ const a = i * 2.4, u = .9 - (i % 3) * .55, rr = Math.sqrt(1 - u * u) * 3.02; deco(GEO.sm, -4 + Math.cos(a) * rr, 3 + u * 3.02, 9 + Math.sin(a) * rr, .55, .55, .55, 0xffffff); }
       for(let i = 0; i < 3; i++){ const x = 4 + i * 4.6; box(x, .8, -2, x + 4, 3.8, 1, [0x6cc4ff, 0xffc23d, 0x5ed6a0][i], 'plain', { round:true }); for(const zz of [-1.6, .6]) for(const xx of [x + .9, x + 3.1]) deco(GEO.cyl, xx, .8, zz, .8, .5, .8, 0x333344, 'plain', Math.PI / 2); }
       deco(GEO.cyl, 5.2, 5, -.5, .7, 2.4, .7, 0x6cc4ff);
-      box(14, 0, 3, 22, 4.4, 10, 0xffc23d, 'knit', { round:'soft' });
-      spot(18, 11.6, 0, L('ورا الكيس', 'behind the bean bag', 'armut koltuğun arkası'));
+      box(16, 0, 2, 23, 4.4, 8.5, 0xffc23d, 'knit', { round:'soft' });
+      spot(24.4, 5, 0, L('ورا الكيس', 'behind the bean bag', 'armut koltuğun arkası'));
       // desk with a pencil cup, chair with books on the seat
-      box(6, 7.4, 13, 22, 8.2, 21.6, 0xf7f3ea, 'wood');
-      for(const [x, z] of [[6.6, 13.6], [21.4, 13.6], [6.6, 21], [21.4, 21]]) box(x - .5, 0, z - .5, x + .5, 7.4, z + .5, 0xf7f3ea, 'wood');
+      box(6, 7.2, 13, 22, 8, 21.6, 0xf7f3ea, 'wood');
+      for(const [x, z] of [[6.6, 13.6], [21.4, 13.6], [6.6, 21], [21.4, 21]]) box(x - .5, 0, z - .5, x + .5, 7.2, z + .5, 0xf7f3ea, 'wood');
       chairAt(10, 6.8, 'n', 0x6cc4ff, 4.4);
-      box(11, 4.4, 9.8, 15, 6, 12.6, 0xff6f91, 'paper');
-      box(4.8, 0, 7, 8.4, 2.4, 10.4, 0x5ed6a0, 'knit', { round:'soft' });   // a backpack: the first step
-      cont('pencils', 18, 19, 8.2, 1.4, 3.2, L('كاسة الأقلام', 'the pencil cup', 'kalemlik'), C.pencils(0xff6f91), { az:-2.6 });
-      deco(GEO.sph, 9, 11, 19, 2, 2, 2, 0x6cc4ff); deco(GEO.cyl, 9, 8.6, 19, .8, .8, .8, 0xd9a35b); deco(GEO.torus, 9, 11, 19, 2.3, 2.3, 2.3, 0xd9a35b, 'plain', 0, .5, .3);
-      solid(7.6, 8.2, 17.6, 10.4, 13, 20.4);
+      box(11, 4.4, 9.6, 15, 6.2, 12.4, 0xff6f91, 'paper');
+      box(5.2, 0, 7, 8.8, 3, 10.6, 0x5ed6a0, 'knit', { round:'soft' });   // a backpack
+      box(2.5, 0, 7.5, 5, 1.5, 10, 0xffc23d, 'plain', { round:true });    // a toy block: the first step
+      cont('pencils', 18, 19, 8, 1.4, 3.2, L('كاسة الأقلام', 'the pencil cup', 'kalemlik'), C.pencils(0xff6f91), { az:-2.6 });
+      deco(GEO.sph, 9, 10.8, 19, 2, 2, 2, 0x6cc4ff); deco(GEO.cyl, 9, 8.4, 19, .8, .8, .8, 0xd9a35b); deco(GEO.torus, 9, 11, 19, 2.3, 2.3, 2.3, 0xd9a35b, 'plain', 0, .5, .3);
+      solid(7.6, 8, 17.6, 10.4, 13, 20.4);
       spot(14, 17, 0, L('تحت الطاولة', 'under the desk', 'masanın altı'));
-      nav(6.6, 8.7, 2.4); nav(13, 8.6, 4.4); nav(13, 11.2, 6); nav(14, 15, 8.2); nav(18, 15.6, 8.2); nav(10, 16, 8.2); nav(14, 17); nav(20, 17);
+      nav(3.7, 8.7, 1.5); nav(7, 8.8, 3); nav(13, 8.5, 4.4); nav(13, 11, 6.2); nav(14, 15, 8); nav(18, 15.6, 8); nav(10, 15, 8); nav(14, 17); nav(20, 17);
       // dollhouse, slippers, plant pot
-      cont('house', -23, 15, 0, 4, 8, L('بيت اللعبة', 'the dollhouse', 'oyuncak ev'), C.house(0xfff1c4), { az:-4.5, cs:1, ry:Math.PI });
+      cont('house', -23, 15, 0, 4, 8, L('بيت اللعبة', 'the dollhouse', 'oyuncak ev'), C.house(0xfff1c4), { az:-5, cs:1, ry:Math.PI });
       cont('slipper', -9, 18, 0, 1.8, 2.2, L('الشحّاطة', 'the slipper', 'terlik'), C.slipper(0xff9ab8), { az:-3.6, cs:.9 });
       deco(GEO.sph, -5, .9, 18.6, 1.8, 1, 3, 0xff9ab8); deco(GEO.box, -5, .25, 18.6, 3.2, .5, 5.6, 0xffffff); deco(GEO.sph, -5, 1.9, 17, .7, .7, .7, 0xffffff);
       cont('plant', 26.5, 18, 0, 3, 5, L('أصيص الزرع', 'the plant pot', 'saksı'), C.plant(0x6cc4ff), { az:-4.2, ax:-1 });
       texPlane(TX.picture, 8, 8, 0, 19, -21.9, 0); deco(GEO.box, 0, 19, -21.95, 9, 9, .2, 0xd9a35b);
       W.spawn = { seeker:[0, -6], hiders:[[-2, 6], [2, 6], [6, 4], [-6, 4]] };
-      W.podium = { x:-10, z:4, f:Math.PI * .15 };
+      W.podium = { x:-14, z:9, f:Math.PI * .15 };
       W.disg = ['block', 'ball', 'sock'];
     }
 
@@ -442,24 +446,24 @@ export function makeMaps(THREE, K, renderer){
       for(const [x, z, s] of [[-26, -8, 1.2], [-6, 10, 1], [4, -12, 1.1], [24, -4, 1.2], [-14, 18, 1], [26, 17, 1], [-2, 18.5, .9], [-24, 6, 1]]) tuft(x, z, s);
       spot(-27.4, -10, 0, L('بين العشب', 'in the tall grass', 'uzun otların arasında')); spot(25.6, -6.4, 0, L('بين العشب', 'in the tall grass', 'uzun otların arasında'));
       // garden bench with a crate staircase
-      box(-24, 5, -21, -6, 5.8, -15, 0xff9a6c, 'wood');
-      for(const x of [-23, -7]) box(x - .6, 0, -20.6, x + .6, 5, -15.4, 0x8a5a3a, 'wood');
-      box(-24, 5.8, -21.4, -6, 11, -20.8, 0xff9a6c, 'wood');
-      box(-5.6, 0, -18, -2, 1.8, -14.4, 0xd9a35b, 'wood'); box(-5.8, 1.8, -17.6, -2.4, 3.5, -14.8, 0xc98f58, 'wood');
+      box(-24, 4.6, -21, -6, 5.4, -15, 0xff9a6c, 'wood');
+      for(const x of [-23, -7]) box(x - .6, 0, -20.6, x + .6, 4.6, -15.4, 0x8a5a3a, 'wood');
+      box(-24, 5.4, -21.4, -6, 11, -20.8, 0xff9a6c, 'wood');
+      box(-2, 0, -18, 1.4, 1.8, -14.6, 0xd9a35b, 'wood'); box(-5.4, 0, -18, -2, 3.6, -14.6, 0xc98f58, 'wood');
       spot(-15, -18, 0, L('تحت المقعد', 'under the bench', 'bankın altı')); nav(-20, -18); nav(-11, -18); nav(-15, -18);
-      nav(-4, -12.4, 1.8); nav(-4, -16.2, 3.5); nav(-9, -17.5, 5.8); nav(-15, -17, 5.8); nav(-21, -18, 5.8);
-      cont('basket', -12, -18.4, 5.8, 2.6, 3.4, L('سلة البيكنيك', 'the picnic basket', 'piknik sepeti'), C.basket(0xd9a35b), { az:3.6 });
+      nav(-.3, -16.3, 1.8); nav(-3.7, -16.3, 3.6); nav(-9, -17.5, 5.4); nav(-15, -16, 5.4); nav(-21, -18, 5.4);
+      cont('basket', -12, -18.8, 5.4, 2.6, 3.4, L('سلة البيكنيك', 'the picnic basket', 'piknik sepeti'), C.basket(0xd9a35b), { az:2.8 });
       // toadstool jumps up to the tree stump with a bird house
-      const toad = (x, z, h, r, col) => { box(x - .7, 0, z - .7, x + .7, h - .5, z + .7, 0xfff1dc, 'plain', { nocol:true }); deco(GEO.cyl, x, (h - .5) / 2, z, .7, h - .5, .7, 0xfff1dc); deco(GEO.hemi, x, h - .6, z, r, 1.2, r, col); solid(x - r * .8, 0, z - r * .8, x + r * .8, h, z + r * .8); for(let i = 0; i < 4; i++){ const a = i * 1.7; deco(GEO.sm, x + Math.cos(a) * r * .5, h + .45, z + Math.sin(a) * r * .5, .32, .14, .32, 0xffffff); } nav(x, z, h); };
+      const toad = (x, z, h, r, col) => { deco(GEO.cyl, x, (h - .5) / 2, z, .7, h - .5, .7, 0xfff1dc); deco(GEO.hemi, x, h - .6, z, r, 1.2, r, col); solid(x - r * .8, 0, z - r * .8, x + r * .8, h, z + r * .8); for(let i = 0; i < 4; i++){ const a = i * 1.7; deco(GEO.sm, x + Math.cos(a) * r * .5, h + .45, z + Math.sin(a) * r * .5, .32, .14, .32, 0xffffff); } nav(x, z, h); };
       toad(18, -4, 1.6, 2, 0xff6f6f); toad(18.5, -9, 3.2, 2.2, 0xffc23d); toad(22.6, -12, 4.8, 2.2, 0xff6f6f); toad(22, -16.8, 6.4, 2.4, 0x6cc4ff);
       box(24, 0, -22, 30, 8, -15, 0xa5713f, 'wood'); deco(GEO.cyl, 27, 8.05, -18.5, 2.6, .1, 2.6, 0xe9c48f, 'wood');
       cont('bird', 28, -19.5, 8, 1.8, 5.5, L('بيت العصافير', 'the bird house', 'kuş evi'), C.bird(0x6cc4ff), { az:3 });
       nav(26.5, -16.2, 8); nav(25, -19, 8);
       // flower pots, watering can, bucket and a wheelbarrow
-      cont('plant', -27, 18, 0, 3, 5, L('أصيص الورد', 'the flower pot', 'çiçek saksısı'), C.plant(0xd9825b), { az:-4.2, ax:1.4 });
+      cont('plant', -27, 19.2, 0, 3, 5, L('أصيص الورد', 'the flower pot', 'çiçek saksısı'), C.plant(0xd9825b), { az:0, ax:4.2 });
       cont('plant', 6, 18.5, 0, 3, 5, L('أصيص الزرع', 'the plant pot', 'saksı'), C.plant(0xff9ab8), { az:-4.2 });
       cont('can', -12, 6, 0, 2.2, 4, L('المرشّة', 'the watering can', 'sulama kabı'), C.can(0x5ed6a0), { az:3.4, ax:-1.6 });
-      cont('bucket', 3, -18, 0, 2.5, 4, L('سطل الرمل', 'the sand bucket', 'kum kovası'), C.bucket(0xff8fb1), { az:3.6 });
+      cont('bucket', 6.5, -18, 0, 2.5, 4, L('سطل الرمل', 'the sand bucket', 'kum kovası'), C.bucket(0xff8fb1), { az:3.6 });
       for(const [x, z, c] of [[-27, 21, 0xff6f91], [-21, 20.5, 0xffc23d], [10.5, 20.8, 0xb48cff]]){ deco(GEO.cyl, x, 3, z, .25, 6, .25, 0x48a34a); for(let i = 0; i < 6; i++){ const a = i / 6 * 6.283; deco(GEO.sph, x + Math.cos(a) * 1.1, 6.2, z + Math.sin(a) * 1.1, .8, .5, .8, c); } deco(GEO.sph, x, 6.3, z, .6, .5, .6, 0xffe066); }
       // wheelbarrow you can climb on, and a log to jump over
       box(-20, 2, 10, -12, 4.6, 16, 0xff6f6f, 'plain'); deco(GEO.cyl, -21.5, 1.5, 13, 1.5, .8, 1.5, 0x333344, 'plain', 0, 0, Math.PI / 2);
@@ -467,16 +471,16 @@ export function makeMaps(THREE, K, renderer){
       ramp(-28.4, -20, 11.4, 14.6, 'x', -28.4, -20, 0, 4.6, 0xe2b07a, 'wood', .5);
       spot(-16, 18.6, 0, L('ورا العربانة', 'behind the wheelbarrow', 'el arabasının arkası'));
       nav(-26, 13, 2.2); nav(-16, 13, 4.6); nav(-16, 18.6); nav(-16, 7.6);
-      cyl(2, 4, 0, 2, 1.4, 0xa5713f, 'wood', { geo:GEO.cyl, rz:Math.PI / 2 }); deco(GEO.cyl, 2, 1.4, 4, 1.4, 10, 1.4, 0xa5713f, 'wood', 0, 0, Math.PI / 2); solid(-3, 0, 2.8, 7, 2.6, 5.2);
+      deco(GEO.cyl, 2, 1, 4, 1, 10, 1, 0xa5713f, 'wood', 0, 0, Math.PI / 2); solid(-3, 0, 3, 7, 2, 5);
       // a picnic blanket
       texPlane(TX.gingham, 14, 10, 0, .04, -4, 0, { rx:-Math.PI / 2 });
       spot(9, 18.4, 0, L('ورا الأصيص', 'behind the pot', 'saksının arkası'));
       W.spawn = { seeker:[0, -6], hiders:[[-2, 9], [2, 9], [6, 8], [-6, 8]] };
-      W.podium = { x:-4, z:12, f:0 };
+      W.podium = { x:0, z:12, f:0 };
       W.disg = ['pebble', 'flower', 'acorn'];
     }
 
-    for(const k in bags) W.group.add(bags[k].mesh());
+    for(const k in bags){ const m = bags[k].mesh(); if(bags[k].noCast) m.castShadow = false; W.group.add(m); }
     W.P = makePhys(W);
     buildNav(W);
     return W;
@@ -489,7 +493,7 @@ export function makeMaps(THREE, K, renderer){
     const add = (x, z, y, kind) => { const gy = P.support(x, z, y + .3); nodes.push({ x, z, y:gy, kind, e:[] }); return nodes.length - 1; };
     for(let x = W.bx0 + 3; x <= W.bx1 - 3; x += 4.5) for(let z = W.bz0 + 3; z <= W.bz1 - 3; z += 4.5) if(free(x, z)) add(x, z, 0, 'g');
     for(const [x, z, y] of W.navPts) add(x, z, y, 'n');
-    for(const r of W.ramps){ for(const t of [.15, .5, .85]){ const x = r.ax === 'x' ? r.a0 + (r.a1 - r.a0) * t : (r.x0 + r.x1) / 2, z = r.ax === 'z' ? r.a0 + (r.a1 - r.a0) * t : (r.z0 + r.z1) / 2; add(x, z, P.rampY(r, x, z), 'r'); } }
+    for(const r of W.ramps){ for(const t of [.08, .25, .42, .58, .75, .92]){ const x = r.ax === 'x' ? r.a0 + (r.a1 - r.a0) * t : (r.x0 + r.x1) / 2, z = r.ax === 'z' ? r.a0 + (r.a1 - r.a0) * t : (r.z0 + r.z1) / 2; add(x, z, P.rampY(r, x, z), 'r'); } }
     for(const s of W.spots) s.node = add(s.x, s.z, s.y, 's');
     for(const c of W.conts) c.node = add(c.ax, c.az, c.y, 'c');
     // edges: try to walk from each node to its neighbours
@@ -498,7 +502,7 @@ export function makeMaps(THREE, K, renderer){
       if(i === j) continue; const a = nodes[i], b = nodes[j], d = Math.hypot(a.x - b.x, a.z - b.z);
       if(d > 7.2 || b.y - a.y > 2.1) continue;
       if(a.kind === 'g' && b.kind === 'g' && d > 4.6) continue;
-      Object.assign(o, { x:a.x, y:a.y, z:a.z, vx:0, vz:0, vy:0, gr:true });
+      Object.assign(o, { x:a.x, y:a.y, z:a.z, vx:0, vz:0, vy:0, gr:true, hit:false, moved:0, jumped:false, landed:false });
       let ok = false, t = 0, best = 1e9, stuck = 0;
       const dt = 1 / 30;
       while(t < 5){
