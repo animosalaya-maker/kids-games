@@ -17,7 +17,7 @@ p,li{color:var(--muted)}section{background:var(--card);border-radius:20px;paddin
 <body>
 <main>
   <h1>سياسة الخصوصية</h1>
-  <p>تطبيق «بوبو لاند» · آخر تحديث: ١٣ تشرين الثاني ٢٠٢٦</p>
+  <p>تطبيق «بوبو لاند» · آخر تحديث: ١٤ تشرين الثاني ٢٠٢٦</p>
   <section>
     <h2>باختصار</h2>
     <ul>
@@ -27,6 +27,13 @@ p,li{color:var(--muted)}section{background:var(--card);border-radius:20px;paddin
       <li>النجوم والمراحل المفتوحة وإعداد الصوت بينحفظوا بس على جهازك، وبيروحوا إذا مسحت بيانات التطبيق.</li>
       <li>التطبيق بيحمّل خطوط الكتابة من Google Fonts أول مرة بيفتح، وبعدها بيشتغل بدون إنترنت.</li>
       <li>اللعب مع الأصحاب (بلعبة بوبو ثلاثي الأبعاد) بيصير برقم غرفة. خلال السباق، مكان اللاعب باللعبة والشخصية اللي اختارها بينبعتوا عن طريق سيرفر اللعبة (Supabase) للاعبين اللي بنفس الغرفة بس. ما في دردشة، وما في أسامي، وما في شي بينحفظ بعد ما يخلص السباق.</li>
+    </ul>
+    <h2>«أصحابي» 👫</h2>
+    <ul>
+      <li>إذا الولد فتح صفحة «أصحابي»، التطبيق بيعمل رقم عشوائي سرّي بيضل على الجهاز، وبيعطيه رمز أصحاب من ٦ حروف (متل <span dir="ltr">ABC 234</span>). السيرفر (Supabase) بيحفظ بس «بصمة» مشفّرة للرقم السرّي، مش الرقم نفسه.</li>
+      <li>على السيرفر بينحفظ: رمز الأصحاب، الصورة اللي اختارها (بوبو بألوانه أو حيوان)، ولقب اختياري من قائمة كلمات ثابتة (متل «نمر سريع»)، مين أصحابه وطلبات الصحبة، دعوات اللعب (بتنمحى بعد ١٠ دقايق)، ووقت آخر مرة كان التطبيق مفتوح (لنعرف مين «موجود هلّق»).</li>
+      <li>ما في أسامي، ولا كتابة حرّة، ولا دردشة، ولا صور، ولا إيميل، ولا رقم تلفون. ما في أي معلومة شخصية.</li>
+      <li>للمسح: بصفحة «أصحابي» اكبس «🗑️ امسح بيانات الأصحاب تبعي»، وكل شي بينمحى من السيرفر فوراً. الرقم السرّي كمان بينحفظ برمز الحفظ 💾 لتنقل أصحابك لجوال تاني.</li>
     </ul>
     <h2>الأطفال</h2>
     <p>التطبيق معمول للأطفال، وما بيطلب منهم أي معلومة، وما فيه روابط لمواقع تانية جوّا الألعاب.</p>
@@ -41,6 +48,10 @@ p,li{color:var(--muted)}section{background:var(--card);border-radius:20px;paddin
       <li>Game progress (stars, unlocked levels, sound setting) is saved only on your device using local storage.</li>
       <li>Fonts are downloaded from Google Fonts on first launch; after that the app works offline.</li>
       <li>Playing with friends (in Bobo's Adventure 3D) uses a room code. During a match, the in-game position and the chosen character are sent through our game server (Supabase) to the other players in the same room only. There is no chat, no names, and nothing is stored after the match.</li>
+      <li><b>Friends 👫:</b> when a child opens the Friends page, the app creates a random secret ID that stays on the device and a 6-letter friend code. Our server (Supabase) stores only a one-way hash of the secret, never the secret itself.</li>
+      <li>The server stores: the friend code, the chosen picture (Bobo with its colours, or an animal), an optional nickname picked from a fixed list of words (e.g. “Fast Tiger”), friend links and friend requests, game invites (deleted after 10 minutes) and the last time the app was open (to show who is online now).</li>
+      <li>There are no names, no free text, no chat, no photos, no email and no phone numbers: no personal data.</li>
+      <li>To delete it: on the Friends page tap “🗑️ Delete my friend data”; everything is removed from the server at once. The secret ID is also included in the save code 💾 so friends can move to a new phone.</li>
       <li>The app is designed for children and asks them for no information.</li>
       <li>Questions: contact the developer through the Google Play developer page.</li>
     </ul>
@@ -53,6 +64,10 @@ p,li{color:var(--muted)}section{background:var(--card);border-radius:20px;paddin
       <li>Oyun ilerlemesi (yıldızlar, açılan bölümler, jetonlar, ses ayarı) yalnızca cihazınızda saklanır.</li>
       <li>Yazı tipleri ilk açılışta Google Fonts'tan indirilir; sonrasında uygulama internetsiz çalışır.</li>
       <li>Arkadaşlarla oynama (Bobo'nun Macerası 3D) bir oda numarasıyla yapılır. Yarış sırasında oyundaki konum ve seçilen karakter, oyun sunucumuz (Supabase) üzerinden yalnızca aynı odadaki diğer oyunculara gönderilir. Sohbet yok, isim yok ve yarış bittikten sonra hiçbir şey saklanmaz.</li>
+      <li><b>Arkadaşlar 👫:</b> çocuk Arkadaşlar sayfasını açtığında uygulama cihazda kalan rastgele gizli bir kimlik ve 6 harfli bir arkadaş kodu oluşturur. Sunucumuz (Supabase) gizli kimliğin yalnızca tek yönlü özetini saklar, kimliğin kendisini asla saklamaz.</li>
+      <li>Sunucuda saklananlar: arkadaş kodu, seçilen resim (renkleriyle Bobo veya bir hayvan), sabit bir kelime listesinden seçilen isteğe bağlı lakap (örn. “Hızlı Kaplan”), arkadaş bağlantıları ve istekleri, oyun davetleri (10 dakika sonra silinir) ve uygulamanın en son açık olduğu zaman (kimin çevrimiçi olduğunu göstermek için).</li>
+      <li>İsim yok, serbest yazı yok, sohbet yok, fotoğraf, e-posta veya telefon numarası yok: kişisel veri yok.</li>
+      <li>Silmek için: Arkadaşlar sayfasında “🗑️ Arkadaş verilerimi sil”e dokunun; her şey sunucudan hemen silinir. Gizli kimlik, arkadaşların yeni telefona taşınabilmesi için kayıt koduna 💾 de eklenir.</li>
       <li>Uygulama çocuklar için tasarlanmıştır ve onlardan hiçbir bilgi istemez.</li>
       <li>Sorular için Google Play geliştirici sayfasından geliştiriciyle iletişime geçin.</li>
     </ul>

@@ -1,0 +1,460 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<script src="../i18n.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-en="My friends – Bobo Land" data-tr="Arkadaşlarım – Bobo Land">أصحابي – بوبو لاند</title>
+<meta name="theme-color" content="#1c1838">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<style>
+:root{
+  --night:#1c1838; --night-2:#2a2452; --night-3:#362e68; --face:#2f2858;
+  --ink:#fff7e8; --muted:#bdb4e6; --gold:#ffcd4d; --gold-d:#c48f12; --bobo:#9b6bff; --mint:#3fd47a; --mint-d:#249c55; --red:#ff5a5f;
+  --display:"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif; --body:"Tajawal",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html{box-sizing:border-box;min-height:100%;background:var(--night)}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;min-height:100%;color:var(--ink);font-family:var(--body);-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;
+  background:radial-gradient(120% 60% at 50% -10%, #3a2d7a 0%, rgba(58,45,122,0) 60%), var(--night)}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+button:disabled{opacity:.5;cursor:default}
+a{color:var(--gold)}
+button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offset:3px}
+.wrap{max-width:560px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:calc(70px + env(safe-area-inset-top,0px)) calc(28px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:16px}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(32px,9vw,42px);line-height:1;margin:0;color:var(--gold);text-shadow:0 4px 0 var(--face);text-align:center}
+.sub{color:var(--muted);text-align:center;margin:-6px 0 0;font-size:15px}
+
+/* my code card */
+.me{position:relative;border-radius:30px;padding:18px 16px 16px;text-align:center;overflow:hidden;
+  background:linear-gradient(160deg,#4a35a8 0%,#2f2470 55%,#251d58 100%);
+  box-shadow:0 0 0 2px rgba(255,205,77,.55),0 0 0 6px rgba(255,205,77,.08),0 18px 40px rgba(0,0,0,.45)}
+.me::before{content:"";position:absolute;inset:-40% -20% auto;height:120%;background:radial-gradient(closest-side,rgba(255,205,77,.22),transparent);pointer-events:none}
+.me .who{position:relative;display:flex;align-items:center;justify-content:center;gap:12px}
+.me .who b{font-family:var(--display);font-size:22px;font-weight:800}
+.me .lbl{position:relative;display:block;margin-top:10px;color:#e3d9ff;font-weight:700;font-size:15px}
+.code{position:relative;direction:ltr;font-family:var(--display);font-weight:800;font-size:clamp(42px,13vw,58px);letter-spacing:.08em;line-height:1.05;color:var(--gold);
+  text-shadow:0 4px 0 #6b4a00,0 0 26px rgba(255,205,77,.45);margin:2px 0 12px;font-variant-numeric:tabular-nums}
+.btns{position:relative;display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.gold-btn,.mint-btn,.ghost{border:0;border-radius:18px;font-family:var(--display);font-weight:800;font-size:19px;padding:9px 18px;display:inline-flex;align-items:center;gap:6px}
+.gold-btn{background:var(--gold);color:#3a2a00;box-shadow:0 5px 0 var(--gold-d)}
+.mint-btn{background:var(--mint);color:#06301a;box-shadow:0 5px 0 var(--mint-d)}
+.ghost{background:rgba(255,255,255,.1);color:var(--ink);box-shadow:inset 0 0 0 2px rgba(255,255,255,.14)}
+.gold-btn:active,.mint-btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--face)}
+.edit{position:absolute;top:10px;inset-inline-end:10px;z-index:1;border:0;border-radius:14px;background:rgba(255,255,255,.12);padding:6px 10px;font-weight:700;font-size:14px}
+
+.add{border:0;border-radius:24px;padding:14px;font-family:var(--display);font-weight:800;font-size:24px;color:#fff;
+  background:linear-gradient(180deg,#8f63ff,#6d43e0);box-shadow:0 6px 0 #4b2bb0,0 12px 24px rgba(0,0,0,.3);display:flex;align-items:center;justify-content:center;gap:10px}
+.add:active{transform:translateY(4px);box-shadow:0 2px 0 #4b2bb0}
+
+.sec{display:flex;flex-direction:column;gap:10px}
+.sec h2{font-family:var(--display);font-weight:800;font-size:23px;margin:4px 0 0;display:flex;align-items:center;gap:8px}
+.sec h2 .n{font-size:14px;background:var(--night-3);border-radius:999px;padding:1px 10px;color:var(--muted)}
+.row{display:flex;align-items:center;gap:12px;background:var(--night-2);border-radius:22px;padding:10px 12px;box-shadow:0 0 0 2px var(--night-3),0 5px 0 var(--face)}
+.row .meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px}
+.row .meta b{font-family:var(--display);font-weight:800;font-size:18px;line-height:1.15;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.row .meta .c{direction:ltr;unicode-bidi:isolate;font-weight:700;color:var(--muted);letter-spacing:.06em;font-size:14px}
+.row .meta small{font-size:13px;color:var(--muted);font-weight:700}
+.row .meta small.on{color:var(--mint)}
+.avw{position:relative;flex:none}
+.dot{position:absolute;bottom:1px;inset-inline-end:1px;width:16px;height:16px;border-radius:50%;background:#77708f;box-shadow:0 0 0 3px var(--night-2)}
+.dot.on{background:var(--mint);animation:pulse 1.6s ease-in-out infinite}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 3px var(--night-2),0 0 0 3px rgba(63,212,122,.6)}50%{box-shadow:0 0 0 3px var(--night-2),0 0 0 9px rgba(63,212,122,0)}}
+.play{border:0;border-radius:16px;background:var(--gold);color:#3a2a00;font-family:var(--display);font-weight:800;font-size:16px;padding:8px 12px;box-shadow:0 4px 0 var(--gold-d);white-space:nowrap}
+.play.off{background:var(--night-3);color:var(--ink);box-shadow:0 4px 0 var(--face)}
+.play:active{transform:translateY(3px);box-shadow:0 1px 0 var(--gold-d)}
+.round{border:0;width:46px;height:46px;border-radius:50%;font-size:22px;font-weight:800;flex:none;display:grid;place-items:center}
+.round.yes{background:var(--mint);color:#06301a;box-shadow:0 4px 0 var(--mint-d)}
+.round.no{background:var(--night-3);color:var(--ink);box-shadow:0 4px 0 var(--face)}
+.more{border:0;background:none;color:var(--muted);font-size:20px;width:30px;height:40px;flex:none;padding:0}
+.invite{background:linear-gradient(135deg,#ffcd4d,#ff9f43);color:#3a2a00;box-shadow:0 0 0 3px rgba(255,255,255,.35),0 6px 0 #b8740f,0 12px 28px rgba(255,159,67,.35);animation:glow 2s ease-in-out infinite}
+.invite .meta b{color:#3a2a00}.invite .meta small{color:#5b3e00}.invite .meta .c{color:#6b4a00}
+.invite .dot{box-shadow:0 0 0 3px #ffb948}
+@keyframes glow{0%,100%{box-shadow:0 0 0 3px rgba(255,255,255,.35),0 6px 0 #b8740f,0 12px 28px rgba(255,159,67,.3)}50%{box-shadow:0 0 0 3px rgba(255,255,255,.6),0 6px 0 #b8740f,0 12px 40px rgba(255,205,77,.75)}}
+.invite .go{border:0;border-radius:16px;background:#3a2a00;color:var(--gold);font-family:var(--display);font-weight:800;font-size:18px;padding:9px 14px;box-shadow:0 4px 0 #1a1200;white-space:nowrap}
+.invite .round.no{background:rgba(58,42,0,.18);color:#3a2a00;box-shadow:none;width:38px;height:38px;font-size:17px}
+.empty{text-align:center;color:var(--muted);background:var(--night-2);border-radius:22px;padding:18px 14px;line-height:1.6;box-shadow:inset 0 0 0 2px var(--night-3)}
+.empty .big{font-size:46px;display:block;line-height:1.2}
+.banner{display:flex;align-items:center;gap:10px;background:#4a2335;border-radius:18px;padding:10px 14px;font-weight:700;box-shadow:inset 0 0 0 2px #7a3a55}
+.banner span{flex:1}
+.small-btn{border:0;border-radius:14px;background:var(--night-3);padding:8px 14px;font-weight:700}
+.del{align-self:center;border:0;background:none;color:var(--muted);font-weight:700;font-size:14px;text-decoration:underline;padding:8px}
+.foot{text-align:center;color:var(--muted);font-size:13px;margin:0}
+.intro{text-align:center;padding:26px 18px}
+.intro .big{font-size:76px;line-height:1}
+.intro h2{font-family:var(--display);font-size:28px;margin:8px 0 4px;color:var(--gold)}
+.intro p{color:var(--muted);margin:0 0 16px;line-height:1.6}
+.skel{height:72px;border-radius:22px;background:linear-gradient(90deg,var(--night-2),var(--night-3),var(--night-2));background-size:200% 100%;animation:sk 1.2s linear infinite}
+@keyframes sk{to{background-position:-200% 0}}
+
+/* sheets */
+.sheet{position:fixed;inset:0;z-index:50;background:rgba(14,10,34,.9);display:grid;place-items:center;overflow-y:auto;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
+.card{width:100%;max-width:440px;background:linear-gradient(180deg,#30287a,var(--night-2) 40%);border-radius:28px;padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
+  box-shadow:0 0 0 2px rgba(255,205,77,.35),0 24px 60px rgba(0,0,0,.55)}
+.card h2{font-family:var(--display);font-weight:800;font-size:27px;margin:0;line-height:1.15}
+.card p{margin:0;color:var(--muted);line-height:1.5}
+.x{align-self:flex-start;border:0;width:40px;height:40px;border-radius:12px;background:var(--night-3);font-size:18px;flex:none}
+.slots{direction:ltr;display:flex;gap:6px;justify-content:center}
+.slots b{width:44px;height:56px;border-radius:14px;background:var(--night);display:grid;place-items:center;font-family:var(--display);font-size:32px;font-weight:800;color:var(--gold);
+  box-shadow:inset 0 0 0 3px var(--night-3)}
+.slots b.cur{box-shadow:inset 0 0 0 3px var(--gold)}
+.slots b:nth-child(3){margin-right:8px}
+.keys{direction:ltr;display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:6px;width:100%}
+.keys button{border:0;border-radius:12px;background:var(--night-3);font-family:var(--display);font-weight:800;font-size:21px;height:46px;padding:0;box-shadow:0 3px 0 var(--face)}
+.keys button:active{transform:translateY(2px);box-shadow:0 1px 0 var(--face);background:#4a3f8a}
+.keys .wide{grid-column:span 4;font-size:22px}
+.keys .ok{background:var(--mint);color:#06301a;box-shadow:0 3px 0 var(--mint-d)}
+.msg{min-height:1.5em;font-weight:700;color:var(--gold)!important}
+.grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px;width:100%;justify-items:center}
+.pick{border:0;background:none;padding:3px;border-radius:50%;box-shadow:0 0 0 3px transparent}
+.pick[aria-pressed="true"]{box-shadow:0 0 0 3px var(--gold)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.chips button{border:0;border-radius:999px;background:var(--night-3);padding:6px 12px;font-weight:700;font-size:15px}
+.chips button[aria-pressed="true"]{background:var(--gold);color:#3a2a00}
+.lbl2{font-weight:800;font-family:var(--display);font-size:17px;align-self:stretch;text-align:start}
+.toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:99;background:var(--gold);color:#3a2a00;max-width:calc(100% - 32px);text-align:center;
+  font:800 18px var(--display);padding:8px 18px;border-radius:999px;box-shadow:0 6px 0 var(--gold-d),0 10px 30px rgba(0,0,0,.4);pointer-events:none;transition:opacity .4s,transform .4s}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <h1 data-en="My friends 👫" data-tr="Arkadaşlarım 👫">أصحابي 👫</h1>
+  <p class="sub" data-en="Add friends with a code and play together" data-tr="Kodla arkadaş ekle, birlikte oyna">ضيف أصحابك بالرمز والعبوا سوا</p>
+
+  <div class="banner" id="offline" hidden><span id="offText"></span><button class="small-btn" id="retry" data-en="Try again" data-tr="Tekrar dene">جرّب كمان مرة</button></div>
+
+  <section class="me intro" id="intro" hidden>
+    <div class="big">👫</div>
+    <h2 data-en="Make your friend code" data-tr="Arkadaş kodunu oluştur">اعمل رمز الأصحاب تبعك</h2>
+    <p data-en="You get a code to give to your friends. No names, no chat: just Bobo and play!" data-tr="Arkadaşlarına vereceğin bir kod alırsın. İsim yok, sohbet yok: sadece Bobo ve oyun!">بتاخد رمز بتعطيه لأصحابك. ما في أسامي ولا دردشة، بس بوبو واللعب!</p>
+    <button class="gold-btn" id="startBtn" data-en="Let's go ✨" data-tr="Hadi başlayalım ✨">يلّا نبلّش ✨</button>
+  </section>
+
+  <section class="me" id="meCard" hidden>
+    <button class="edit" id="editBtn" data-en="✏️ My look" data-tr="✏️ Görünüşüm">✏️ شكلي</button>
+    <div class="who" id="meWho"></div>
+    <span class="lbl" data-en="My friend code" data-tr="Arkadaş kodum">رمز الأصحاب تبعي</span>
+    <div class="code" id="myCode">······</div>
+    <div class="btns">
+      <button class="gold-btn" id="copyBtn">📋 <span data-en="Copy" data-tr="Kopyala">انسخ</span></button>
+      <button class="mint-btn" id="shareBtn">📤 <span data-en="Share" data-tr="Paylaş">شارك</span></button>
+    </div>
+  </section>
+
+  <section class="sec" id="invSec" hidden><h2>🎮 <span data-en="Come and play!" data-tr="Gel oynayalım!">تعا نلعب!</span></h2><div class="sec" id="invList"></div></section>
+  <section class="sec" id="reqSec" hidden><h2>💌 <span data-en="Friend requests" data-tr="Arkadaşlık istekleri">طلبات صحبة</span></h2><div class="sec" id="reqList"></div></section>
+
+  <button class="add" id="addBtn" hidden>➕ <span data-en="Add a friend" data-tr="Arkadaş ekle">ضيف صاحب</span></button>
+
+  <section class="sec" id="frSec" hidden>
+    <h2>👫 <span data-en="My friends" data-tr="Arkadaşlarım">أصحابي</span> <span class="n" id="frN"></span></h2>
+    <div class="sec" id="frList"><div class="skel"></div><div class="skel"></div></div>
+  </section>
+  <section class="sec" id="outSec" hidden><h2 style="font-size:18px">⏳ <span data-en="Waiting for them to accept" data-tr="Kabul etmelerini bekliyoruz">استنّينا يقبلوا</span></h2><div class="sec" id="outList"></div></section>
+
+  <button class="del" id="delBtn" hidden data-en="🗑️ Delete my friend data" data-tr="🗑️ Arkadaş verilerimi sil">🗑️ امسح بيانات الأصحاب تبعي</button>
+  <p class="foot"><a href="../privacy.html" data-en="Privacy" data-tr="Gizlilik">الخصوصية</a></p>
+</div>
+
+<div class="sheet" id="addSheet" hidden><div class="card">
+  <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
+  <h2 data-en="Type your friend's code" data-tr="Arkadaşının kodunu yaz">اكتب رمز صاحبك</h2>
+  <div class="slots" id="slots"></div>
+  <p class="msg" id="addMsg"></p>
+  <div class="keys" id="keys"></div>
+</div></div>
+
+<div class="sheet" id="lookSheet" hidden><div class="card">
+  <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
+  <h2 data-en="How friends see me" data-tr="Arkadaşlarım beni nasıl görür">كيف بيشوفني أصحابي</h2>
+  <div class="who" id="lookPrev" style="display:flex;align-items:center;gap:12px"></div>
+  <span class="lbl2" data-en="Picture" data-tr="Resim">الصورة</span>
+  <div class="grid" id="avGrid"></div>
+  <p style="font-size:13px" data-en="Bobo wears your wardrobe colours and hats" data-tr="Bobo dolabındaki renkleri ve şapkaları giyer">بوبو بيلبس ألوان وقبعات خزانتك</p>
+  <span class="lbl2" data-en="Nickname (pick 2 words)" data-tr="Lakap (2 kelime seç)">لقب (اختار كلمتين)</span>
+  <div class="chips" id="nounChips"></div>
+  <div class="chips" id="adjChips"></div>
+  <button class="gold-btn" id="saveLook" data-en="Save ✓" data-tr="Kaydet ✓">احفظ ✓</button>
+</div></div>
+
+<div class="sheet" id="askSheet" hidden><div class="card">
+  <div id="askAv"></div>
+  <h2 id="askH"></h2>
+  <p id="askP"></p>
+  <div class="btns"><button class="gold-btn" id="askYes"></button><button class="ghost" id="askNo"></button></div>
+</div></div>
+
+<script src="../world.js"></script>
+<script src="../friends.js"></script>
+<script src="../back.js"></script>
+<script>
+(function(){
+'use strict';
+const F = window.Friends, W = window.World, L = window.L, $ = id => document.getElementById(id);
+const N = n => I18N.num(n);
+
+/* sound */
+let actx = null;
+function tone(f, d, type, v, delay){ try{ actx = actx || new (window.AudioContext || window.webkitAudioContext)(); if(actx.state === 'suspended') actx.resume();
+  const t0 = actx.currentTime + (delay || 0), o = actx.createOscillator(), g = actx.createGain(); o.type = type || 'triangle'; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(v || 0.12, t0 + 0.02); g.gain.exponentialRampToValueAtTime(0.0001, t0 + d);
+  o.connect(g).connect(actx.destination); o.start(t0); o.stop(t0 + d + 0.05); }catch(e){} }
+const ding = () => [784, 988, 1318].forEach((f, i) => tone(f, .18, 'triangle', .12, i * .08));
+const tap = () => tone(660, .05, 'triangle', .06);
+const nope = () => tone(170, .22, 'sawtooth', .06);
+
+function toast(text){
+  const el = document.createElement('div'); el.className = 'toast'; el.textContent = text; document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transform = 'translateX(-50%) translateY(-16px)'; }, 2200);
+  setTimeout(() => el.remove(), 2800);
+}
+function offline(e){ $('offline').hidden = false; $('offText').textContent = F.errText(e); }
+function online(){ $('offline').hidden = true; }
+
+/* sheets + back button */
+const sheets = ['addSheet', 'lookSheet', 'askSheet'];
+const openSheet = id => { $(id).hidden = false; };
+const closeSheets = () => sheets.forEach(id => { $(id).hidden = true; });
+document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => { tap(); closeSheets(); });
+sheets.forEach(id => $(id).addEventListener('click', e => { if(e.target === $(id) && id !== 'askSheet') closeSheets(); }));
+BoboBack.init({ onBack: () => { if(sheets.some(id => !$(id).hidden)){ closeSheets(); if(askDone) askDone(false); } else location.href = '../'; } });
+
+let askDone = null;
+function ask(o){
+  return new Promise(res => {
+    $('askH').textContent = o.title; $('askP').textContent = o.text || ''; $('askYes').textContent = o.yes; $('askNo').textContent = o.no;
+    const av = $('askAv'); av.innerHTML = ''; if(o.kid) av.appendChild(F.avatarEl(o.kid, 84)); else if(o.icon){ av.textContent = o.icon; av.style.fontSize = '60px'; }
+    askDone = v => { askDone = null; $('askSheet').hidden = true; res(v); };
+    $('askYes').onclick = () => { tap(); askDone && askDone(true); };
+    $('askNo').onclick = () => { tap(); askDone && askDone(false); };
+    openSheet('askSheet');
+  });
+}
+
+/* a friend row */
+const label = k => F.nick(k) || F.fmtCode(k.code);
+function row(k, opts){
+  const r = document.createElement('div'); r.className = 'row' + (opts.cls ? ' ' + opts.cls : ''); r.dataset.code = k.code;
+  const aw = document.createElement('span'); aw.className = 'avw'; aw.appendChild(F.avatarEl(k, opts.size || 56));
+  if(opts.dot){ const d = document.createElement('i'); d.className = 'dot' + (k.online ? ' on' : ''); aw.appendChild(d); }
+  r.appendChild(aw);
+  const m = document.createElement('div'); m.className = 'meta';
+  const b = document.createElement('b'); b.textContent = opts.title || label(k); if(!F.nick(k) && !opts.title) b.style.cssText = 'direction:ltr;unicode-bidi:isolate;letter-spacing:.06em;align-self:flex-start;max-width:100%'; m.appendChild(b);
+  if(F.nick(k) || opts.title){ const c = document.createElement('span'); c.className = 'c'; c.textContent = F.fmtCode(k.code); m.appendChild(c); }
+  if(opts.sub){ const s = document.createElement('small'); s.textContent = opts.sub; if(opts.subOn) s.className = 'on'; m.appendChild(s); }
+  r.appendChild(m);
+  (opts.buttons || []).forEach(x => r.appendChild(x));
+  return r;
+}
+function btn(cls, html, aria, fn){ const b = document.createElement('button'); b.className = cls; b.innerHTML = html; if(aria) b.setAttribute('aria-label', aria); b.onclick = e => { e.stopPropagation(); fn(b); }; return b; }
+
+/* state + render */
+let me = null, data = { friends:[], incoming:[], outgoing:[], invites:[] }, loading = false;
+const myLook = () => ({ avatar:(me && me.avatar) || 'bobo', color:W.outfit.color || 'purple', hat:W.outfit.hat || null, glasses:W.outfit.glasses || null, na:me && me.na, nn:me && me.nn });
+
+function renderMe(){
+  $('myCode').textContent = me ? F.fmtCode(me.code) : '······';
+  const who = $('meWho'); who.innerHTML = '';
+  who.appendChild(F.avatarEl(Object.assign({}, me, myLook()), 64));
+  const b = document.createElement('b'); b.textContent = F.nick(me) || L('أنا', 'Me', 'Ben'); who.appendChild(b);
+}
+function render(){
+  // invites
+  const il = $('invList'); il.innerHTML = '';
+  data.invites.forEach(inv => {
+    const mins = Math.max(1, Math.ceil(inv.left / 60));
+    il.appendChild(row(inv.from, { cls:'invite', dot:true, size:58,
+      sub:L('بدّو يلعب معك! غرفة ' + N(inv.room), 'Wants to play with you! Room ' + inv.room, 'Seninle oynamak istiyor! Oda ' + inv.room) + ' · ' + L('⏱️ ' + N(mins) + ' د', '⏱️ ' + mins + ' min', '⏱️ ' + mins + ' dk'),
+      buttons:[
+        btn('go', L('يلّا 🎮', "Let's go 🎮", 'Hadi 🎮'), null, b => {
+          tap(); b.disabled = true; const go = () => { location.href = F.gameUrl('../adventure3d/', { join:inv.room }); };
+          // mark the invite as used first (a request still in flight is cancelled by the page change), but never wait long
+          Promise.race([F.dismiss(inv.id).catch(() => {}), new Promise(r => setTimeout(r, 1500))]).then(go);
+        }),
+        btn('round no', '✕', L('مش هلّق', 'Not now', 'Şimdi değil'), b => { tap(); b.closest('.row').remove(); data.invites = data.invites.filter(x => x.id !== inv.id); $('invSec').hidden = !data.invites.length; F.dismiss(inv.id).catch(offline); })
+      ] }));
+  });
+  $('invSec').hidden = !data.invites.length;
+  // incoming requests
+  const rl = $('reqList'); rl.innerHTML = '';
+  data.incoming.forEach(k => rl.appendChild(row(k, { sub:L('بدّو يصير صاحبك', 'Wants to be your friend', 'Arkadaşın olmak istiyor'), buttons:[
+    btn('round yes', '✓', L('اقبل', 'Accept', 'Kabul et'), b => answer(k, true, b)),
+    btn('round no', '✕', L('لا', 'Decline', 'Reddet'), b => answer(k, false, b))
+  ] })));
+  $('reqSec').hidden = !data.incoming.length;
+  // friends
+  const fl = $('frList'); fl.innerHTML = '';
+  $('frN').textContent = N(data.friends.length);
+  if(!data.friends.length){
+    fl.innerHTML = `<div class="empty"><span class="big">🫂</span>${L('لسّا ما عندك أصحاب هون. شارك رمزك أو اكبس «ضيف صاحب»!', 'No friends here yet. Share your code or tap “Add a friend”!', 'Henüz arkadaşın yok. Kodunu paylaş veya “Arkadaş ekle”ye dokun!')}</div>`;
+  }
+  data.friends.forEach(k => fl.appendChild(row(k, { dot:true,
+    sub:k.online ? L('موجود هلّق 🟢', 'Online now', 'Şu an çevrimiçi') : L('مش موجود هلّق', 'Not online now', 'Şu an çevrimdışı'), subOn:k.online,
+    buttons:[
+      btn('play' + (k.online ? '' : ' off'), L('تعا العب 🎮', 'Play 🎮', 'Oyna 🎮'), null, () => { tap(); location.href = F.gameUrl('../adventure3d/', { host:1, invite:k.code }); }),
+      btn('more', '⋯', L('أكتر', 'More', 'Daha fazla'), () => removeFriend(k))
+    ] })));
+  // outgoing
+  const ol = $('outList'); ol.innerHTML = '';
+  data.outgoing.forEach(k => ol.appendChild(row(k, { size:44, sub:L('بعتنالو طلب ✉️', 'Request sent ✉️', 'İstek gönderildi ✉️'), buttons:[
+    btn('round no', '✕', L('الغي', 'Cancel', 'İptal'), b => { tap(); b.disabled = true; F.remove(k.code).then(load, e => { b.disabled = false; offline(e); }); })
+  ] })));
+  $('outSec').hidden = !data.outgoing.length;
+}
+
+async function load(){
+  if(loading || !F.has()) return; loading = true;
+  try{
+    const [fr, rq, iv] = await Promise.all([F.list(), F.requests(), F.invites()]);
+    data = { friends:fr || [], incoming:(rq && rq.incoming) || [], outgoing:(rq && rq.outgoing) || [], invites:iv || [] };
+    online(); render();
+  }catch(e){ offline(e); if($('frList').querySelector('.skel')) $('frList').innerHTML = ''; }
+  finally{ loading = false; }
+}
+async function boot(){
+  const started = F.has();
+  $('intro').hidden = started;
+  ['meCard', 'addBtn', 'frSec', 'delBtn'].forEach(id => { $(id).hidden = !started; });
+  if(!started) return;
+  renderMe();
+  try{
+    me = await F.me(true); online(); renderMe();
+    // keep my Bobo look on the server in step with the wardrobe
+    const l = myLook();
+    if(me.avatar === 'bobo' && (me.color !== l.color || (me.hat || null) !== l.hat || (me.glasses || null) !== l.glasses))
+      F.setLook(l).then(c => { me = Object.assign(me, c); }, () => {});
+  }catch(e){ offline(e); $('frList').innerHTML = ''; $('frN').textContent = ''; return; }
+  load();
+}
+$('startBtn').onclick = () => { tap(); $('startBtn').disabled = true; F.me().then(() => { ding(); return boot(); }).then(live, offline).finally(() => { $('startBtn').disabled = false; }); };
+$('retry').onclick = () => { tap(); boot(); };
+
+async function answer(k, yes, b){
+  tap(); b.closest('.row').querySelectorAll('button').forEach(x => { x.disabled = true; });
+  try{ const r = await F.answer(k.code, yes); if(r.status === 'accepted'){ ding(); toast(F.statusText('accepted')); } else if(r.status !== 'declined') toast(F.statusText(r.status)); }
+  catch(e){ offline(e); }
+  load();
+}
+async function removeFriend(k){
+  tap();
+  const ok = await ask({ kid:k, title:L('تشيل هالصاحب؟', 'Remove this friend?', 'Bu arkadaşı çıkar?'), text:label(k), yes:L('إيه، شيله', 'Yes, remove', 'Evet, çıkar'), no:L('لا', 'No', 'Hayır') });
+  if(!ok) return;
+  try{ await F.remove(k.code); load(); }catch(e){ offline(e); }
+}
+
+/* copy + share */
+function copyText(t){
+  return new Promise((res, rej) => {
+    const fb = () => { try{ const ta = document.createElement('textarea'); ta.value = t; ta.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(ta); ta.select(); const ok = document.execCommand('copy'); ta.remove(); ok ? res() : rej(); }catch(e){ rej(e); } };
+    try{ navigator.clipboard.writeText(t).then(res, fb); }catch(e){ fb(); }
+  });
+}
+$('copyBtn').onclick = () => { if(!me) return; tap(); copyText(me.code).then(() => toast(L('انسخ الرمز ✔', 'Code copied ✔', 'Kod kopyalandı ✔')), () => toast(F.fmtCode(me.code))); };
+$('shareBtn').onclick = async () => {
+  if(!me) return; tap();
+  const url = F.link(me.code), text = L('تعا صير صاحبي ببوبو لاند! 👫 رمزي: ', 'Be my friend in Bobo Land! 👫 My code: ', "Bobo Land'de arkadaşım ol! 👫 Kodum: ") + me.code;
+  if(navigator.share){ try{ await navigator.share({ title:L('بوبو لاند', 'Bobo Land', 'Bobo Land'), text, url }); return; }catch(e){ if(e && e.name === 'AbortError') return; } }
+  copyText(text + ' ' + url).then(() => toast(L('انسخ الرابط ✔ ابعته لصاحبك', 'Link copied ✔ send it to your friend', 'Bağlantı kopyalandı ✔ arkadaşına gönder')), () => toast(url));
+};
+
+/* add by code: big letter keypad (only the code alphabet, no free text) */
+let typed = '', sending = false;
+function drawSlots(){
+  $('slots').innerHTML = [0, 1, 2, 3, 4, 5].map(i => `<b class="${i === typed.length ? 'cur' : ''}">${typed[i] || ''}</b>`).join('');
+}
+function buildKeys(){
+  const k = $('keys'); k.innerHTML = '';
+  [...F.ALPHABET].forEach(ch => { const b = document.createElement('button'); b.textContent = ch; b.dataset.k = ch; k.appendChild(b); });
+  const del = document.createElement('button'); del.className = 'wide'; del.dataset.k = 'del'; del.textContent = '⌫'; del.setAttribute('aria-label', L('امسح', 'Delete', 'Sil')); k.appendChild(del);
+  const ok = document.createElement('button'); ok.className = 'wide ok'; ok.dataset.k = 'ok'; ok.id = 'okKey'; ok.textContent = L('ضيف ✓', 'Add ✓', 'Ekle ✓'); k.appendChild(ok);
+  k.querySelectorAll('button').forEach(b => b.onclick = () => key(b.dataset.k));
+}
+function key(k){
+  if(sending) return;
+  if(k === 'del'){ typed = typed.slice(0, -1); tap(); }
+  else if(k === 'ok'){ if(typed.length === 6) sendReq(typed); else { nope(); $('addMsg').textContent = L('الرمز ٦ حروف', 'The code has 6 letters', 'Kod 6 harfli'); } return; }
+  else if(F.ALPHABET.includes(k) && typed.length < 6){ typed += k; tap(); }
+  $('addMsg').textContent = ''; drawSlots();
+  if(typed.length === 6){ const code = typed; setTimeout(() => { if(!$('addSheet').hidden && typed === code && !sending) sendReq(code); }, 300); }
+}
+addEventListener('keydown', e => {
+  if($('addSheet').hidden) return;
+  const ch = e.key.toUpperCase();
+  if(e.key === 'Backspace') key('del'); else if(e.key === 'Enter') key('ok'); else if(ch.length === 1 && F.ALPHABET.includes(ch)) key(ch);
+});
+async function sendReq(code){
+  sending = true; $('addMsg').textContent = '⏳';
+  try{
+    const r = await F.request(code);
+    $('addMsg').textContent = F.statusText(r.status);
+    if(['sent', 'accepted', 'already_sent', 'already_friends'].includes(r.status)){ ding(); typed = ''; drawSlots(); setTimeout(() => { if(!$('addSheet').hidden) closeSheets(); }, 1400); load(); }
+    else nope();
+  }catch(e){ $('addMsg').textContent = F.errText(e); nope(); }
+  sending = false;
+}
+$('addBtn').onclick = () => { tap(); typed = ''; $('addMsg').textContent = ''; drawSlots(); openSheet('addSheet'); };
+buildKeys(); drawSlots();
+
+/* my look: avatar + fixed nickname */
+let look = null;
+function drawLook(){
+  const prev = $('lookPrev'); prev.innerHTML = '';
+  prev.appendChild(F.avatarEl(look, 72));
+  const b = document.createElement('b'); b.style.cssText = 'font-family:var(--display);font-size:22px'; b.textContent = F.nick(look) || L('بلا لقب', 'No nickname', 'Lakapsız'); prev.appendChild(b);
+  const g = $('avGrid'); g.innerHTML = '';
+  Object.keys(F.AVATARS).forEach(id => {
+    const p = document.createElement('button'); p.className = 'pick'; p.setAttribute('aria-pressed', look.avatar === id);
+    p.setAttribute('aria-label', id === 'bobo' ? L('بوبو', 'Bobo', 'Bobo') : F.AVATARS[id]);
+    p.appendChild(F.avatarEl(Object.assign({}, look, { avatar:id }), 50));
+    p.onclick = () => { tap(); look.avatar = id; drawLook(); }; g.appendChild(p);
+  });
+  const chips = (box, list, keyName) => {
+    box.innerHTML = '';
+    Object.entries(list).forEach(([id, w]) => {
+      const c = document.createElement('button'); c.textContent = L(w[0], w[1], w[2]); c.setAttribute('aria-pressed', look[keyName] === id);
+      c.onclick = () => { tap(); look[keyName] = look[keyName] === id ? null : id; drawLook(); }; box.appendChild(c);
+    });
+  };
+  chips($('nounChips'), F.NOUN, 'nn'); chips($('adjChips'), F.ADJ, 'na');
+  const half = (look.na == null) !== (look.nn == null);
+  $('saveLook').disabled = half;
+}
+$('editBtn').onclick = () => { tap(); look = myLook(); drawLook(); openSheet('lookSheet'); };
+$('saveLook').onclick = async () => {
+  tap(); $('saveLook').disabled = true;
+  try{ const c = await F.setLook(look); me = Object.assign({}, me, c); renderMe(); ding(); closeSheets(); toast(L('تمام! ✨', 'Saved! ✨', 'Kaydedildi! ✨')); }
+  catch(e){ toast(F.errText(e)); }
+  $('saveLook').disabled = false;
+};
+
+/* delete my friend data */
+$('delBtn').onclick = async () => {
+  const ok = await ask({ icon:'🗑️', title:L('تمسح بيانات الأصحاب؟', 'Delete your friend data?', 'Arkadaş verilerin silinsin mi?'),
+    text:L('رمزك وكل أصحابك والطلبات رح ينمحوا من السيرفر. الألعاب والعملات بيضلّوا.', 'Your code, all your friends and requests will be deleted from the server. Games and coins stay.', 'Kodun, tüm arkadaşların ve isteklerin sunucudan silinir. Oyunlar ve jetonlar kalır.'),
+    yes:L('إيه، امسح', 'Yes, delete', 'Evet, sil'), no:L('لا', 'No', 'Hayır') });
+  if(!ok) return;
+  try{ await F.deleteMe(); me = null; data = { friends:[], incoming:[], outgoing:[], invites:[] }; toast(L('انمسحت ✔', 'Deleted ✔', 'Silindi ✔')); boot(); }
+  catch(e){ offline(e); }
+};
+
+/* keep fresh: heartbeat (25 s) + reload lists every 15 s while visible */
+let stopHb = () => {};
+function live(){ stopHb(); stopHb = F.startHeartbeat(c => { if(c && (c.requests !== data.incoming.length || c.invites !== data.invites.length)) load(); }); }
+setInterval(() => { if(document.visibilityState === 'visible' && me) load(); }, 15000);
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && me) load(); });
+boot().then(live);
+if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').catch(() => {});
+})();
+</script>
+</body>
+</html>
