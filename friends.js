@@ -48,7 +48,7 @@ function makeMock(load, save, now){
   const ok = s => typeof s === 'string' && s.length >= 43 && s.length <= 128 && /^[A-Za-z0-9_-]+$/.test(s);
   const fail = (code, msg) => { const e = new Error(msg); e.code = code; throw e; };
   const fresh = () => ({ seq:1, kids:[], req:[], fr:[], inv:[] });
-  const card = k => ({ code:k.code, avatar:k.avatar, color:k.color, hat:k.hat, glasses:k.glasses, na:k.na, nn:k.nn, online:now() - k.seen < 60000 });
+  const card = k => ({ code:k.code, avatar:k.avatar, color:k.color, hat:k.hat, glasses:k.glasses, na:k.na, nn:k.nn, name:k.name || null, online:now() - k.seen < 60000 });
   const isFr = (d, a, b) => d.fr.some(f => f[0] === a && f[1] === b);
   const nFr = (d, a) => d.fr.filter(f => f[0] === a).length;
   const counts = (d, id) => ({ requests:d.req.filter(r => r[1] === id).length,
@@ -70,6 +70,11 @@ function makeMock(load, save, now){
       if((a.p_nick_a == null) !== (a.p_nick_n == null) || (a.p_nick_a != null && !(a.p_nick_a in ADJ && a.p_nick_n in NOUN))) fail('22023', 'bad_nick');
       Object.assign(me, { avatar:a.p_avatar, color:a.p_color, hat:a.p_hat || null, glasses:a.p_glasses || null, na:a.p_nick_a || null, nn:a.p_nick_n || null, seen:now() });
       return card(me);
+    },
+    bobo_fr_set_name(d, a, me){
+      const n = String(a.p_name || '').trim().replace(/\s+/g, ' ');
+      if(n && (n.length > 14 || !/^[\p{L} ]+$/u.test(n))) fail('22023', 'bad_name');
+      me.name = n || null; me.seen = now(); return card(me);
     },
     bobo_fr_request(d, a, me){
       const o = byCode(d, a.p_code); if(!o) return { status:'not_found' };
@@ -252,6 +257,7 @@ function avatarEl(k, size){
   return el;
 }
 function nick(k){
+  if(k && k.name) return k.name;
   if(!k || !k.na || !ADJ[k.na] || !NOUN[k.nn]) return '';
   const lang = window.I18N ? I18N.lang : 'ar', i = lang === 'ar' ? 0 : lang === 'tr' ? 2 : 1;
   return lang === 'ar' ? NOUN[k.nn][0] + ' ' + ADJ[k.na][0] : ADJ[k.na][i] + ' ' + NOUN[k.nn][i];
@@ -297,6 +303,7 @@ window.Friends = {
   me: force => ready(!!force),
   setLook: o => call('bobo_fr_set_look', { p_avatar:o.avatar || 'bobo', p_color:o.color || 'purple', p_hat:o.hat || null, p_glasses:o.glasses || null, p_nick_a:o.na || null, p_nick_n:o.nn || null })
     .then(c => { meCache = Object.assign({}, meCache, c); return c; }),
+  setName: n => call('bobo_fr_set_name', { p_name:n || null }).then(c => { meCache = Object.assign({}, meCache, c); return c; }),
   request: code => call('bobo_fr_request', { p_code:normCode(code) }),
   requests: () => call('bobo_fr_requests'),
   answer: (code, yes) => call('bobo_fr_answer', { p_code:code, p_accept:!!yes }),
