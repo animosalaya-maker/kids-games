@@ -1748,7 +1748,7 @@ function mpUpdateRemotes(dt){
     const b = r.buf, show = mpActive() && b.length > 0;
     r.h.grp.visible = r.ring.visible = r.badge.visible = show;
     if(!show) continue;
-    const rt = now - r.off - 100;
+    const rt = now - r.off - 180;
     while(b.length > 2 && b[1].t < rt - 400) b.shift();
     let a = b[0], c = b[0];
     if(rt > b[0].t){ for(let i = b.length - 1; i >= 0; i--) if(b[i].t <= rt){ a = b[i]; c = b[i + 1] || b[i]; break; } }
@@ -1874,7 +1874,7 @@ function mpBegin(p){
   MP.screen = 'match'; state = 'play'; setPlayUI(true);
   joy.id = null; joy.x = joy.y = 0; look.id = null; knob.style.transform = ''; for(const k in keys) keys[k] = false;
   P.hearts = 3; P.inv = 0; mpSpawn(); placeJoyHome(); hud();
-  clearInterval(MP.iv); MP.iv = setInterval(() => mpSendPos(false), 100);
+  clearInterval(MP.iv); MP.iv = setInterval(() => mpSendPos(false), 150);
 }
 function mpSpawn(){
   const M = MP.match, me = M && M.pl.find(x => x.id === MP.id), c = me ? me.c : 0;
