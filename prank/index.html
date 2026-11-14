@@ -170,7 +170,7 @@ const UNCLE = L('عمّو زعلان', 'Uncle Grumpy', 'Somurtkan Amca');
 const P = (item, target, react, fx, pick, msg, bubble) => ({ item, target, react, fx, pick, msg, bubble });
 const LEVELS = [
   { name:L('الصالون', 'Living room', 'Salon'), theme:'living', patrol:1.6, chase:2.5, vision:3.8, napChance:0.3, goal:75,
-    intro:L('دخلنا بيت ' + UNCLE + ' 🤫 اعمل ٣ مقالب!', 'We sneaked into ' + UNCLE + '\'s house 🤫 Set 3 pranks!', UNCLE + '\'nın evine girdik 🤫 3 şaka hazırla!'),
+    intro:L('دخلنا بيت ' + UNCLE + ' 🤫 اعمل 3 مقالب!', 'We sneaked into ' + UNCLE + '\'s house 🤫 Set 3 pranks!', UNCLE + '\'nın evine girdik 🤫 3 şaka hazırla!'),
     pranks:[
       P('🎈', '🪑', 'jump', '💥', L('أخدت البالون 🎈 خبّيه تحت مخدّة الكرسي 🪑', 'Got the balloon 🎈 Hide it under the chair cushion 🪑', 'Balonu aldın 🎈 Sandalye minderinin altına sakla 🪑'),
         L('البالون تحت المخدّة! 🤭', 'Balloon under the cushion! 🤭', 'Balon minderin altında! 🤭'), L('بووم!', 'BOOM!', 'BUM!')),
@@ -999,7 +999,7 @@ function showHome(){
       '<li><span>🍯</span><span>' + L('خود الغرض وروح فيه عالمكان اللي عم يلمع ✨', 'Grab an item and take it to its glowing spot ✨', 'Eşyayı al, parlayan yere götür ✨') + '</span></li>' +
       '<li><span>⏳</span><span>' + L('وقّف عالمكان شوي لحتى يجهز المقلب', 'Stand on the spot a moment to set the prank', 'Şaka hazırlanana kadar orada biraz bekle') + '</span></li>' +
       '<li><span>📦</span><span>' + L('إذا شافك ' + UNCLE + ' تخبّى بالصندوق أو بالخزانة', 'If ' + UNCLE + ' sees you, hide in a box or the wardrobe', UNCLE + ' seni görürse kutuya ya da dolaba saklan') + '</span></li>' +
-      '<li><span>🚪</span><span>' + L('خلّص ٣ مقالب واهرب من الباب', 'Set 3 pranks, then run out the door', '3 şakayı hazırla, sonra kapıdan kaç') + '</span></li>' +
+      '<li><span>🚪</span><span>' + L('خلّص 3 مقالب واهرب من الباب', 'Set 3 pranks, then run out the door', '3 şakayı hazırla, sonra kapıdan kaç') + '</span></li>' +
       '<li><span>⭐</span><span>' + L('نجوم: اهرب • بلا ما ينمسكك • وبسرعة قبل ما يخلص الوقت ⏱️', 'Stars: escape • don\'t get caught • be quick before the timer ⏱️ ends', 'Yıldızlar: kaç • yakalanma • süre ⏱️ bitmeden hızlı ol') + '</span></li>' +
     '</ul>' +
     '<span class="note">' + L('حرّك بوبو بالأسهم أو اسحب إصبعك عالخريطة', 'Move Bobo with the arrows, or slide your finger on the map', 'Bobo\'yu oklarla yürüt ya da parmağını haritada kaydır') + '</span>' +
@@ -1039,7 +1039,7 @@ function showLose(){
   const i = G.i;
   openOverlay(
     '<canvas id="heroCv" width="440" height="280"></canvas>' +
-    '<h2>' + L(UNCLE + ' طردك ٣ مرات! 😆', UNCLE + ' put you out 3 times! 😆', UNCLE + ' seni 3 kez dışarı attı! 😆') + '</h2>' +
+    '<h2>' + L(UNCLE + ' طردك 3 مرات! 😆', UNCLE + ' put you out 3 times! 😆', UNCLE + ' seni 3 kez dışarı attı! 😆') + '</h2>' +
     '<p>' + L('ولا يهمك! لما تشوف الضو الأحمر تخبّى بالصندوق 📦، ومرّ جنبه وهو نايم 💤', 'No worries! When you see the red light, hide in a box 📦, and sneak past while he naps 💤', 'Üzülme! Kırmızı ışığı görünce kutuya saklan 📦, o uyurken yanından geç 💤') + '</p>' +
     '<button class="big-btn" id="bAgain">' + L('جرّب كمان مرة', 'Try again', 'Tekrar dene') + '</button>' +
     '<button class="ghost-btn" id="bHome">' + L('القائمة', 'Menu', 'Menü') + '</button>', 'lose'

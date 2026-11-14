@@ -2,7 +2,7 @@
    Both halves are simulated in the same "bottom half" frame; player 1's half is drawn rotated 180° so it is an exact mirror. */
 Duel.register({
   id: 'basketball', title: L('السلة', 'Basketball', 'Basketbol'), emoji: '🏀', bg: '#ff8a3d',
-  help: L('اسحب الطابة لفوق بسرعة لتفوت بالسلة. أول واحد بيجيب ٥ سلّات بيربح', 'Swipe the ball up fast to get it in the hoop. First to 5 baskets wins!', 'Topu hızlıca yukarı kaydır, potaya sok. İlk 5 basketi atan kazanır!'),
+  help: L('اسحب الطابة لفوق بسرعة لتفوت بالسلة. أول واحد بيجيب 5 سلّات بيربح', 'Swipe the ball up fast to get it in the hoop. First to 5 baskets wins!', 'Topu hızlıca yukarı kaydır, potaya sok. İlk 5 basketi atan kazanır!'),
   create(api){
     const OUT = '#1c1838', TARGET = 5, LIMIT = 40;
     const P = [0, 1].map(() => ({

@@ -2,7 +2,7 @@
    A game file calls Duel.register({...}). See duel/GAME_API.md. */
 (function(){
 'use strict';
-const AR = n => (window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]));
+const AR = n => (window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => d));
 const L = window.L || ((a) => a);
 const PLAYERS = [
   { name:L('الأحمر','Red','Kırmızı'), color:'#ff5a5f', dark:'#c23a40', light:'#ffb3b5' },

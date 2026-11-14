@@ -1561,7 +1561,7 @@ function showEnd(){
 
 /* ---------- Online play with friends: «سباق النجوم» / Star Rush ----------
    Realtime only (Supabase Broadcast + Presence on a public channel `bobo-room-<code>`), nothing is stored.
-   Child safety: no names, no chat, no free text — a player is a hero + a colour badge («لاعب ١»).
+   Child safety: no names, no chat, no free text — a player is a hero + a colour badge («لاعب 1»).
    Presence meta per player: { hero, c (colour slot 0-3), o (join order), ph (lobby|match|end), mid }.
    The host = lowest join order; when the host leaves, the next player takes over automatically.
    Broadcast events: pos (10/s while moving), claim (request from a player, or {r:1} result from the host),

@@ -108,7 +108,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
       <span class="hud-sub" id="hudSub" data-en="Get the keys and run" data-tr="Anahtarları topla ve kaç">اجمع المفاتيح واهرب</span>
     </div>
     <div class="chips">
-      <span class="chip" id="hudKeys" data-en="🔑 0/3" data-tr="🔑 0/3">🔑 ٠ من ٣</span>
+      <span class="chip" id="hudKeys" data-en="🔑 0/3" data-tr="🔑 0/3">🔑 0 من 3</span>
       <span class="chip" id="hudHearts">❤️❤️❤️</span>
     </div>
     <button class="icon-btn" id="btnSound" aria-label="الصوت" data-en-aria="Sound" data-tr-aria="Ses">🔊</button>
@@ -137,7 +137,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 'use strict';
 const $ = s => document.querySelector(s);
 { const md = document.querySelector('meta[name="description"]'), dl = window.I18N && md && md.getAttribute('data-' + I18N.lang); if(dl) md.setAttribute('content', dl); }
-const AR = n => window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]); // digits for the current language
+const AR = n => window.I18N ? I18N.num(n) : String(n).replace(/\d/g, d => d); // digits for the current language
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('bobo_' + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem('bobo_' + k, JSON.stringify(v)); }catch(e){} }
@@ -750,7 +750,7 @@ function showLose(){
   const i = G.i;
   openOverlay(
     '<canvas id="boboCv" width="340" height="300"></canvas>' +
-    '<h2>' + L(G.monsters[0].pal.name + ' مسكك ٣ مرات! 🤭', G.monsters[0].pal.name + ' caught you 3 times! 🤭', G.monsters[0].pal.name + ' seni 3 kez yakaladı! 🤭') + '</h2>' +
+    '<h2>' + L(G.monsters[0].pal.name + ' مسكك 3 مرات! 🤭', G.monsters[0].pal.name + ' caught you 3 times! 🤭', G.monsters[0].pal.name + ' seni 3 kez yakaladı! 🤭') + '</h2>' +
     '<p>' + L('ولا يهمك، تخبّى بالصناديق 📦 لما تشوف الضو الأحمر.', 'That\'s OK! Hide in the boxes 📦 when you see the red light.', 'Üzülme! Kırmızı ışığı görünce kutulara saklan 📦') + '</p>' +
     '<button class="big-btn" id="bAgain">' + L('جرّب كمان مرة', 'Try again', 'Tekrar dene') + '</button>' +
     '<button class="ghost-btn" id="bHome">' + L('القائمة', 'Menu', 'Menü') + '</button>'

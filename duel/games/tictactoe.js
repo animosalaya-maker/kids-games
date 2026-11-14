@@ -1,7 +1,7 @@
 /* Example game: tic-tac-toe. Turn based. Red (bottom) plays X, blue (top) plays O. */
 Duel.register({
   id: 'tictactoe', title: L('إكس أو', 'Tic-Tac-Toe', 'XOX'), emoji: '❌', bg: '#ff8fa3',
-  help: L('كل واحد بدوره بيكبس على مربع. اللي بيعمل ٣ ورا بعض بيربح', 'Take turns tapping a square. Get 3 in a row to win!', 'Sırayla bir kareye dokun. Yan yana 3 tane yapan kazanır!'),
+  help: L('كل واحد بدوره بيكبس على مربع. اللي بيعمل 3 ورا بعض بيربح', 'Take turns tapping a square. Get 3 in a row to win!', 'Sırayla bir kareye dokun. Yan yana 3 tane yapan kazanır!'),
   create(api){
     const cells = Array(9).fill(-1);
     let turn = Math.random() < 0.5 ? 0 : 1, line = null, t = 0;
