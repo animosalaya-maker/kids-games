@@ -1,6 +1,6 @@
 /* «تعا العب» invite popup on every screen (needs friends.js loaded first).
    Every 8 s while the page is visible: heartbeat; if invites are waiting, show the newest one as a popup.
-   «يلّا 🎮» opens the 3D game straight into the friend's room. */
+   «يلّا 🎮» opens the invited game (Friends.GAMES[inv.game]) straight into the friend's room. */
 (function(){
   if(!window.Friends || !Friends.has()) return;
   const T = (a, e, t) => (window.L ? window.L(a, e, t) : a);
@@ -18,6 +18,7 @@
 @keyframes ipGlow{50%{box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 0 10px rgba(255,205,77,.32)}}
 .ip-txt{flex:1;min-width:0;font-weight:800;font-size:16px;line-height:1.35}
 .ip-txt small{display:block;font-weight:600;font-size:13px;opacity:.85}
+.ip-txt .ip-g{display:inline-block;margin-top:3px;padding:1px 10px;border-radius:999px;background:rgba(255,205,77,.22);color:#ffe08a;font-weight:900;font-size:14px}
 .ip-go{border:0;border-radius:16px;padding:12px 16px;background:#ffcd4d;color:#3b2600;font-family:inherit;font-weight:900;font-size:17px;line-height:1;box-shadow:0 4px 0 #c99418;cursor:pointer;white-space:nowrap}
 .ip-go:active{transform:translateY(3px);box-shadow:0 1px 0 #c99418}
 .ip-x{border:0;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:18px;cursor:pointer;flex:none}`;
@@ -32,7 +33,7 @@
       const h = host(); if(h !== document.body) box.classList.add('in'); h.appendChild(box);
     }
     const f = inv.from || {}, who = Friends.nick(f) || Friends.fmtCode(f.code);
-    box.innerHTML = `<div class="ip-card"><span class="ip-av"></span><div class="ip-txt">🎮 ${T('صاحبك عم يعزمك تلعبوا سوا!', 'Your friend invites you to play!', 'Arkadaşın seni oynamaya çağırıyor!')}<small>${who}</small></div>
+    box.innerHTML = `<div class="ip-card"><span class="ip-av"></span><div class="ip-txt">🎮 ${T('صاحبك عم يعزمك تلعبوا سوا!', 'Your friend invites you to play!', 'Arkadaşın seni oynamaya çağırıyor!')}<small>${who}</small><span class="ip-g">${Friends.gameName(inv.game)}</span></div>
       <button class="ip-go">${T('يلّا 🎮', "Let's go 🎮", 'Hadi 🎮')}</button><button class="ip-x" aria-label="✕">✕</button></div>`;
     try{ box.querySelector('.ip-av').appendChild(Friends.avatarEl(f, 48)); }catch(e){}
     box.querySelector('.ip-go').onclick = go;
@@ -44,7 +45,7 @@
   async function go(){
     if(!cur) return; const inv = cur; hide();
     await Promise.race([Friends.dismiss(inv.id).catch(() => {}), new Promise(r => setTimeout(r, 1500))]);
-    location.href = Friends.gameUrl(ROOT + 'adventure3d/', { join:inv.room });
+    location.href = Friends.gameUrl(ROOT + Friends.GAMES[Friends.gameOf(inv.game)].path, { join:inv.room });
   }
   async function tick(){
     if(busy || cur || document.visibilityState === 'hidden') return; busy = true;
