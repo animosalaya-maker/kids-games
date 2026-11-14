@@ -53,6 +53,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 #champ .sc{font-family:var(--display);font-weight:800;font-size:28px;color:var(--muted)}
 .big-btn{border:0;border-radius:20px;background:var(--gold);color:#3a2a00;font-family:var(--display);font-weight:800;font-size:22px;padding:10px 26px;box-shadow:0 6px 0 #c48f12}
 .ghost-btn{border:0;background:var(--night-3);border-radius:16px;padding:10px 18px;font-weight:700}
+.head .back{display:none!important}
 </style>
 </head>
 <body>
@@ -96,5 +97,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 <script src="games/mathduel.js"></script>
 <!-- GAMES:END -->
 <script>Duel.boot();</script>
+<script src="../back.js"></script>
+<script>BoboBack.init({ visible: () => document.getElementById('play').hidden, onBack(){ const c = document.getElementById('champ'); if(c && !c.hidden) document.getElementById('toMenu').click(); else location.href = '../'; } });</script>
 </body>
 </html>

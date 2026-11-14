@@ -1182,5 +1182,7 @@ showMenu();
 requestAnimationFrame(frame);
 })();
 </script>
+<script src="../back.js"></script>
+<script>BoboBack.init({ visible: () => document.getElementById('hud').hidden, onBack(){ const b = document.getElementById('bBack'); if(b && b.offsetParent) b.click(); else location.href = '../'; } });</script>
 </body>
 </html>

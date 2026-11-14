@@ -52,6 +52,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 .big-btn{border:0;border-radius:20px;background:var(--gold);color:#3a2a00;font-family:var(--display);font-weight:800;font-size:26px;padding:10px 40px;box-shadow:0 6px 0 #c48f12}
 .big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 #c48f12}
 .ghost-btn{border:0;background:rgba(28,24,56,.55);border-radius:16px;padding:10px 18px;font-weight:700}
+#quit,.head .back{display:none!important}
 </style>
 </head>
 <body>
@@ -89,5 +90,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 <script src="games/peek.js"></script>
 <!-- GAMES:END -->
 <script>Solo.boot();</script>
+<script src="../back.js"></script>
+<script>BoboBack.init({ compact: () => !document.getElementById('play').hidden, onBack(){ if(!document.getElementById('play').hidden) document.getElementById('quit').click(); else location.href = '../'; } });</script>
 </body>
 </html>
