@@ -33,11 +33,17 @@ body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:v
 [hidden]{display:none!important}
 button{font:inherit;color:inherit;cursor:pointer}
 button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
-#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
-#touch{position:fixed;inset:0;z-index:2;touch-action:none}
+/* #stage holds the whole game. The app is locked to portrait, so when the viewport is portrait the stage is
+   rotated 90° clockwise (game top = right edge of the phone) and sized to the landscape size. JS sets size/transform. */
+#stage{position:fixed;left:0;top:0;width:100%;height:100%;overflow:hidden;transform-origin:0 0;
+  --sa-t:env(safe-area-inset-top,0px);--sa-r:env(safe-area-inset-right,0px);--sa-b:env(safe-area-inset-bottom,0px);--sa-l:env(safe-area-inset-left,0px);--sw:100vw;--sh:100vh}
+#stage.rot{--sa-t:env(safe-area-inset-right,0px);--sa-r:env(safe-area-inset-bottom,0px);--sa-b:env(safe-area-inset-left,0px);--sa-l:env(safe-area-inset-top,0px)}
+#saProbe{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;width:var(--sa-l);height:var(--sa-b)}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#touch{position:absolute;inset:0;z-index:2;touch-action:none}
 
-.hud{position:fixed;left:0;right:0;top:0;z-index:5;display:flex;align-items:flex-start;gap:8px;pointer-events:none;
-  padding:calc(8px + env(safe-area-inset-top,0px)) max(12px,env(safe-area-inset-right,0px)) 0 max(12px,env(safe-area-inset-left,0px))}
+.hud{position:absolute;left:0;right:0;top:0;z-index:5;display:flex;align-items:flex-start;gap:8px;pointer-events:none;
+  padding:calc(8px + var(--sa-t)) max(12px,var(--sa-r)) 0 max(12px,var(--sa-l))}
 .hud > *{pointer-events:auto}
 .icon-btn{width:46px;height:46px;flex:none;border:0;border-radius:15px;background:rgba(28,24,56,.78);font-size:22px;display:grid;place-items:center;box-shadow:0 4px 0 rgba(0,0,0,.25)}
 .icon-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.25)}
@@ -46,35 +52,35 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .compass svg{width:40px;height:40px;fill:var(--gold);stroke:#7a5200;stroke-width:1.5;transition:transform .08s linear}
 .compass b{position:absolute;bottom:-6px;font-size:16px;line-height:1}
 .timer{font-family:var(--display);font-size:22px!important;background:#ff5d73!important;color:#fff;padding:4px 14px!important}
-.chips{display:flex;gap:6px;flex:none;direction:ltr;flex-wrap:wrap;justify-content:flex-end;max-width:62vw}
+.chips{display:flex;gap:6px;flex:none;direction:ltr;flex-wrap:wrap;justify-content:flex-end;max-width:calc(var(--sw) * .62)}
 .chip{background:rgba(28,24,56,.78);border-radius:999px;padding:6px 10px;font-weight:700;font-size:16px;white-space:nowrap;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:3px}
-@media (max-width:420px){ .chip{font-size:15px;padding:5px 8px} }
 
-.joy{position:fixed;z-index:4;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:rgba(255,247,232,.16);border:3px solid rgba(255,247,232,.45);pointer-events:none;
+.joy{position:absolute;z-index:4;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:rgba(255,247,232,.16);border:3px solid rgba(255,247,232,.45);pointer-events:none;
   box-shadow:0 5px 0 rgba(0,0,0,.2)}
 .joy.on{background:rgba(255,247,232,.24)}
 .knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:rgba(255,247,232,.8);box-shadow:0 4px 0 rgba(0,0,0,.25)}
-.jump{position:fixed;z-index:4;right:max(18px,env(safe-area-inset-right,0px));bottom:calc(22px + env(safe-area-inset-bottom,0px));--s:min(27vw,108px);width:var(--s);height:var(--s);
+.jump{position:absolute;z-index:4;right:max(18px,calc(var(--sa-r) + 8px));bottom:calc(22px + var(--sa-b));--s:min(calc(var(--sw) * .27),108px);width:var(--s);height:var(--s);
   border-radius:50%;border:3px solid rgba(255,224,140,.85);background:rgba(255,205,77,.5);display:grid;place-items:center;box-shadow:0 6px 0 rgba(0,0,0,.25);touch-action:none}
 .jump svg{width:46%;height:46%;fill:#fff7e8}
 .jump.on{transform:translateY(4px) scale(.96);background:rgba(255,205,77,.8);box-shadow:0 1px 0 rgba(0,0,0,.25)}
-@media (orientation:landscape) and (max-height:500px){ .jump{--s:min(22vh,96px)} .joy{width:110px;height:110px;margin:-55px 0 0 -55px} }
+#stage.short .jump{--s:min(calc(var(--sh) * .24),100px)}
+#stage.short .joy{width:110px;height:110px;margin:-55px 0 0 -55px}
 
-.toast{position:fixed;left:50%;top:calc(126px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:6;background:var(--ink);color:var(--night);
+.toast{position:absolute;left:50%;top:calc(126px + var(--sa-t));transform:translateX(-50%);z-index:6;background:var(--ink);color:var(--night);
   font-family:var(--display);font-weight:800;font-size:19px;padding:8px 18px;border-radius:999px;max-width:calc(100% - 32px);text-align:center;
   box-shadow:0 8px 20px rgba(0,0,0,.35);animation:pop .25s ease-out;pointer-events:none}
-@media (orientation:landscape) and (max-height:500px){ .toast{top:calc(70px + env(safe-area-inset-top,0px))} }
+#stage.short .toast{top:calc(70px + var(--sa-t))}
 @keyframes pop{from{transform:translateX(-50%) scale(.7);opacity:0}to{transform:translateX(-50%) scale(1);opacity:1}}
 
-.overlay{position:fixed;inset:0;z-index:20;display:flex;background:rgba(18,14,40,.55);overflow-y:auto;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:calc(16px + env(safe-area-inset-top,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
+.overlay{position:absolute;inset:0;z-index:20;display:flex;background:rgba(18,14,40,.55);overflow-y:auto;
+  padding-left:max(16px,var(--sa-l));padding-right:max(16px,var(--sa-r));
+  padding-block:calc(16px + var(--sa-t)) calc(16px + var(--sa-b))}
 .overlay.dim{background:rgba(18,14,40,.8)}
-.overlay.title{background:linear-gradient(180deg,rgba(18,14,40,0) 30%,rgba(18,14,40,.6))}
-.overlay.title .card{margin:auto auto 0}
-@media (orientation:landscape){ .overlay.title{background:linear-gradient(90deg,rgba(18,14,40,.5),rgba(18,14,40,0) 60%)} .overlay.title .card{margin:auto auto auto 0} }
+.overlay.title{background:linear-gradient(90deg,rgba(18,14,40,.5),rgba(18,14,40,0) 60%)}
+.overlay.title .card{margin:auto auto auto 0}
 .card{width:100%;max-width:440px;margin:auto;background:rgba(42,36,82,.94);border-radius:28px;padding:22px 18px;display:flex;flex-direction:column;align-items:center;gap:14px;text-align:center;
   box-shadow:0 0 0 3px var(--night-3),0 24px 60px rgba(0,0,0,.5);animation:cardIn .3s ease-out}
+.card.wide{max-width:780px}
 @keyframes cardIn{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
 .card h1{font-family:var(--display);font-weight:800;font-size:40px;line-height:1.1;margin:0;color:var(--gold);text-shadow:0 4px 0 var(--wall-face);text-wrap:balance}
 .card h1 small{display:block;font-size:22px;color:var(--ink);text-shadow:none;margin-top:2px}
@@ -96,18 +102,88 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .how{list-style:none;margin:0;padding:12px 14px;background:var(--night);border-radius:18px;display:grid;gap:8px;text-align:start;width:100%}
 .how li{display:flex;gap:10px;align-items:center;font-size:15px;line-height:1.4}
 .how li span:first-child{font-size:22px;width:30px;text-align:center;flex:none}
-#nogl{position:fixed;inset:0;z-index:30;display:grid;place-items:center;padding:24px;text-align:center;background:var(--night);font-family:var(--display);font-size:22px}
-@media (max-height:520px){ .card{gap:8px;padding:12px 16px} .card h1{font-size:28px} .card h1 small{font-size:18px} .card h2{font-size:23px} .how{display:none} .bigstar{font-size:50px} .big-btn{font-size:20px;padding:8px 22px} .starrow{font-size:20px} .tally span{padding:5px 12px;font-size:16px} }
+/* "turn your phone" hint (only shown while the game is rotated) */
+.rothint{display:flex;align-items:center;gap:10px;background:var(--gold);color:#3a2a00;border-radius:18px;padding:6px 16px 6px 12px;font-family:var(--display);font-weight:800;font-size:18px;box-shadow:0 4px 0 #c48f12}
+.rothint i{font-style:normal;font-size:30px;line-height:1;display:inline-block;animation:rotphone 2.6s ease-in-out infinite}
+@keyframes rotphone{0%,20%{transform:rotate(-90deg)}55%,85%{transform:rotate(-180deg)}100%{transform:rotate(-90deg)}}
+/* hero picker */
+.heroes{display:flex;gap:10px;justify-content:center;width:100%}
+.hero{flex:1 1 0;min-width:0;max-width:168px;border:0;border-radius:22px;background:var(--night);padding:8px 8px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;
+  box-shadow:0 0 0 3px var(--night-3),0 5px 0 rgba(0,0,0,.3);transition:transform .15s}
+.hero canvas{width:100%;aspect-ratio:1;border-radius:16px;display:block;background:#2a2452}
+.hero b{font-family:var(--display);font-weight:800;font-size:21px;line-height:1.2}
+.hero.on{background:#4a3f8c;box-shadow:0 0 0 4px var(--gold),0 5px 0 rgba(0,0,0,.3);transform:translateY(-4px)}
+.hero.on b{color:var(--gold)}
+#nogl{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:24px;text-align:center;background:var(--night);font-family:var(--display);font-size:22px}
+#stage.short .card{gap:8px;padding:12px 16px} #stage.short .card h1{font-size:28px} #stage.short .card h1 small{font-size:18px} #stage.short .card h2{font-size:23px}
+#stage.short .how{display:none} #stage.short .bigstar{font-size:50px} #stage.short .big-btn{font-size:20px;padding:8px 22px} #stage.short .starrow{font-size:20px}
+#stage.short .tally span{padding:5px 12px;font-size:16px} #stage.short .ghost-btn{padding:8px 14px;font-size:16px} #stage.short .hero b{font-size:18px}
+#stage.short .rothint{font-size:16px;padding:4px 14px 4px 10px} #stage.short .rothint i{font-size:24px}
+/* online play with friends */
+.big-btn.alt{background:var(--pink);color:#4a0f2a;box-shadow:0 6px 0 #c45a83}
+.big-btn.alt:active{box-shadow:0 2px 0 #c45a83}
+.big-btn.mint{background:var(--mint);color:#063d2a;box-shadow:0 6px 0 #2a9c74}
+.big-btn.mint:active{box-shadow:0 2px 0 #2a9c74}
+.big-btn:disabled{opacity:.45;transform:none}
+.mp-cols{display:flex;gap:18px;width:100%;align-items:center;justify-content:center;flex-wrap:wrap}
+.mp-col{display:flex;flex-direction:column;align-items:center;gap:10px;flex:1 1 250px;min-width:0}
+.mp-code{display:flex;gap:8px;direction:ltr;justify-content:center;align-items:center}
+.mp-code b{width:54px;height:66px;border-radius:16px;background:var(--night);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:44px;line-height:1;color:var(--gold);box-shadow:inset 0 0 0 3px var(--night-3),0 4px 0 rgba(0,0,0,.3)}
+.mp-code b.cur{box-shadow:inset 0 0 0 3px var(--gold),0 4px 0 rgba(0,0,0,.3)}
+.mp-code .copy{width:54px;height:54px;border:0;border-radius:16px;background:var(--night-3);font-size:24px;box-shadow:0 4px 0 var(--wall-face);margin-inline-start:4px}
+.mp-code .copy:active{transform:translateY(3px);box-shadow:0 1px 0 var(--wall-face)}
+.mp-lbl{font-weight:700;color:var(--muted);font-size:15px}
+.mp-msg{min-height:1.4em;font-weight:700;color:var(--pink)!important}
+.keypad{display:grid;grid-template-columns:repeat(3,68px);gap:8px;direction:ltr;flex:none}
+.keypad button{height:56px;border:0;border-radius:16px;background:var(--night-3);font-family:var(--display);font-weight:800;font-size:30px;line-height:1;box-shadow:0 4px 0 var(--wall-face)}
+.keypad button:active{transform:translateY(3px);box-shadow:0 1px 0 var(--wall-face)}
+.keypad .ok{background:var(--mint);color:#063d2a;box-shadow:0 4px 0 #2a9c74}
+.keypad .del{font-size:24px}
+.slots{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;width:100%;max-width:360px}
+.slot{background:var(--night);border-radius:18px;padding:7px;display:flex;align-items:center;gap:8px;box-shadow:inset 0 0 0 3px var(--c);min-height:66px;position:relative;text-align:start}
+.slot img{width:52px;height:52px;border-radius:12px;flex:none;display:block}
+.slot b{font-family:var(--display);font-weight:800;font-size:18px;line-height:1.15;color:var(--c);display:block}
+.slot small{display:block;font-size:13px;color:var(--muted);font-weight:700}
+.slot .crown{position:absolute;top:-12px;inset-inline-end:-4px;font-size:22px}
+.slot.empty{box-shadow:none;outline:3px dashed var(--night-3);outline-offset:-3px;justify-content:center;opacity:.7;font-size:26px}
+.mp-hero{width:84px;height:84px;border-radius:20px;box-shadow:0 0 0 3px var(--gold)}
+.mpbar{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;direction:ltr;pointer-events:none}
+.mpscore{display:flex;gap:6px;flex-wrap:wrap;justify-content:center}
+.chip.ps{box-shadow:inset 0 0 0 3px var(--c);padding:3px 10px 3px 3px;gap:5px}
+.chip.ps img{width:28px;height:28px;border-radius:50%;display:block;background:var(--night)}
+.chip.ps.me{background:rgba(74,63,140,.95)}
+.mpcd{position:absolute;inset:0;z-index:7;display:grid;place-items:center;pointer-events:none;font-family:var(--display);font-weight:800;font-size:120px;line-height:1;color:var(--gold);text-shadow:0 7px 0 var(--wall-face),0 0 30px rgba(0,0,0,.35)}
+.mpcd span{animation:pop2 .35s ease-out}
+@keyframes pop2{from{transform:scale(.4);opacity:0}to{transform:scale(1);opacity:1}}
+.podium{display:flex;align-items:flex-end;justify-content:center;gap:10px;direction:ltr;width:100%}
+.pod{display:flex;flex-direction:column;align-items:center;gap:3px;width:112px;min-width:0}
+.pod img{width:62px;height:62px;border-radius:16px;box-shadow:0 0 0 3px var(--c);display:block}
+.pod b{font-family:var(--display);font-weight:800;font-size:17px;color:var(--c);line-height:1.2}
+.pod span{font-weight:700;font-size:17px}
+.pod .blk{width:100%;border-radius:14px 14px 6px 6px;background:var(--c);display:grid;place-items:center;font-size:30px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
+.pod.me img{box-shadow:0 0 0 3px var(--c),0 0 0 6px var(--ink);margin-bottom:4px}
+.rest{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;direction:ltr}
+.spin{display:inline-block;animation:spinL 1.2s linear infinite}
+@keyframes spinL{to{transform:rotate(360deg)}}
+#stage.short .mp-code b{width:44px;height:52px;font-size:34px;border-radius:13px} #stage.short .mp-code .copy{width:46px;height:46px}
+#stage.short .keypad{grid-template-columns:repeat(3,62px);gap:6px} #stage.short .keypad button{height:46px;font-size:26px}
+#stage.short .slot{min-height:54px;padding:5px} #stage.short .slot img{width:42px;height:42px} #stage.short .slot b{font-size:16px}
+#stage.short .mp-hero{width:60px;height:60px} #stage.short .mpcd{font-size:90px}
+#stage.short .pod img{width:48px;height:48px} #stage.short .pod .blk{font-size:24px} #stage.short .pod b,#stage.short .pod span{font-size:15px}
+#stage.short .chip.ps img{width:24px;height:24px} #stage.short.mpon .toast{top:calc(112px + var(--sa-t))}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
 </head>
 <body>
+<div id="stage">
+<div id="saProbe"></div>
 <canvas id="cv" aria-label="مغامرة بوبو ثلاثي الأبعاد" data-en-aria="Bobo's Adventure 3D" data-tr-aria="Bobo'nun Macerası 3D"></canvas>
 <div id="touch"></div>
 
 <header class="hud" id="hud" hidden>
   <button class="icon-btn" id="btnPause" aria-label="استراحة" data-en-aria="Pause" data-tr-aria="Mola">⏸️</button>
   <div class="hud-mid">
+    <div class="mpbar" id="mpBar" hidden><span class="chip timer" id="mpTimer"></span><span class="mpscore" id="mpScore"></span></div>
     <div class="compass" id="compass" aria-hidden="true"><svg viewBox="0 0 40 40" id="arrow"><path d="M20 3 L32 31 L20 25 L8 31 Z"/></svg><b>⭐</b></div>
     <span class="chip timer" id="timer" hidden></span>
   </div>
@@ -121,9 +197,11 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <div class="joy" id="joy" hidden><div class="knob" id="knob"></div></div>
 <button class="jump" id="btnJump" hidden aria-label="نطّ" data-en-aria="Jump" data-tr-aria="Zıpla"><svg viewBox="0 0 24 24"><path d="M12 3 21 13h-5.5v8h-7v-8H3z"/></svg></button>
 
+<div class="mpcd" id="mpCd" hidden></div>
 <div class="toast" id="toast" hidden></div>
 <div class="overlay" id="overlay"><div class="card" id="card"></div></div>
 <div id="nogl" hidden><span data-en="Sorry, this phone can't show 3D games 😢" data-tr="Üzgünüz, bu telefon 3D oyunları gösteremiyor 😢">عذراً، هالتلفون ما بيقدر يشغّل ألعاب ثلاثية الأبعاد 😢</span></div>
+</div>
 
 <script src="../world.js"></script>
 <script type="module">
@@ -136,6 +214,29 @@ const store = {
   get(k, d){ try{ const v = localStorage.getItem('adv3d_' + k); return v == null ? d : JSON.parse(v); }catch(e){ return d; } },
   set(k, v){ try{ localStorage.setItem('adv3d_' + k, JSON.stringify(v)); }catch(e){} }
 };
+const rawGet = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
+const rawSet = (k, v) => { try{ localStorage.setItem(k, v); }catch(e){} };
+
+/* ---------- Always-landscape stage ----------
+   The app is a portrait-locked TWA, so when the viewport is portrait we rotate the whole game layer 90° clockwise
+   (the game's top sits at the right edge of the phone; the kid turns the phone with its left side down).
+   Stage coords: SW × SH (always landscape). toLayer() maps screen (clientX, clientY) into stage coords. */
+const stage = $('#stage'), saProbe = $('#saProbe');
+let ROT = false, VW = innerWidth, SW = innerWidth, SH = innerHeight, SAL = 0, SAB = 0;
+function layout(){
+  VW = innerWidth; const vh = innerHeight; ROT = vh > VW;
+  SW = ROT ? vh : VW; SH = ROT ? VW : vh;
+  const st = stage.style;
+  st.width = SW + 'px'; st.height = SH + 'px';
+  st.transform = ROT ? `translateX(${VW}px) rotate(90deg)` : 'none';
+  st.setProperty('--sw', SW + 'px'); st.setProperty('--sh', SH + 'px');
+  stage.classList.toggle('rot', ROT); stage.classList.toggle('short', SH <= 520);
+  SAL = saProbe.offsetWidth; SAB = saProbe.offsetHeight;
+}
+function toLayer(cx, cy){ return ROT ? { x:cy, y:VW - cx } : { x:cx, y:cy }; }
+function tryLandscapeLock(){ try{ const o = screen.orientation; if(o && o.lock) o.lock('landscape').catch(() => {}); }catch(e){} }
+layout(); tryLandscapeLock();
+
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
 const smooth = (e0, e1, x) => { const t = clamp((x - e0) / (e1 - e0), 0, 1); return t * t * (3 - 2 * t); };
@@ -190,13 +291,15 @@ scene.fog = new THREE.Fog(FOG, 70, 240);
 const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 700);
 let portrait = false;
 function resize(){
-  const w = innerWidth, h = innerHeight;
+  layout();
+  const w = SW, h = SH;
   renderer.setSize(w, h, false);
   portrait = w < h;
   camera.aspect = w / h; camera.fov = portrait ? 68 : 55; camera.updateProjectionMatrix();
   placeJoyHome();
 }
 addEventListener('resize', resize);
+addEventListener('orientationchange', () => setTimeout(resize, 120));
 
 scene.add(new THREE.HemisphereLight(0xe4f6ff, 0x5f8a3c, 1.9));
 const sun = new THREE.DirectionalLight(0xfff0d0, 2.1);
@@ -723,50 +826,175 @@ const blobMat = new THREE.MeshBasicMaterial({ map:blobTex, transparent:true, dep
 const pShadow = new THREE.Mesh(blobGeo, blobMat); pShadow.renderOrder = 2; scene.add(pShadow);
 const eShadows = new THREE.InstancedMesh(blobGeo, blobMat, 24); eShadows.frustumCulled = false; eShadows.renderOrder = 2; scene.add(eShadows);
 
-/* ---------- Bobo ---------- */
+/* ---------- Heroes: four original characters, all the same size / collision (PR .42, ~1.1 tall) ---------- */
 const PAL = window.World ? World.palette() : { color:'#9b6bff', light:'#d2bcff', belly:'#b993ff' };
 const OUTFIT = window.World ? World.outfit : {};
-const bobo = (() => {
-  const grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
-  const sph = new THREE.SphereGeometry(1, 22, 16), small = new THREE.SphereGeometry(1, 8, 6), M = new Merge();
-  const base = new THREE.Color(PAL.color), light = new THREE.Color(PAL.light);
-  M.add(sph, 0, .55, 0, .5, .5, .5, 0, 0, 0, PAL.color);
-  for(let i = 0; i < 110; i++){
-    const u = rnd() * 2 - 1, a = rnd() * 6.28, r = Math.sqrt(1 - u * u), x = r * Math.cos(a), y = u, z = r * Math.sin(a);
-    if(z > .35 && y > -.55 && y < .65 && Math.abs(x) < .75) continue;
-    const s = .08 + rnd() * .06, c = base.clone().lerp(light, rnd() * .35);
-    M.add(small, x * .47, .55 + y * .47, z * .47, s, s, s, 0, 0, 0, c.getHex());
-  }
-  M.add(sph, 0, .43, .34, .31, .32, .17, 0, 0, 0, PAL.belly);
-  for(const s of [-1, 1]){
-    M.add(G.cone, s * .2, 1.03, .02, .075, .24, .075, 0, 0, -s * .38, PAL.light);
-    M.add(small, s * .5, .45, .08, .11, .11, .11, 0, 0, 0, PAL.color);
-    M.add(small, s * .27, .58, .42, .075, .045, .03, 0, s * .55, 0, 0xff8fb0);
-  }
-  M.add(new THREE.TorusGeometry(.075, .02, 6, 12, Math.PI), 0, .58, .485, 1, 1, 1, 0, 0, Math.PI, 0x3a1d2e);
-  const mat = new THREE.MeshLambertMaterial({ vertexColors:true });
-  body.add(new THREE.Mesh(M.geometry(), mat));
+const mkRng = s => () => (s = (s * 16807) % 2147483647) / 2147483647;
+const HSPH = new THREE.SphereGeometry(1, 22, 16), HSM = new THREE.SphereGeometry(1, 8, 6), HFOOT = new THREE.SphereGeometry(1, 10, 8);
+const vcLam = () => new THREE.MeshLambertMaterial({ vertexColors:true }), vcBasic = () => new THREE.MeshBasicMaterial({ vertexColors:true });
+function cartoonEyes(dx, w, h, pupil){
   const E = new Merge();
   for(const s of [-1, 1]){
-    E.add(sph, s * .16, 0, 0, .13, .155, .1, 0, 0, 0, 0xffffff);
-    E.add(sph, s * .155, -.015, .075, .075, .09, .045, 0, 0, 0, 0x2a1a3a);
-    E.add(small, s * .155 - .03, .03, .115, .028, .028, .02, 0, 0, 0, 0xffffff);
+    E.add(HSPH, s * dx, 0, 0, w, h, w * .75, 0, 0, 0, 0xffffff);
+    E.add(HSPH, s * (dx - .005), -.015, w * .58, w * .58, h * .58, w * .35, 0, 0, 0, pupil || 0x2a1a3a);
+    E.add(HSM, s * (dx - .005) - .03, h * .22, w * .9, .028, .028, .02, 0, 0, 0, 0xffffff);
   }
-  const eyes = new THREE.Mesh(E.geometry(), new THREE.MeshBasicMaterial({ vertexColors:true }));
-  eyes.position.set(0, .73, .4); body.add(eyes);
-  const footGeo = new THREE.SphereGeometry(1, 10, 8), footMat = new THREE.MeshLambertMaterial({ color:new THREE.Color(PAL.color).multiplyScalar(.8) });
-  const feet = [-1, 1].map(s => { const f = new THREE.Mesh(footGeo, footMat); f.scale.set(.14, .08, .19); f.position.set(s * .2, .06, .06); grp.add(f); return f; });
-  if(OUTFIT.glasses && World.GLASSES[OUTFIT.glasses]){
+  return new THREE.Mesh(E.geometry(), vcBasic());
+}
+function footPair(grp, geo, mat, sx, sy, sz, x, y, z){
+  return [-1, 1].map(s => { const f = new THREE.Mesh(geo, mat); f.scale.set(sx, sy, sz); f.position.set(s * x, y, z); f.userData = { y, z }; grp.add(f); return f; });
+}
+function roundRect(w, h, r){
+  const s = new THREE.Shape(), x = -w / 2, y = -h / 2;
+  s.moveTo(x + r, y); s.lineTo(x + w - r, y); s.quadraticCurveTo(x + w, y, x + w, y + r); s.lineTo(x + w, y + h - r); s.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  s.lineTo(x + r, y + h); s.quadraticCurveTo(x, y + h, x, y + h - r); s.lineTo(x, y + r); s.quadraticCurveTo(x, y, x + r, y); return s;
+}
+// بوبو — the fluffy monster in the player's World colour, with hat / glasses
+function buildBobo(plain){
+  const r = mkRng(4242), grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
+  const M = new Merge(), base = new THREE.Color(PAL.color), light = new THREE.Color(PAL.light);
+  M.add(HSPH, 0, .55, 0, .5, .5, .5, 0, 0, 0, PAL.color);
+  for(let i = 0; i < 110; i++){
+    const u = r() * 2 - 1, a = r() * 6.28, q = Math.sqrt(1 - u * u), x = q * Math.cos(a), y = u, z = q * Math.sin(a);
+    if(z > .35 && y > -.55 && y < .65 && Math.abs(x) < .75) continue;
+    const s = .08 + r() * .06, c = base.clone().lerp(light, r() * .35);
+    M.add(HSM, x * .47, .55 + y * .47, z * .47, s, s, s, 0, 0, 0, c.getHex());
+  }
+  M.add(HSPH, 0, .43, .34, .31, .32, .17, 0, 0, 0, PAL.belly);
+  for(const s of [-1, 1]){
+    M.add(G.cone, s * .2, 1.03, .02, .075, .24, .075, 0, 0, -s * .38, PAL.light);
+    M.add(HSM, s * .5, .45, .08, .11, .11, .11, 0, 0, 0, PAL.color);
+    M.add(HSM, s * .27, .58, .42, .075, .045, .03, 0, s * .55, 0, 0xff8fb0);
+  }
+  M.add(new THREE.TorusGeometry(.075, .02, 6, 12, Math.PI), 0, .58, .485, 1, 1, 1, 0, 0, Math.PI, 0x3a1d2e);
+  body.add(new THREE.Mesh(M.geometry(), vcLam()));
+  const eyes = cartoonEyes(.16, .13, .155); eyes.position.set(0, .73, .4); body.add(eyes);
+  const feet = footPair(grp, HFOOT, new THREE.MeshLambertMaterial({ color:new THREE.Color(PAL.color).multiplyScalar(.8) }), .14, .08, .19, .2, .06, .06);
+  if(!plain && OUTFIT.glasses && World.GLASSES[OUTFIT.glasses]){
     const g = new THREE.Mesh(new THREE.PlaneGeometry(.62, .62), new THREE.MeshBasicMaterial({ map:emojiTex(World.GLASSES[OUTFIT.glasses].e), transparent:true, alphaTest:.1 }));
     g.position.set(0, .73, .52); body.add(g);
   }
-  if(OUTFIT.hat && World.HATS[OUTFIT.hat]){
+  if(!plain && OUTFIT.hat && World.HATS[OUTFIT.hat]){
     const h = new THREE.Sprite(new THREE.SpriteMaterial({ map:emojiTex(World.HATS[OUTFIT.hat].e), transparent:true, alphaTest:.1 }));
     h.scale.set(.6, .6, 1); h.position.set(0, 1.2, 0); body.add(h);
   }
-  scene.add(grp);
-  return { grp, body, eyes, feet };
-})();
+  return { type:'bobo', grp, body, eyes, feet, blink:0 };
+}
+// لولو — a round pink bunny with long floppy ears and a cotton tail
+function buildLulu(){
+  const grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
+  const PINK = 0xffa9cb, PALE = 0xffe0ec, INNER = 0xff7aa8, M = new Merge();
+  M.add(HSPH, 0, .55, 0, .5, .49, .5, 0, 0, 0, PINK);
+  M.add(HSPH, 0, .42, .3, .31, .3, .2, 0, 0, 0, PALE);
+  M.add(HSPH, 0, .59, .44, .13, .085, .08, 0, 0, 0, PALE);
+  M.add(HSPH, 0, .635, .51, .045, .034, .03, 0, 0, 0, 0xff4f86);
+  M.add(G.box, -.024, .53, .505, .04, .06, .02, 0, 0, 0, 0xffffff).add(G.box, .024, .53, .505, .04, .06, .02, 0, 0, 0, 0xffffff);
+  for(const s of [-1, 1]){
+    M.add(HSM, s * .29, .55, .4, .075, .045, .03, 0, s * .6, 0, INNER);
+    M.add(HSM, s * .47, .42, .12, .1, .12, .1, 0, 0, 0, PINK);
+    for(const w of [-1, 1]) M.add(G.cyl8, s * .2, .6 + w * .025, .45, .006, .2, .006, 0, 0, Math.PI / 2 + s * w * .15, 0xc97a9a);
+  }
+  [[0, .44, -.5, .15], [.07, .5, -.47, .09], [-.07, .4, -.47, .09], [0, .36, -.47, .08]].forEach(([x, y, z, k]) => M.add(HSM, x, y, z, k, k, k, 0, 0, 0, 0xffffff));
+  body.add(new THREE.Mesh(M.geometry(), vcLam()));
+  const eyes = cartoonEyes(.17, .14, .17); eyes.position.set(0, .74, .38); body.add(eyes);
+  const earGeo = new Merge().add(new THREE.CapsuleGeometry(.1, .42, 4, 10), 0, .3, 0, 1, 1, .65, 0, 0, 0, PINK)
+    .add(new THREE.CapsuleGeometry(.055, .32, 4, 8), 0, .31, .045, 1, 1, .4, 0, 0, 0, INNER).geometry();
+  const earMat = vcLam();
+  const ears = [-1, 1].map(s => { const p = new THREE.Group(); p.position.set(s * .17, .93, -.04); p.userData.s = s; p.add(new THREE.Mesh(earGeo, earMat)); body.add(p); return p; });
+  const feet = footPair(grp, HFOOT, new THREE.MeshLambertMaterial({ color:0xffd0e2 }), .14, .08, .23, .2, .06, .08);
+  return { type:'lulu', grp, body, eyes, feet, ears, earA:0, earV:0, blink:1.1 };
+}
+// روكو — a small boxy robot on wheels with a glowing antenna
+function buildRokko(){
+  const grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
+  const BLUE = 0x6ec6ff, DARK = 0x26345e, TRIM = 0xffb347, M = new Merge();
+  const box = new THREE.ExtrudeGeometry(roundRect(.6, .52, .12), { depth:.44, bevelEnabled:true, bevelThickness:.1, bevelSize:.1, bevelSegments:4, curveSegments:6 }); box.translate(0, 0, -.22);
+  M.add(box, 0, .6, 0, 1, 1, 1, 0, 0, 0, BLUE);
+  M.add(new THREE.ExtrudeGeometry(roundRect(.54, .36, .09), { depth:.03, bevelEnabled:false, curveSegments:6 }), 0, .67, .31, 1, 1, 1, 0, 0, 0, DARK);
+  for(const s of [-1, 1]){
+    M.add(G.cyl8, s * .42, .64, 0, .09, .07, .09, 0, 0, Math.PI / 2, TRIM);
+    M.add(G.cyl8, s * .24, .2, .02, .035, .14, .035, 0, 0, 0, DARK);
+    M.add(HSM, s * .46, .42, .08, .08, .1, .08, 0, 0, 0, BLUE);
+  }
+  M.add(HSM, -.09, .38, .33, .045, .045, .02, 0, 0, 0, 0xff6f91).add(HSM, .02, .38, .33, .045, .045, .02, 0, 0, 0, 0x5fe3b1).add(HSM, .13, .38, .33, .045, .045, .02, 0, 0, 0, 0xffd23f);
+  M.add(G.cyl8, 0, .99, 0, .1, .05, .1, 0, 0, 0, DARK);
+  body.add(new THREE.Mesh(M.geometry(), vcLam()));
+  const E = new Merge();
+  for(const s of [-1, 1]) E.add(HSPH, s * .12, 0, 0, .062, .075, .025, 0, 0, 0, 0x7ff6ff);
+  const eyes = new THREE.Mesh(E.geometry(), vcBasic()); eyes.position.set(0, .7, .345); body.add(eyes);
+  const mouth = new THREE.Mesh(new THREE.TorusGeometry(.055, .014, 5, 12, Math.PI), new THREE.MeshBasicMaterial({ color:0x7ff6ff }));
+  mouth.position.set(0, .6, .345); mouth.rotation.z = Math.PI; body.add(mouth);
+  const antenna = new THREE.Group(); antenna.position.set(0, 1.01, 0); body.add(antenna);
+  antenna.add(new THREE.Mesh(new Merge().add(G.cyl8, 0, .14, 0, .022, .28, .022, 0, 0, 0, DARK).geometry(), vcLam()));
+  const ball = new THREE.Mesh(HSPH, new THREE.MeshBasicMaterial({ color:0xffe066 })); ball.scale.setScalar(.075); ball.position.y = .31; antenna.add(ball);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending })); glow.scale.set(.42, .42, 1); glow.position.y = .31; antenna.add(glow);
+  const wheelGeo = new Merge().add(G.cyl, 0, 0, 0, .11, .1, .11, 0, 0, Math.PI / 2, 0x3a3f5a).add(G.cyl8, 0, 0, 0, .05, .112, .05, 0, 0, Math.PI / 2, TRIM)
+    .add(G.box, 0, .085, 0, .114, .03, .03, 0, 0, 0, 0xc9cfe6).geometry(), wheelMat = vcLam();
+  const feet = [-1, 1].map(s => { const w = new THREE.Mesh(wheelGeo, wheelMat); w.position.set(s * .24, .11, .02); grp.add(w); return w; });
+  return { type:'rokko', grp, body, eyes, feet, antenna, ball, roll:0, blink:2.3 };
+}
+// بيبو — a yellow egg-shaped chick with a little orange beak, feet and flappy wings
+function buildPipo(){
+  const grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
+  const YEL = 0xffd84a, PALE = 0xfff0a6, ORA = 0xff9a2a, M = new Merge(), pts = [];
+  for(let i = 0; i <= 16; i++){ const t = i / 16 * Math.PI; pts.push(new THREE.Vector2(Math.max(.0001, .5 * Math.sin(t) * (1 + .1 * Math.cos(t))), .02 + (1 - Math.cos(t)) * .58)); }
+  M.add(new THREE.LatheGeometry(pts, 22), 0, 0, 0, 1, 1, 1, 0, 0, 0, YEL);
+  M.add(HSPH, 0, .44, .3, .31, .3, .2, 0, 0, 0, PALE);
+  for(const dx of [-.07, 0, .07]) M.add(G.cone, dx, 1.22, -.02, .05, .17, .05, -.2, 0, -dx * 3, YEL);
+  M.add(G.cone, 0, .735, .52, .085, .17, .07, Math.PI / 2, 0, 0, ORA).add(G.cone, 0, .7, .5, .06, .1, .05, Math.PI / 2 + .25, 0, 0, 0xf07d12);
+  for(const s of [-1, 1]) M.add(HSM, s * .28, .7, .4, .07, .045, .03, 0, s * .6, 0, 0xffa07a);
+  body.add(new THREE.Mesh(M.geometry(), vcLam()));
+  const eyes = cartoonEyes(.15, .1, .125, 0x1a1020); eyes.position.set(0, .87, .39); body.add(eyes);
+  const wingGeo = new Merge().add(HSPH, 0, -.14, 0, .07, .2, .16, 0, 0, 0, 0xffc928).geometry(), wingMat = vcLam();
+  const wings = [-1, 1].map(s => { const p = new THREE.Group(); p.position.set(s * .46, .66, -.02); p.userData.s = s; p.add(new THREE.Mesh(wingGeo, wingMat)); body.add(p); return p; });
+  const footGeo = new Merge().add(HSM, 0, 0, 0, .07, .035, .08, 0, 0, 0, ORA)
+    .add(HSM, -.055, 0, .08, .03, .025, .07, 0, -.5, 0, ORA).add(HSM, 0, 0, .1, .03, .025, .07, 0, 0, 0, ORA).add(HSM, .055, 0, .08, .03, .025, .07, 0, .5, 0, ORA).geometry();
+  const feet = footPair(grp, footGeo, vcLam(), 1, 1, 1, .17, .04, .06);
+  return { type:'pipo', grp, body, eyes, feet, wings, wt:0, blink:.6 };
+}
+const HERO_IDS = ['bobo', 'lulu', 'rokko', 'pipo'];
+const HERO_BUILD = { bobo:buildBobo, lulu:buildLulu, rokko:buildRokko, pipo:buildPipo };
+const HERO_NAME = { bobo:L('بوبو', 'Bobo', 'Bobo'), lulu:L('لولو', 'Lulu', 'Lulu'), rokko:L('روكو', 'Rokko', 'Rokko'), pipo:L('بيبو', 'Pipo', 'Pipo') };
+// s = { t, dt, run, grounded, vy, sq, flip }
+function poseHero(h, s){
+  const t = s.t, dt = s.dt, run = s.grounded ? s.run : 0;
+  const bounce = s.grounded ? Math.abs(Math.sin(t * 13)) * .08 * run + Math.sin(t * 3) * .02 * (1 - run) : 0;
+  const sy = 1 + s.sq + (s.grounded ? Math.sin(t * 3) * .025 * (1 - run) : 0), sxz = 1 - s.sq * .6;
+  h.body.scale.set(sxz, sy, sxz); h.body.position.y = bounce; h.body.rotation.set(run * .14, 0, 0);
+  if(s.flip > 0) h.body.rotation.x = (1 - s.flip) * Math.PI * 2;
+  const bt = t + h.blink, blink = (bt % 3.7) < .12 || ((bt + 1.3) % 6.1) < .1;
+  h.eyes.scale.y = blink ? .12 : 1;
+  if(h.type === 'rokko'){
+    h.body.position.y += .03 + Math.sin(t * 4) * .025;
+    h.body.rotation.z = Math.sin(t * 2.3) * .045;
+    h.roll += dt * (run * 16 + (s.grounded ? 0 : 5));
+    h.feet.forEach(w => { w.rotation.x = h.roll; w.position.y = .11 + (s.grounded ? 0 : .04); });
+    h.antenna.rotation.z = Math.sin(t * 7) * .13 + Math.sin(t * 19) * .06 * run;
+    h.antenna.rotation.x = clamp(-s.vy * .04, -.55, .55) - run * .25;
+    h.ball.scale.setScalar(.075 * (1 + Math.sin(t * 5) * .15));
+  } else {
+    h.feet.forEach((f, i) => { const k = Math.sin(t * 13 + i * Math.PI) * run; f.position.z = f.userData.z + k * .18; f.position.y = f.userData.y + Math.max(0, k) * .1 + (s.grounded ? 0 : .05); });
+  }
+  if(h.type === 'lulu'){
+    const target = s.grounded ? -run * .35 + Math.sin(t * 2.5) * .05 : clamp(-s.vy * .075, -1.1, .55);
+    h.earV += ((target - h.earA) * 130 - h.earV * 8) * dt; h.earA += h.earV * dt;
+    h.ears.forEach(e => { const k = e.userData.s; e.rotation.x = h.earA; e.rotation.z = -k * (.2 + Math.max(0, -h.earA) * .25 + Math.sin(t * 2 + k) * .03); });
+  }
+  if(h.type === 'pipo'){
+    h.wt += dt * (s.grounded ? 3 + run * 16 : 32);
+    const amp = s.grounded ? .07 + run * .25 : .8, a = .12 + amp * (.5 + .5 * Math.sin(h.wt));
+    h.wings.forEach(w => { w.rotation.z = w.userData.s * a; });
+  }
+}
+const heroes = {};
+HERO_IDS.forEach(id => { heroes[id] = HERO_BUILD[id](); scene.add(heroes[id].grp); });
+let heroId = HERO_IDS.includes(rawGet('adv3d_hero')) ? rawGet('adv3d_hero') : 'bobo', hero = heroes[heroId];
+function setHero(id, save){
+  if(!heroes[id]) return;
+  heroId = id; hero = heroes[id]; if(save) rawSet('adv3d_hero', id);
+  HERO_IDS.forEach(k => { heroes[k].grp.visible = k === id; });
+}
+setHero(heroId, false);
 
 /* ---------- Enemies (cute critters) ---------- */
 const ENEMY_GEO = (() => {
@@ -845,6 +1073,7 @@ let state = 'title', T = 0;
 const race = { active:false, t:0, armed:true };
 const hinted = {};
 function toCheckpoint(){
+  if(mpActive()){ mpSpawn(); return; }
   const c = cpFlags[cp]; P.x = c.x + (cp ? 1.2 : 0); P.z = c.z + (cp ? 1 : -1.8); P.y = groundTop(P.x, P.z) + .1; P.vx = P.vy = 0; P.ground = null; P.jumps = 0;
   P.face = Math.atan2(-P.x, -P.z) ; if(cp === 0) P.face = Math.PI;
   cam.yaw = Math.atan2(-Math.sin(P.face), -Math.cos(P.face));
@@ -866,16 +1095,17 @@ let jumpQueued = false;
 const joy = { x:0, y:0, id:null, ox:0, oy:0 }, look = { id:null, x:0, y:0 };
 const joyEl = $('#joy'), knob = $('#knob'), jumpBtn = $('#btnJump');
 let joyHome = [90, 0];
-function placeJoyHome(){ joyHome = [Math.max(84, 20 + 62), innerHeight - Math.max(92, innerHeight * .16)]; if(joy.id == null) setJoy(joyHome[0], joyHome[1]); }
+function placeJoyHome(){ joyHome = [Math.max(84, SAL + 78), SH - Math.max(92, SH * .16) - SAB * .5]; if(joy.id == null) setJoy(joyHome[0], joyHome[1]); }
 function setJoy(x, y){ joyEl.style.left = x + 'px'; joyEl.style.top = y + 'px'; }
 const touch = $('#touch');
 touch.addEventListener('pointerdown', e => {
   if(state !== 'play') return;
   e.preventDefault();
-  if(e.clientX < innerWidth * .45 && joy.id == null){
-    joy.id = e.pointerId; joy.ox = clamp(e.clientX, 70, innerWidth * .45); joy.oy = clamp(e.clientY, 140, innerHeight - 70);
-    setJoy(joy.ox, joy.oy); joyEl.classList.add('on'); moveJoy(e.clientX, e.clientY);
-  } else if(look.id == null){ look.id = e.pointerId; look.x = e.clientX; look.y = e.clientY; }
+  const p = toLayer(e.clientX, e.clientY);
+  if(p.x < SW * .45 && joy.id == null){
+    joy.id = e.pointerId; joy.ox = clamp(p.x, Math.max(70, SAL + 64), SW * .45); joy.oy = clamp(p.y, 140, SH - 70);
+    setJoy(joy.ox, joy.oy); joyEl.classList.add('on'); moveJoy(p.x, p.y);
+  } else if(look.id == null){ look.id = e.pointerId; look.x = p.x; look.y = p.y; }
   try{ touch.setPointerCapture(e.pointerId); }catch(err){}
 });
 function moveJoy(x, y){
@@ -885,10 +1115,11 @@ function moveJoy(x, y){
   joy.x = dx / m; joy.y = dy / m;
 }
 touch.addEventListener('pointermove', e => {
-  if(e.pointerId === joy.id) moveJoy(e.clientX, e.clientY);
+  const p = toLayer(e.clientX, e.clientY);
+  if(e.pointerId === joy.id) moveJoy(p.x, p.y);
   else if(e.pointerId === look.id){
-    cam.yaw -= (e.clientX - look.x) * .0075; cam.pitch = clamp(cam.pitch + (e.clientY - look.y) * .004, .05, 1.15);
-    look.x = e.clientX; look.y = e.clientY; cam.dragT = T;
+    cam.yaw -= (p.x - look.x) * .0075; cam.pitch = clamp(cam.pitch + (p.y - look.y) * .004, .05, 1.15);
+    look.x = p.x; look.y = p.y; cam.dragT = T;
   }
 });
 function endPtr(e){
@@ -978,11 +1209,11 @@ function step(dt){
     if(gi.ref && gi.ref.kind === 'spring'){ P.vy = 21; P.grounded = false; P.jumps = 1; P.ground = null; P.sq = .35; SFX.spring(); mushBounce = 1; burst(P.x, P.y, P.z, 10, [0xff5d8f, 0xffffff], 4); }
   } else { P.grounded = false; P.ground = null; }
   // water / falling
-  if(P.y < -.55){ SFX.splash(); burst(P.x, 0, P.z, 14, [0x7fd0ff, 0xffffff], 4); toast(L('طرطشة! 💦 منرجع للعلم', 'Splash! 💦 Back to the flag', 'Şap! 💦 Bayrağa dönüyoruz')); toCheckpoint(); }
+  if(P.y < -.55){ SFX.splash(); burst(P.x, 0, P.z, 14, [0x7fd0ff, 0xffffff], 4); toast(mpActive() ? L('طرطشة! 💦', 'Splash! 💦', 'Şap! 💦') : L('طرطشة! 💦 منرجع للعلم', 'Splash! 💦 Back to the flag', 'Şap! 💦 Bayrağa dönüyoruz')); toCheckpoint(); }
   // hearts come back slowly
   P.inv = Math.max(0, P.inv - dt); P.calm += dt;
   if(P.hearts < 3 && P.calm > 12){ P.hearts++; P.calm = 0; hud(); }
-  interact(dt);
+  if(mpActive()) mpInteract(dt); else interact(dt);
 }
 
 let mushBounce = 0;
@@ -1110,31 +1341,26 @@ function updateCamera(dt){
 
 /* ---------- Per-frame visuals ---------- */
 function animate(dt){
-  // Bobo
-  const g = bobo.grp; g.position.set(P.x, P.y, P.z); g.rotation.y = P.face;
+  // the hero
+  hero.grp.position.set(P.x, P.y, P.z); hero.grp.rotation.y = P.face;
   P.sqv += (-P.sq * 180 - P.sqv * 14) * dt; P.sq += P.sqv * dt;
-  const run = P.grounded ? P.move : 0, bounce = P.grounded ? Math.abs(Math.sin(T * 13)) * .08 * run + Math.sin(T * 3) * .02 * (1 - run) : 0;
-  const sy = 1 + P.sq + (P.grounded ? Math.sin(T * 3) * .025 * (1 - run) : 0), sxz = 1 - P.sq * .6;
-  bobo.body.scale.set(sxz, sy, sxz); bobo.body.position.y = bounce;
-  bobo.body.rotation.x = run * .14;
-  if(P.flip > 0){ P.flip = Math.max(0, P.flip - dt * 2.4); bobo.body.rotation.x = (1 - P.flip) * Math.PI * 2; }
-  bobo.feet.forEach((f, i) => { const s = Math.sin(T * 13 + i * Math.PI) * run; f.position.z = .06 + s * .18; f.position.y = .06 + Math.max(0, s) * .1 + (P.grounded ? 0 : .05); });
-  const blink = (T % 3.7) < .12 || ((T + 1.3) % 6.1) < .1;
-  bobo.eyes.scale.y = blink ? .12 : 1;
-  bobo.grp.visible = P.inv <= 0 || Math.floor(P.inv * 12) % 2 === 0;
+  if(P.flip > 0) P.flip = Math.max(0, P.flip - dt * 2.4);
+  poseHero(hero, { t:T, dt, run:P.move, grounded:P.grounded, vy:P.vy, sq:P.sq, flip:P.flip });
+  hero.grp.visible = P.inv <= 0 || Math.floor(P.inv * 12) % 2 === 0;
   const gh = groundInfo(P.x, P.z, P.y + .1, 0).h, hh = P.y - gh, ss = clamp(1.1 - hh * .08, .45, 1.1);
   pShadow.position.set(P.x, gh + .04, P.z); pShadow.scale.set(ss * 1.1, 1, ss * 1.1); pShadow.visible = gh > -.2;
   // honey spin
+  const mpOn = mpActive();
   for(let i = 0; i < HONEY.length; i++){
     const h = HONEY[i];
-    if(honeyGot.has(i)) _m.makeScale(0, 0, 0);
+    if(mpOn || honeyGot.has(i)) _m.makeScale(0, 0, 0);
     else _m.compose(_v.set(h[0], h[1] + Math.sin(T * 2.5 + i) * .1, h[2]), _q.setFromEuler(_e.set(0, T * 2.4 + i, 0)), _s.set(1, 1, 1));
     honeyMesh.setMatrixAt(i, _m);
   }
   honeyMesh.instanceMatrix.needsUpdate = true;
   // stars
   starObjs.forEach((o, i) => {
-    o.grp.visible = starVisible(i);
+    o.grp.visible = !mpOn && starVisible(i);
     if(!o.grp.visible) return;
     o.m.rotation.y = T * 1.8; o.grp.position.y = STARS[i].at[1] + Math.sin(T * 2 + i) * .18;
   });
@@ -1142,7 +1368,8 @@ function animate(dt){
   let si = 0;
   for(const e of enemies){
     if(state === 'play' || state === 'title') placeEnemy(e, dt);
-    if(e.alive && si < 24){ _m.compose(_v.set(e.x, e.gy + .05, e.z), _q.identity(), _s.set(1.2, 1, 1.2)); eShadows.setMatrixAt(si++, _m); }
+    e.grp.visible = e.alive && !mpOn;
+    if(e.alive && !mpOn && si < 24){ _m.compose(_v.set(e.x, e.gy + .05, e.z), _q.identity(), _s.set(1.2, 1, 1.2)); eShadows.setMatrixAt(si++, _m); }
   }
   for(; si < 24; si++){ _m.makeScale(0, 0, 0); eShadows.setMatrixAt(si, _m); }
   eShadows.instanceMatrix.needsUpdate = true;
@@ -1162,6 +1389,9 @@ let toastTimer = 0, honeyDirty = false;
 function toast(t){ toastEl.textContent = t; toastEl.hidden = false; toastEl.style.animation = 'none'; void toastEl.offsetWidth; toastEl.style.animation = ''; clearTimeout(toastTimer); toastTimer = setTimeout(() => toastEl.hidden = true, 2300); }
 function nStars(){ return starsGot.filter(Boolean).length; }
 function hud(){
+  const mp = mpActive();
+  $('#hudHearts').hidden = mp; $('#hudStars').hidden = mp; $('#mpBar').hidden = !mp; stage.classList.toggle('mpon', mp);
+  if(mp){ mpHud(); return; }
   $('#hudHearts').textContent = '❤️'.repeat(Math.max(0, P.hearts)) + '🤍'.repeat(Math.max(0, 3 - P.hearts));
   $('#hudHoney').textContent = '🍯 ' + N(honeyCount);
   $('#hudStars').textContent = '⭐ ' + N(nStars()) + '/' + N(10);
@@ -1178,7 +1408,7 @@ function nearestTarget(){
 }
 const compassEl = $('#compass'), arrowEl = $('#arrow'), timerEl = $('#timer');
 function hudFrame(){
-  const t = nearestTarget();
+  const t = mpActive() ? mpNearest() : nearestTarget();
   if(!t || t.d < 2.5){ compassEl.style.visibility = 'hidden'; }
   else {
     compassEl.style.visibility = 'visible';
@@ -1192,24 +1422,26 @@ function hudFrame(){
 
 /* ---------- Menus ---------- */
 const overlay = $('#overlay'), card = $('#card');
-function setPlayUI(on){ overlay.classList.remove('title'); hudEl.hidden = !on; joyEl.hidden = !on; jumpBtn.hidden = !on; overlay.hidden = on; if(!on){ toastEl.hidden = true; } }
+function setPlayUI(on){ overlay.classList.remove('title'); card.classList.remove('wide'); if(pv) pv.cvs = []; hudEl.hidden = !on; joyEl.hidden = !on; jumpBtn.hidden = !on; overlay.hidden = on; if(!on){ toastEl.hidden = true; } }
 function starRow(){ return '<div class="starrow">' + starsGot.map(g => `<i class="${g ? '' : 'off'}">⭐</i>`).join('') + '</div>'; }
 const HOME = `<a class="ghost-btn" href="../">🏠 ${L('الرئيسية', 'Home', 'Ana sayfa')}</a>`;
 function showTitle(){
   state = 'title'; setPlayUI(false); overlay.classList.remove('dim'); overlay.classList.add('title');
-  const any = nStars() > 0 || honeyCount > 0;
-  card.innerHTML = `<h1>${L('مغامرة بوبو', "Bobo's Adventure", "Bobo'nun Macerası")}<small>${L('ثلاثي الأبعاد', '3D', '3D')} 🏝️</small></h1>
+  const any = nStars() > 0 || honeyCount > 0, rotHint = ROT && !rawGet('adv3d_rothint');
+  card.innerHTML = `${rotHint ? `<div class="rothint"><i aria-hidden="true">📱</i><span>${L('لفّ الجوال على جنب 📱↪️', 'Turn your phone sideways 📱↪️', 'Telefonu yan çevir 📱↪️')}</span></div>` : ''}<h1>${L('مغامرة بوبو', "Bobo's Adventure", "Bobo'nun Macerası")}<small>${L('ثلاثي الأبعاد', '3D', '3D')} 🏝️</small></h1>
     <p>${L('لفّ الجزيرة، اجمع العسل ولاقي العشر نجوم!', 'Explore the island, collect honey and find all 10 stars!', 'Adayı gez, bal topla ve 10 yıldızın hepsini bul!')}</p>
     ${any ? starRow() : ''}
-    <button class="big-btn" id="bPlay">${any ? '▶️ ' + L('كمّل', 'Continue', 'Devam') : '▶️ ' + L('العب', 'Play', 'Oyna')}</button>
+    <div class="row"><button class="big-btn" id="bPlay">${any ? '▶️ ' + L('كمّل', 'Continue', 'Devam') : '▶️ ' + L('العب', 'Play', 'Oyna')}</button>
+    <button class="big-btn alt" id="bMp">👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</button></div>
     <ul class="how">
-      <li><span>🕹️</span><span>${L('اسحب عالشمال لتمشّي بوبو', 'Drag on the left to move Bobo', "Bobo'yu yürütmek için solda kaydır")}</span></li>
+      <li><span>🕹️</span><span>${L('اسحب عالشمال لتمشي', 'Drag on the left to walk', 'Yürümek için solda kaydır')}</span></li>
       <li><span>⬆️</span><span>${L('كبسة الزر الأصفر = نطّة، كبستين = نطّة دبل', 'Yellow button = jump, tap twice = double jump', 'Sarı düğme = zıpla, iki kez = çift zıplama')}</span></li>
       <li><span>👆</span><span>${L('اسحب عاليمين لتلفّ الكاميرا', 'Drag on the right to turn the camera', 'Kamerayı döndürmek için sağda kaydır')}</span></li>
       <li><span>🧭</span><span>${L('السهم بيدلّك على أقرب نجمة', 'The arrow points to the nearest star', 'Ok en yakın yıldızı gösterir')}</span></li>
     </ul>
     <div class="row">${any ? `<button class="ghost-btn" id="bNew">🔄 ${L('من الأول', 'New game', 'Yeni oyun')}</button>` : ''}${HOME}</div>`;
-  $('#bPlay').onclick = () => { ac(); SFX.tap(); startPlay(); };
+  $('#bPlay').onclick = () => { ac(); SFX.tap(); tryLandscapeLock(); showSelect('title'); };
+  $('#bMp').onclick = () => { ac(); SFX.tap(); tryLandscapeLock(); mpMenu(); };
   if(any) $('#bNew').onclick = () => {
     SFX.tap();
     card.innerHTML = `<h2>${L('نبلّش من الأول؟', 'Start over?', 'Baştan başlayalım mı?')}</h2><p>${L('النجوم والعسل رح ينمحوا', 'Your stars and honey will be cleared', 'Yıldızların ve balın silinecek')}</p>
@@ -1219,21 +1451,84 @@ function showTitle(){
   };
 }
 function startPlay(){
+  if(ROT) rawSet('adv3d_rothint', '1');
   state = 'play'; setPlayUI(true); toCheckpoint(); P.hearts = 3; hud(); placeJoyHome();
   if(window.World && !startPlay.tracked){ startPlay.tracked = true; }
 }
 function showPause(){
   if(state !== 'play') return;
+  if(mpActive()){ mpPause(); return; }
   state = 'pause'; setPlayUI(false); overlay.classList.add('dim');
   joy.id = null; joy.x = joy.y = 0; look.id = null; knob.style.transform = '';
   card.innerHTML = `<h2>⏸️ ${L('استراحة', 'Paused', 'Mola')}</h2>${starRow()}
     <div class="tally"><span>⭐ ${N(nStars())}/${N(10)}</span><span>🍯 ${N(honeyCount)}</span></div>
     <button class="big-btn" id="bRes">▶️ ${L('كمّل', 'Resume', 'Devam')}</button>
     <div class="row"><button class="ghost-btn" id="bCp">🚩 ${L('رجّعني للعلم', 'Back to checkpoint', 'Kontrol noktasına dön')}</button>
+    <button class="ghost-btn" id="bHero">🦸 ${L('غيّر الشخصية', 'Change hero', 'Kahramanı değiştir')}</button>
     <button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button>${HOME}</div>`;
   $('#bRes').onclick = () => { SFX.tap(); resume(); };
   $('#bCp').onclick = () => { toCheckpoint(); resume(); };
+  $('#bHero').onclick = () => { SFX.tap(); showSelect('pause'); };
   $('#bSnd').onclick = () => { muted = !muted; store.set('muted', muted); $('#bSnd').innerHTML = (muted ? '🔇' : '🔊') + ' ' + L('الصوت', 'Sound', 'Ses'); SFX.tap(); };
+}
+/* Hero picker: 4 cards, each with a live 3D preview rendered by the main renderer into a corner and copied to the card canvas */
+let pv = null, selFrom = 'title', selPick = heroId;
+const PV_BG = { bobo:0x3d3478, lulu:0x5a3166, rokko:0x24497a, pipo:0x5c4a22 };
+function ensurePreview(){
+  if(pv) return pv;
+  const sc = new THREE.Scene();
+  sc.add(new THREE.HemisphereLight(0xeef8ff, 0x7a6cb0, 2.1));
+  const d = new THREE.DirectionalLight(0xfff0d0, 2.0); d.position.set(2, 4, 3.5); sc.add(d);
+  const hs = {}; HERO_IDS.forEach(id => { hs[id] = HERO_BUILD[id](); sc.add(hs[id].grp); });
+  const sh = new THREE.Mesh(blobGeo, blobMat); sh.position.y = .01; sc.add(sh);
+  const cam = new THREE.PerspectiveCamera(38, 1, .1, 50); cam.position.set(0, 1.0, 3.5); cam.lookAt(0, .8, 0);
+  const bg = {}; HERO_IDS.forEach(id => { bg[id] = new THREE.Color(PV_BG[id]); });
+  pv = { sc, cam, hs, sh, bg, cvs:[], css:0 }; return pv;
+}
+function showSelect(from){
+  if(from === 'pause' && state !== 'pause') return;
+  selFrom = from; state = 'select'; setPlayUI(false); overlay.classList.add('dim'); card.classList.add('wide');
+  selPick = heroId; ensurePreview();
+  card.innerHTML = `<h2>🦸 ${L('اختار شخصيتك', 'Pick your hero', 'Kahramanını seç')}</h2>
+    <div class="heroes">${HERO_IDS.map(id => `<button class="hero${id === selPick ? ' on' : ''}" data-id="${id}" aria-pressed="${id === selPick}"><canvas aria-hidden="true"></canvas><b>${HERO_NAME[id]}</b></button>`).join('')}</div>
+    <button class="big-btn" id="bGoHero">${from === 'mp' || from === 'lobby' ? '✅ ' + L('تمام', 'OK', 'Tamam') : '▶️ ' + (from === 'pause' ? L('كمّل', 'Resume', 'Devam') : L('يلّا نلعب', "Let's play", 'Hadi oynayalım'))}</button>`;
+  const btns = [...card.querySelectorAll('.hero')];
+  let css = 1e9; btns.forEach(b => { css = Math.min(css, b.querySelector('canvas').offsetWidth || 1e9); });
+  if(!(css < 1e8)) css = 120;
+  css = Math.max(40, Math.min(Math.floor(css), SH - 2, SW - 2));
+  pv.css = css;
+  pv.cvs = btns.map(b => {
+    const c = b.querySelector('canvas'); c.width = c.height = Math.floor(css * dpr);
+    return { id:b.dataset.id, c, ctx:c.getContext('2d'), t:Math.random() * 3, y:0, vy:0, sq:0, sqv:0, wait:.3 };
+  });
+  btns.forEach(b => b.onclick = () => {
+    selPick = b.dataset.id; SFX.jump();
+    btns.forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); });
+    const v = pv.cvs.find(v => v.id === selPick); if(v) v.wait = 0;
+  });
+  $('#bGoHero').onclick = () => { SFX.tap(); setHero(selPick, true); if(selFrom === 'pause') resume(); else if(selFrom === 'mp') mpMenu(); else if(selFrom === 'lobby') mpHeroChanged(); else startPlay(); };
+}
+function renderPreviews(dt){
+  if(!pv || !pv.cvs.length) return;
+  const css = pv.css, px = Math.floor(css * dpr), bh = canvas.height;
+  renderer.setScissorTest(true); renderer.setViewport(0, 0, css, css); renderer.setScissor(0, 0, css, css);
+  for(const v of pv.cvs){
+    const h = pv.hs[v.id], on = v.id === selPick;
+    HERO_IDS.forEach(k => { pv.hs[k].grp.visible = k === v.id; });
+    v.t += dt;
+    // little hops for the picked hero
+    const grounded = v.y <= 0 && v.vy <= 0;
+    if(grounded){ v.wait -= dt; if(on && v.wait <= 0){ v.vy = 3.3; v.sq = .25; v.sqv = 0; v.wait = .55; } }
+    if(!grounded || v.vy > 0){ v.vy -= 14 * dt; v.y += v.vy * dt; if(v.y <= 0){ v.y = 0; v.vy = 0; v.sq = -.2; v.sqv = 0; } }
+    v.sqv += (-v.sq * 180 - v.sqv * 14) * dt; v.sq += v.sqv * dt;
+    h.grp.position.y = v.y; h.grp.rotation.y = Math.sin(v.t * .9) * .55;
+    poseHero(h, { t:v.t, dt, run:0, grounded:v.y <= 0, vy:v.vy, sq:v.sq, flip:0 });
+    const ss = clamp(1.2 - v.y * .5, .6, 1.2); pv.sh.scale.set(ss, 1, ss);
+    pv.sc.background = pv.bg[v.id];
+    renderer.render(pv.sc, pv.cam);
+    v.ctx.drawImage(canvas, 0, bh - px, px, px, 0, 0, v.c.width, v.c.height);
+  }
+  renderer.setScissorTest(false); renderer.setViewport(0, 0, SW, SH);
 }
 function resume(){ state = 'play'; setPlayUI(true); hud(); }
 $('#btnPause').onclick = () => { SFX.tap(); showPause(); };
@@ -1264,6 +1559,603 @@ function showEnd(){
   $('#bMore').onclick = () => { SFX.tap(); resume(); };
 }
 
+/* ---------- Online play with friends: «سباق النجوم» / Star Rush ----------
+   Realtime only (Supabase Broadcast + Presence on a public channel `bobo-room-<code>`), nothing is stored.
+   Child safety: no names, no chat, no free text — a player is a hero + a colour badge («لاعب ١»).
+   Presence meta per player: { hero, c (colour slot 0-3), o (join order), ph (lobby|match|end), mid }.
+   The host = lowest join order; when the host leaves, the next player takes over automatically.
+   Broadcast events: pos (10/s while moving), claim (request from a player, or {r:1} result from the host),
+   start (host starts a match), end (host ends it with the final result). `?mp=local` swaps in a BroadcastChannel
+   transport with the same interface so several tabs can play together without a server (tests). */
+const MP_URL = 'https://vgpwtrzplggvlsuvqsas.supabase.co', MP_KEY = 'sb_publishable_D9thEhZlZnfn0t06j8h1Rw_H-LVF786';
+const MP_EVENTS = ['pos', 'claim', 'start', 'end'];
+const MP_MAX = 4, MP_DUR = 180, MP_NSTAR = 15, MP_CD = 3;
+const MP_COLORS = ['#ff5d73', '#5fb8ff', '#5fe3b1', '#ffd23f'];
+const MP_LOCAL = new URLSearchParams(location.search).get('mp') === 'local';
+
+function loadSupabase(){
+  if(window.supabase && window.supabase.createClient) return Promise.resolve();
+  if(loadSupabase.p) return loadSupabase.p;
+  return (loadSupabase.p = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = 'supabase.js';
+    s.onload = () => (window.supabase && window.supabase.createClient) ? res() : rej(new Error('no client'));
+    s.onerror = () => { loadSupabase.p = null; s.remove(); rej(new Error('load')); };
+    document.head.appendChild(s);
+  }));
+}
+class SupabaseTransport{
+  async open(code, id, h){
+    if(navigator.onLine === false) throw new Error('offline');
+    await loadSupabase();
+    if(!SupabaseTransport.client) SupabaseTransport.client = window.supabase.createClient(MP_URL, MP_KEY, {
+      auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:40 } } });
+    const sb = SupabaseTransport.client;
+    const ch = this.ch = sb.channel('bobo-room-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id } } });
+    ch.on('presence', { event:'sync' }, () => {
+      const st = ch.presenceState(), list = [];
+      for(const k in st){ const m = st[k]; if(m && m.length) list.push(Object.assign({}, m[m.length - 1], { id:k })); }
+      h.presence(list);
+    });
+    MP_EVENTS.forEach(ev => ch.on('broadcast', { event:ev }, m => h.msg(ev, m && m.payload)));
+    await new Promise((res, rej) => {
+      let first = true;
+      const to = setTimeout(() => { if(first){ first = false; rej(new Error('timeout')); } }, 9000);
+      ch.subscribe(status => {
+        if(status === 'SUBSCRIBED'){ if(first){ first = false; clearTimeout(to); res(); } else h.status('up'); }
+        else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
+          if(first){ first = false; clearTimeout(to); rej(new Error(status)); } else if(!this.closed) h.status('down');
+        }
+      });
+    });
+  }
+  track(meta){ try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
+  send(ev, payload){ try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
+  close(){
+    this.closed = true; const ch = this.ch, sb = SupabaseTransport.client; this.ch = null;
+    if(!ch || !sb) return;
+    try{ const p = ch.untrack(); if(p && p.catch) p.catch(() => {}); }catch(e){}
+    try{ const p = sb.removeChannel(ch); if(p && p.catch) p.catch(() => {}); }catch(e){}
+  }
+}
+class LocalTransport{
+  open(code, id, h){
+    this.id = id; this.h = h; this.meta = null; this.peers = new Map(); this.ready = false;
+    const bc = this.bc = new BroadcastChannel('bobo-room-' + code);
+    bc.onmessage = e => {
+      const m = e.data || {};
+      if(m.k === 'hb'){ const old = this.peers.get(m.from), js = JSON.stringify(m.meta); this.peers.set(m.from, { meta:m.meta, js, last:Date.now() }); if(!old || old.js !== js) this.sync(); }
+      else if(m.k === 'hello'){ if(this.meta) this.beat(); }
+      else if(m.k === 'bye'){ if(this.peers.delete(m.from)) this.sync(); }
+      else if(m.k === 'b') h.msg(m.ev, m.p);
+    };
+    this.iv = setInterval(() => {
+      if(this.meta) this.beat();
+      const now = Date.now(); let ch = false;
+      for(const [k, p] of this.peers) if(now - p.last > 3500){ this.peers.delete(k); ch = true; }
+      if(ch) this.sync();
+    }, 1000);
+    bc.postMessage({ k:'hello', from:id });
+    return new Promise(res => setTimeout(() => { this.ready = true; res(); this.sync(); }, 400));
+  }
+  sync(){
+    if(!this.ready || !this.bc) return;
+    const list = [...this.peers].map(([k, p]) => Object.assign({}, p.meta, { id:k }));
+    if(this.meta) list.push(Object.assign({}, this.meta, { id:this.id }));
+    this.h.presence(list);
+  }
+  beat(){ if(this.bc) this.bc.postMessage({ k:'hb', from:this.id, meta:this.meta }); }
+  track(meta){ this.meta = Object.assign({}, meta); this.beat(); setTimeout(() => this.sync(), 0); }
+  send(ev, p){ if(this.bc) this.bc.postMessage({ k:'b', ev, p }); }
+  close(){ clearInterval(this.iv); if(this.bc){ if(this.meta) this.bc.postMessage({ k:'bye', from:this.id }); this.bc.close(); this.bc = null; } }
+}
+
+const MP = { t:null, id:null, code:null, list:[], players:[], meta:null, isHost:false, synced:false, screen:'off', match:null, remotes:new Map(), tok:0, clock:0, lastEnd:null, again:null, iv:0 };
+const mpActive = () => !!(MP.match && !MP.match.over);
+const mpFrozen = () => mpActive() && performance.now() < MP.match.cdEnd;
+const mpLabel = c => L('لاعب ' + N(c + 1), 'Player ' + (c + 1), 'Oyuncu ' + (c + 1));
+const mpNewId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const mpSort = (a, b) => ((a.o || 0) - (b.o || 0)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+
+/* Race star spots: a fixed pool of open ground spots (same on every phone), each match picks 15 from the shared seed */
+const MP_POOL = (() => {
+  const r = mkRng(424242), out = [];
+  for(let i = 0; i < 5000 && out.length < 90; i++){
+    const a = r() * 6.28, d = 7 + r() * 42, x = Math.cos(a) * d, z = Math.sin(a) * d, h = H(x, z);
+    if(h < 1.05 || h > 6.5 || riverC(x, z) > .03 || !free(x, z) || Math.abs(groundTop(x, z) - h) > .05 || inCave(x, z, h)) continue;
+    if(Math.hypot(x, z - 34) < 7) continue;
+    if(out.some(p => (p[0] - x) ** 2 + (p[2] - z) ** 2 < 16)) continue;
+    out.push([x, h + 1.25, z]);
+  }
+  return out;
+})();
+const raceStarMat = new THREE.MeshLambertMaterial({ vertexColors:true, color:0xffd0f4, emissive:0x7a2a6a });
+const raceStars = Array.from({ length:MP_NSTAR }, () => {
+  const grp = new THREE.Group(), m = new THREE.Mesh(starGeo, raceStarMat), halo = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, color:0xff9ee0, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending }));
+  halo.scale.set(4.4, 4.4, 1); grp.add(halo); grp.add(m); grp.visible = false; scene.add(grp); return { grp, m };
+});
+const MP_HONEY_N = MP_NSTAR * 3;
+const raceHoney = new THREE.InstancedMesh(honeyGeo, new THREE.MeshLambertMaterial({ color:0xffb21c, emissive:0x7a4500 }), MP_HONEY_N);
+raceHoney.frustumCulled = false; raceHoney.visible = false; scene.add(raceHoney);
+function mpLayout(seed){
+  const r = mkRng((Math.abs(seed | 0) % 2147483000) + 1), idx = MP_POOL.map((_, i) => i);
+  for(let i = idx.length - 1; i > 0; i--){ const j = Math.floor(r() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; }
+  const pick = [];
+  for(const sp of [11, 8, 5, 0]) for(const i of idx){
+    if(pick.length >= MP_NSTAR) break;
+    if(pick.includes(i)) continue;
+    const p = MP_POOL[i];
+    if(pick.every(k => (MP_POOL[k][0] - p[0]) ** 2 + (MP_POOL[k][2] - p[2]) ** 2 >= sp * sp)) pick.push(i);
+  }
+  const stars = pick.map(i => MP_POOL[i].slice()), honey = [];
+  stars.forEach(s => { const a0 = r() * 6.28; for(let k = 0; k < 3; k++){ const a = a0 + k * 2.094, x = s[0] + Math.cos(a) * 2.4, z = s[2] + Math.sin(a) * 2.4; honey.push([x, groundTop(x, z) + .75, z]); } });
+  return { stars, honey };
+}
+
+/* Hero icons (a still of each hero, rendered once with the picker scene) */
+const HERO_ICON = {};
+function heroIcon(id){
+  if(HERO_ICON[id]) return HERO_ICON[id];
+  if(!heroes[id]) id = 'bobo';
+  ensurePreview();
+  const css = 72, px = Math.floor(css * dpr), bh = canvas.height;
+  HERO_IDS.forEach(k => { pv.hs[k].grp.visible = k === id; });
+  const h = pv.hs[id]; h.grp.position.y = 0; h.grp.rotation.y = .3;
+  poseHero(h, { t:.5, dt:0, run:0, grounded:true, vy:0, sq:0, flip:0 });
+  pv.sh.scale.set(1.2, 1, 1.2); pv.sc.background = pv.bg[id];
+  renderer.setScissorTest(true); renderer.setViewport(0, 0, css, css); renderer.setScissor(0, 0, css, css);
+  const ic = heroIcon.cam || (heroIcon.cam = new THREE.PerspectiveCamera(34, 1, .1, 50));
+  ic.position.set(.15, .95, 2.35); ic.lookAt(0, .62, 0);
+  renderer.render(pv.sc, ic);
+  const c = document.createElement('canvas'); c.width = c.height = 96;
+  c.getContext('2d').drawImage(canvas, 0, bh - px, px, px, 0, 0, 96, 96);
+  renderer.setScissorTest(false); renderer.setViewport(0, 0, SW, SH);
+  let url = ''; try{ url = c.toDataURL('image/png'); }catch(e){}
+  return (HERO_ICON[id] = url);
+}
+const heroImg = (id, cls) => `<img${cls ? ` class="${cls}"` : ''} src="${heroIcon(id)}" alt="${HERO_NAME[id] || ''}">`;
+
+/* Remote players: hero model (pooled), coloured ring, numbered badge */
+const ringGeo = new THREE.RingGeometry(.5, .74, 32).rotateX(-Math.PI / 2);
+const ringMats = MP_COLORS.map(c => new THREE.MeshBasicMaterial({ color:c, transparent:true, opacity:.92, depthWrite:false, polygonOffset:true, polygonOffsetFactor:-3 }));
+const badgeMats = MP_COLORS.map((c, i) => new THREE.SpriteMaterial({ depthTest:false, transparent:true, map:canvasTex(64, 64, x => {
+  x.fillStyle = c; x.beginPath(); x.arc(32, 32, 28, 0, 6.28); x.fill(); x.lineWidth = 5; x.strokeStyle = '#fff7e8'; x.stroke();
+  x.fillStyle = '#1c1838'; x.font = 'bold 34px sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(N(i + 1), 32, 35);
+}) }));
+const modelPool = {};
+function takeModel(hero){ const p = modelPool[hero] || (modelPool[hero] = []); const h = p.pop() || HERO_BUILD[hero](true); if(!h.grp.parent) scene.add(h.grp); h.grp.visible = false; return h; }
+function giveModel(h){ h.grp.visible = false; (modelPool[h.type] || (modelPool[h.type] = [])).push(h); }
+const myRing = new THREE.Mesh(ringGeo, ringMats[0]); myRing.renderOrder = 3; myRing.visible = false; scene.add(myRing);
+function mpRemote(id){
+  let r = MP.remotes.get(id);
+  const p = MP.players.find(x => x.id === id) || (MP.match && MP.match.pl.find(x => x.id === id));
+  if(!p) return r || null;
+  const hero = heroes[p.hero] ? p.hero : 'bobo', c = clamp(p.c | 0, 0, 3);
+  if(r && r.hero !== hero){ giveModel(r.h); r.h = takeModel(hero); r.hero = hero; }
+  if(!r){
+    const ring = new THREE.Mesh(ringGeo, ringMats[c]); ring.renderOrder = 3; scene.add(ring);
+    const badge = new THREE.Sprite(badgeMats[c]); badge.scale.set(.55, .55, 1); badge.renderOrder = 4; scene.add(badge);
+    r = { id, hero, c, h:takeModel(hero), ring, badge, buf:[], off:null, hn:0, ph:Math.random() * 5 };
+    MP.remotes.set(id, r);
+  }
+  if(r.c !== c){ r.c = c; r.ring.material = ringMats[c]; r.badge.material = badgeMats[c]; }
+  return r;
+}
+function mpDropRemote(id){ const r = MP.remotes.get(id); if(!r) return; giveModel(r.h); scene.remove(r.ring); scene.remove(r.badge); MP.remotes.delete(id); }
+function mpHideRemotes(){ for(const r of MP.remotes.values()){ r.h.grp.visible = r.ring.visible = r.badge.visible = false; r.buf.length = 0; } }
+function mpUpdateRemotes(dt){
+  const now = performance.now();
+  for(const r of MP.remotes.values()){
+    const b = r.buf, show = mpActive() && b.length > 0;
+    r.h.grp.visible = r.ring.visible = r.badge.visible = show;
+    if(!show) continue;
+    const rt = now - r.off - 180;
+    while(b.length > 2 && b[1].t < rt - 400) b.shift();
+    let a = b[0], c = b[0];
+    if(rt > b[0].t){ for(let i = b.length - 1; i >= 0; i--) if(b[i].t <= rt){ a = b[i]; c = b[i + 1] || b[i]; break; } }
+    const k = c === a ? 0 : clamp((rt - a.t) / (c.t - a.t), 0, 1), n = k < .5 ? a : c;
+    const x = lerp(a.x, c.x, k), y = lerp(a.y, c.y, k), z = lerp(a.z, c.z, k);
+    r.h.grp.position.set(x, y, z); r.h.grp.rotation.y = a.f + angDiff(c.f, a.f) * k;
+    poseHero(r.h, { t:MP.clock + r.ph, dt, run:lerp(a.m, c.m, k), grounded:!!n.g, vy:lerp(a.vy, c.vy, k), sq:0, flip:n.fl || 0 });
+    const gh = groundInfo(x, z, y + .1, 0).h;
+    r.ring.position.set(x, gh + .05, z); r.ring.visible = gh > -.3;
+    r.badge.position.set(x, y + 1.75, z);
+  }
+}
+
+/* Connection */
+function mpClose(){
+  clearInterval(MP.iv); MP.iv = 0;
+  if(MP.t){ try{ MP.t.close(); }catch(e){} }
+  MP.t = null; MP.meta = null; MP.list = []; MP.players = []; MP.isHost = false; MP.synced = false;
+  for(const id of [...MP.remotes.keys()]) mpDropRemote(id);
+  if(MP.match){ MP.match.over = true; }
+  MP.match = null; mpShowRace(false); myRing.visible = false;
+}
+async function mpOpen(code, mode){
+  mpClose();
+  const t = MP_LOCAL ? new LocalTransport() : new SupabaseTransport(), tok = ++MP.tok;
+  MP.t = t; MP.code = code; MP.id = MP.id || mpNewId();
+  const live = () => MP.t === t && MP.tok === tok;
+  try{
+    await t.open(code, MP.id, {
+      presence:list => { if(live()) mpPresence(list); },
+      msg:(ev, p) => { if(live() && p && typeof p === 'object') mpMsg(ev, p); },
+      status:s => { if(live()) mpStatus(s); }
+    });
+  }catch(e){ if(live()) mpClose(); throw e; }
+  if(!live()) throw new Error('cancelled');
+  const t0 = performance.now();
+  await new Promise(res => { const chk = () => (MP.synced || performance.now() - t0 > 1500 || !live()) ? res() : setTimeout(chk, 40); chk(); });
+  if(!live()) throw new Error('cancelled');
+  const others = MP.list.filter(p => p.id !== MP.id);
+  if(mode === 'create' && others.length){ mpClose(); return 'busy'; }
+  if(mode === 'join' && !others.length){ mpClose(); return 'nobody'; }
+  if(others.length >= MP_MAX){ mpClose(); return 'full'; }
+  const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
+  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0 };
+  t.track(MP.meta);
+  mpPresence(MP.list);
+  return 'ok';
+}
+function mpTrack(){ if(MP.t && MP.meta) MP.t.track(MP.meta); }
+function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+function mpPresence(list){
+  MP.list = list; MP.synced = true;
+  if(!MP.meta) return;
+  const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
+  const me = all.findIndex(p => p.id === MP.id);
+  if(me >= MP_MAX && !mpActive()){ mpClose(); mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈'); return; }
+  // two players picked the same colour at the same moment: the later one moves
+  const clash = all.find((p, i) => i < me && p.c === MP.meta.c);
+  if(clash){ const used = new Set(all.filter(p => p.id !== MP.id).map(p => p.c)); let c = 0; while(used.has(c)) c++; if(c < MP_MAX){ MP.meta.c = c; all[me].c = c; mpTrack(); } }
+  const before = MP.players.map(p => p.id), wasHost = MP.isHost, hadHost = before.length > 0;
+  MP.players = all.slice(0, MP_MAX);
+  MP.isHost = MP.players[0].id === MP.id;
+  for(const id of [...MP.remotes.keys()]) if(!MP.players.some(p => p.id === id)) mpDropRemote(id);
+  for(const r of MP.remotes.values()) mpRemote(r.id);
+  const left = before.filter(id => !MP.players.some(p => p.id === id));
+  const joined = MP.players.filter(p => p.id !== MP.id && !before.includes(p.id));
+  if(mpActive()){
+    if(left.some(id => MP.match.pl.some(p => p.id === id))) toast(L('لاعب طلع من السباق 👋', 'A player left the race 👋', 'Bir oyuncu yarıştan ayrıldı 👋'));
+    if(MP.isHost && !wasHost && hadHost) toast(L('👑 صرت إنت صاحب الغرفة', '👑 You are the room owner now', '👑 Artık oda sahibi sensin'));
+    mpHud();
+  }
+  if(joined.length && hadHost && MP.screen === 'lobby') SFX.ring();
+  if(MP.screen === 'lobby') mpRenderLobby();
+  else if(MP.screen === 'end' && state === 'mp' && MP.lastEnd) mpRenderEnd();
+}
+function mpStatus(s){
+  if(s === 'down'){ MP.down = true; if(state === 'play') toast(L('الإنترنت ضعيف… عم نرجع نتصل 📡', 'Weak internet… reconnecting 📡', 'İnternet zayıf… yeniden bağlanıyor 📡')); }
+  else if(s === 'up'){ mpTrack(); if(MP.down && state === 'play') toast(L('رجعنا! ✅', 'Back online! ✅', 'Tekrar bağlandık! ✅')); MP.down = false; }
+}
+function mpMsg(ev, p){
+  const M = MP.match;
+  if(ev === 'pos'){
+    if(!M || M.over || p.mid !== M.mid || p.id === MP.id || !M.pl.some(x => x.id === p.id)) return;
+    const r = mpRemote(p.id); if(!r) return;
+    const t = +p.t, now = performance.now();
+    if(!isFinite(t) || (r.buf.length && t <= r.buf[r.buf.length - 1].t)) return;
+    const d = now - t; r.off = r.off == null || d < r.off ? d : r.off + (d - r.off) * .02;
+    r.buf.push({ t, x:+p.x || 0, y:+p.y || 0, z:+p.z || 0, f:+p.f || 0, m:clamp(+p.m || 0, 0, 1), g:p.g ? 1 : 0, vy:+p.vy || 0, fl:clamp(+p.fl || 0, 0, 1) });
+    if(r.buf.length > 40) r.buf.shift();
+    r.hn = Math.max(0, p.hn | 0);
+  } else if(ev === 'claim'){
+    if(!M || p.mid !== M.mid) return;
+    if(p.r){ if(Array.isArray(p.own)) mpApplyOwn(p.own); }
+    else if(MP.isHost) mpHostClaim(p.i | 0, p.id);
+  } else if(ev === 'start'){
+    if(Array.isArray(p.pl) && p.pl.some(x => x.id === MP.id) && (!M || M.mid !== p.mid)) mpBegin(p);
+  } else if(ev === 'end'){
+    if(M && p.mid === M.mid && !M.over) mpShowEnd(p);
+  }
+}
+
+/* Match */
+function mpCounts(own){ const n = {}; own.forEach(id => { if(id) n[id] = (n[id] || 0) + 1; }); return n; }
+function mpStart(){
+  if(!MP.isHost || MP.players.length < 2) return;
+  const p = { mid:Math.floor(Math.random() * 1e9) + 1, seed:Math.floor(Math.random() * 2e9) + 1, dur:(MP_DUR + MP_CD) * 1000, cd:MP_CD * 1000,
+    pl:MP.players.map(x => ({ id:x.id, hero:heroes[x.hero] ? x.hero : 'bobo', c:x.c | 0 })) };
+  mpSend('start', p); mpBegin(p);
+}
+function mpBegin(p){
+  const now = performance.now(), lay = mpLayout(p.seed);
+  const M = MP.match = { mid:p.mid, seed:p.seed, endAt:now + (+p.dur || (MP_DUR + MP_CD) * 1000), cdEnd:now + (+p.cd || 0), pl:p.pl.map(x => ({ id:x.id, hero:heroes[x.hero] ? x.hero : 'bobo', c:clamp(x.c | 0, 0, 3) })),
+    own:Array(MP_NSTAR).fill(0), pending:new Map(), hn:0, honeyGot:new Set(), over:false, lastSend:0, lastSent:null, stars:lay.stars, honey:lay.honey, allAt:0, cdShown:-1, rewarded:false };
+  MP.lastEnd = null;
+  if(MP.meta){ MP.meta.ph = 'match'; MP.meta.mid = M.mid; mpTrack(); }
+  for(const r of MP.remotes.values()) r.buf.length = 0;
+  M.pl.forEach(x => { if(x.id !== MP.id) mpRemote(x.id); });
+  M.stars.forEach((s, i) => raceStars[i].grp.position.set(...s));
+  mpShowRace(true);
+  race.active = false; raceBtn.scale.y = 1;
+  const mine = M.pl.find(x => x.id === MP.id); myRing.material = ringMats[mine ? mine.c : 0];
+  if(mine && heroes[mine.hero]) setHero(mine.hero, false);
+  MP.screen = 'match'; state = 'play'; setPlayUI(true);
+  joy.id = null; joy.x = joy.y = 0; look.id = null; knob.style.transform = ''; for(const k in keys) keys[k] = false;
+  P.hearts = 3; P.inv = 0; mpSpawn(); placeJoyHome(); hud();
+  clearInterval(MP.iv); MP.iv = setInterval(() => mpSendPos(false), 150);
+}
+function mpSpawn(){
+  const M = MP.match, me = M && M.pl.find(x => x.id === MP.id), c = me ? me.c : 0;
+  P.x = -3 + c * 2; P.z = 33; P.y = groundTop(P.x, P.z) + .1; P.vx = P.vy = P.vz = 0; P.ground = null; P.jumps = 0; P.flip = 0;
+  P.face = Math.PI; cam.yaw = 0; snapCam = true;
+}
+function mpShowRace(on){ raceHoney.visible = on; if(!on) raceStars.forEach(s => { s.grp.visible = false; }); $('#mpCd').hidden = true; }
+function mpSendPos(force){
+  const M = MP.match; if(!M || M.over || !MP.t) return;
+  const now = performance.now(), r2 = v => Math.round(v * 100) / 100;
+  const s = { mid:M.mid, t:Math.round(now), x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.face), m:r2(P.move), g:P.grounded ? 1 : 0, vy:Math.round(P.vy * 10) / 10, fl:r2(P.flip), hn:M.hn };
+  const o = M.lastSent;
+  const changed = !o || Math.abs(o.x - s.x) + Math.abs(o.y - s.y) + Math.abs(o.z - s.z) > .01 || Math.abs(o.f - s.f) > .01 || s.m > 0 || s.fl > 0 || o.hn !== s.hn || o.g !== s.g;
+  if(!force && !changed && now - M.lastSend < 1000) return;
+  M.lastSent = s; M.lastSend = now; mpSend('pos', s);
+}
+function mpInteract(){
+  const M = MP.match, cy = P.y + .55, now = performance.now();
+  for(let i = 0; i < M.honey.length; i++){
+    if(M.honeyGot.has(i)) continue;
+    const h = M.honey[i], dx = h[0] - P.x, dy = h[1] - cy, dz = h[2] - P.z;
+    if(dx * dx + dy * dy + dz * dz < 1.1){ M.honeyGot.add(i); M.hn++; SFX.honey(); burst(h[0], h[1], h[2], 5, [0xffb21c, 0xffe066], 2.5, .7); hud(); }
+  }
+  for(let i = 0; i < M.stars.length; i++){
+    if(M.own[i] || M.pending.has(i)) continue;
+    const s = M.stars[i], dx = s[0] - P.x, dy = s[1] - cy, dz = s[2] - P.z;
+    if(dx * dx + dy * dy + dz * dz < 2.3){
+      M.pending.set(i, { t:now, tries:1 }); tone(988, .08, 'triangle', .1);
+      if(MP.isHost) mpHostClaim(i, MP.id); else mpSend('claim', { mid:M.mid, i });
+    }
+  }
+}
+function mpHostClaim(i, by){
+  const M = MP.match; if(!M || M.over || i < 0 || i >= MP_NSTAR || !by) return;
+  const own = M.own.slice(); if(!own[i]) own[i] = by;
+  mpSend('claim', { mid:M.mid, r:1, i, by:own[i], own });
+  mpApplyOwn(own);
+}
+function mpApplyOwn(own){
+  const M = MP.match; if(!M || M.over) return;
+  let mine = 0, lost = false;
+  for(let k = 0; k < MP_NSTAR; k++){
+    const id = own[k]; if(!id || M.own[k]) continue;
+    M.own[k] = String(id);
+    const s = M.stars[k];
+    if(id === MP.id){ mine++; burst(s[0], s[1], s[2], 26, [0xffd23f, 0xffffff, 0xff8fb8, 0x5fe3b1], 6, 1.2); }
+    else { burst(s[0], s[1], s[2], 10, [0xffffff, 0xff9ee0], 3, .8); if(M.pending.has(k)) lost = true; }
+    M.pending.delete(k);
+  }
+  if(mine){ SFX.star(); toast(L('⭐ إلك!', '⭐ Got it!', '⭐ Senin!')); }
+  else if(lost) toast(L('سبقك صاحبك! 💨', 'A friend was faster! 💨', 'Arkadaşın daha hızlıydı! 💨'));
+  if(!M.allAt && M.own.every(Boolean)) M.allAt = performance.now() + 1500;
+  mpHud();
+}
+function mpHostEnd(){
+  const M = MP.match; if(!M || M.over) return;
+  const pres = new Set(MP.players.map(p => p.id)); pres.add(MP.id);
+  const pl = M.pl.filter(p => pres.has(p.id)), hn = {};
+  pl.forEach(p => { hn[p.id] = p.id === MP.id ? M.hn : (MP.remotes.get(p.id) || {}).hn || 0; });
+  const p = { mid:M.mid, own:M.own.slice(), hn, pl };
+  mpSend('end', p); mpShowEnd(p);
+}
+function mpNearest(){
+  const M = MP.match; let best = null, bd = 1e9;
+  M.stars.forEach((s, i) => { if(M.own[i] || M.pending.has(i)) return; const d = (s[0] - P.x) ** 2 + (s[2] - P.z) ** 2; if(d < bd){ bd = d; best = s; } });
+  return best ? { x:best[0], z:best[2], d:Math.sqrt(bd) } : null;
+}
+function mpHud(){
+  const M = MP.match; if(!M) return;
+  const pres = new Set(MP.players.map(p => p.id)); pres.add(MP.id);
+  const cnt = mpCounts(M.own);
+  const html = M.pl.filter(p => pres.has(p.id)).sort((a, b) => a.c - b.c).map(p =>
+    `<span class="chip ps${p.id === MP.id ? ' me' : ''}" style="--c:${MP_COLORS[p.c]}" data-id="${p.id}">${heroImg(p.hero)}<span>⭐ ${N(cnt[p.id] || 0)}</span></span>`).join('');
+  if(html !== mpHud.last){ mpHud.last = html; $('#mpScore').innerHTML = html; }
+  $('#hudHoney').textContent = '🍯 ' + N(M.hn);
+}
+function mpTimeText(ms){ const s = Math.max(0, Math.ceil(ms / 1000)), m = Math.floor(s / 60), r = s % 60; return N(m) + ':' + N(r < 10 ? '0' + r : r); }
+function mpFrame(dt){
+  MP.clock += dt;
+  const M = MP.match;
+  if(!M || M.over){ return; }
+  const now = performance.now();
+  // countdown
+  const cdl = M.cdEnd - now, cdEl = $('#mpCd');
+  const cdN = cdl > 0 ? Math.ceil(cdl / 1000) : (cdl > -900 ? 0 : -1);
+  if(cdN !== M.cdShown){
+    M.cdShown = cdN;
+    if(cdN < 0) cdEl.hidden = true;
+    else { cdEl.hidden = false; cdEl.innerHTML = `<span>${cdN > 0 ? N(cdN) : L('يلّا!', 'Go!', 'Başla!')}</span>`; if(cdN > 0) tone(520, .1, 'square', .06); else SFX.go(); }
+  }
+  if(state === 'play' || state === 'pause') $('#mpTimer').textContent = '⏱️ ' + mpTimeText(Math.min(MP_DUR * 1000, M.endAt - now));
+  // claims that got no answer (e.g. the host just left): ask again
+  for(const [i, q] of M.pending){
+    if(now - q.t < 1200) continue;
+    if(q.tries >= 5){ M.pending.delete(i); continue; }
+    q.t = now; q.tries++;
+    if(MP.isHost) mpHostClaim(i, MP.id); else mpSend('claim', { mid:M.mid, i });
+  }
+  if(MP.isHost && (now >= M.endAt || (M.allAt && now >= M.allAt))) mpHostEnd();
+  if(!MP.match || MP.match.over) return;
+  // visuals
+  M.stars.forEach((s, i) => {
+    const o = raceStars[i], vis = !M.own[i] && !M.pending.has(i);
+    o.grp.visible = vis; if(!vis) return;
+    o.m.rotation.y = MP.clock * 2.2 + i; o.grp.position.y = s[1] + Math.sin(MP.clock * 2.4 + i) * .2;
+  });
+  for(let i = 0; i < MP_HONEY_N; i++){
+    const h = M.honey[i];
+    if(!h || M.honeyGot.has(i)) _m.makeScale(0, 0, 0);
+    else _m.compose(_v.set(h[0], h[1] + Math.sin(MP.clock * 2.5 + i) * .1, h[2]), _q.setFromEuler(_e.set(0, MP.clock * 2.4 + i, 0)), _s.set(1, 1, 1));
+    raceHoney.setMatrixAt(i, _m);
+  }
+  raceHoney.instanceMatrix.needsUpdate = true;
+  const gh = groundInfo(P.x, P.z, P.y + .1, 0).h;
+  myRing.position.set(P.x, gh + .05, P.z); myRing.visible = gh > -.3;
+  mpUpdateRemotes(dt);
+}
+function mpRank(p){
+  const cnt = mpCounts(p.own || []), hn = p.hn || {};
+  const rows = (p.pl || []).map(x => ({ id:x.id, hero:x.hero, c:x.c, s:cnt[x.id] || 0, h:hn[x.id] || 0 })).sort((a, b) => b.s - a.s || b.h - a.h || a.c - b.c);
+  rows.forEach((r, i) => { r.place = i && rows[i - 1].s === r.s && rows[i - 1].h === r.h ? rows[i - 1].place : i + 1; });
+  return rows;
+}
+function mpShowEnd(p){
+  const M = MP.match; if(!M) return;
+  M.over = true; if(Array.isArray(p.own)) M.own = p.own.map(x => x ? String(x) : 0);
+  clearInterval(MP.iv); MP.iv = 0;
+  mpShowRace(false); mpHideRemotes(); myRing.visible = false;
+  MP.lastEnd = { mid:p.mid, own:M.own.slice(), hn:p.hn || {}, pl:(p.pl || M.pl) };
+  const rows = mpRank(MP.lastEnd), me = rows.find(r => r.id === MP.id);
+  MP.lastEnd.rows = rows;
+  MP.lastEnd.coins = me ? (me.place === 1 ? 10 : me.place === 2 ? 6 : 4) : 0;
+  if(MP.meta){ MP.meta.ph = 'end'; mpTrack(); }
+  if(me && !M.rewarded){ M.rewarded = true; if(window.World) World.addCoins(MP.lastEnd.coins, L('من سباق النجوم', 'for Star Rush', 'Yıldız Yarışı için')); }
+  if(me && me.place === 1) SFX.win(); else SFX.flag();
+  MP.screen = 'end'; state = 'mp'; setPlayUI(false); overlay.classList.add('dim'); card.classList.add('wide'); stage.classList.remove('mpon');
+  toCheckpoint();
+  mpRenderEnd();
+}
+const MEDAL = ['🥇', '🥈', '🥉'];
+function mpRenderEnd(){
+  const E = MP.lastEnd; if(!E || MP.screen !== 'end') return;
+  const rows = E.rows, me = rows.find(r => r.id === MP.id);
+  const pod = r => r ? `<div class="pod${r.id === MP.id ? ' me' : ''}" style="--c:${MP_COLORS[r.c]}" data-id="${r.id}">${heroImg(r.hero)}<b>${mpLabel(r.c)}</b><span>⭐ ${N(r.s)}</span>
+    <div class="blk" style="height:${[0, 88, 62, 42][Math.min(r.place, 3)]}px">${MEDAL[r.place - 1] || N(r.place)}</div></div>` : '';
+  const top = [rows[1], rows[0], rows[2]].filter(Boolean);
+  const rest = rows.slice(3).map(r => `<span class="chip ps${r.id === MP.id ? ' me' : ''}" style="--c:${MP_COLORS[r.c]}">${heroImg(r.hero)}<span>${N(r.place)} · ⭐ ${N(r.s)}</span></span>`).join('');
+  card.innerHTML = `<h2>🏁 ${L('خلص السباق!', 'Race over!', 'Yarış bitti!')}</h2>
+    <div class="podium">${top.map(pod).join('')}</div>${rest ? `<div class="rest">${rest}</div>` : ''}
+    ${me ? `<div class="tally"><span>${MEDAL[me.place - 1] || N(me.place)}</span><span>⭐ ${N(me.s)}</span><span>🍯 ${N(me.h)}</span><span>+${N(E.coins)} 🪙</span></div>` : ''}
+    <div class="row">${MP.isHost ? `<button class="big-btn" id="bAgain"${MP.players.length < 2 ? ' disabled' : ''}>🔁 ${L('كمان مرة', 'Play again', 'Tekrar oyna')}</button>` : `<p>${L('استنّى صاحب الغرفة يبلّش ⏳', 'Waiting for the room owner to start ⏳', 'Oda sahibinin başlatmasını bekle ⏳')}</p>`}
+    <button class="ghost-btn" id="bLeave">🚪 ${L('اطلع', 'Leave', 'Ayrıl')}</button></div>`;
+  if(MP.isHost) $('#bAgain').onclick = () => { SFX.tap(); mpStart(); };
+  $('#bLeave').onclick = () => { SFX.tap(); mpLeave(); };
+}
+function mpPause(){
+  state = 'pause'; setPlayUI(false); overlay.classList.add('dim');
+  joy.id = null; joy.x = joy.y = 0; look.id = null; knob.style.transform = ''; for(const k in keys) keys[k] = false;
+  card.innerHTML = `<h2>⏸️ ${L('استراحة', 'Paused', 'Mola')}</h2><p>${L('السباق لسّا ماشي!', 'The race is still going!', 'Yarış devam ediyor!')}</p>
+    <button class="big-btn" id="bRes">▶️ ${L('كمّل', 'Resume', 'Devam')}</button>
+    <div class="row"><button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button><button class="ghost-btn" id="bLeave">🚪 ${L('اطلع من السباق', 'Leave the race', 'Yarıştan ayrıl')}</button></div>`;
+  $('#bRes').onclick = () => { SFX.tap(); if(mpActive()) resume(); };
+  $('#bSnd').onclick = () => { muted = !muted; store.set('muted', muted); $('#bSnd').innerHTML = (muted ? '🔇' : '🔊') + ' ' + L('الصوت', 'Sound', 'Ses'); SFX.tap(); };
+  $('#bLeave').onclick = () => { SFX.tap(); mpLeave(); };
+}
+function mpLeave(){
+  MP.tok++; mpClose(); MP.screen = 'off'; MP.lastEnd = null; stage.classList.remove('mpon');
+  toCheckpoint(); showTitle();
+}
+
+/* Screens */
+function mpCard(wide){ state = 'mp'; setPlayUI(false); overlay.classList.remove('title'); overlay.classList.add('dim'); card.classList.toggle('wide', !!wide); }
+function mpMenu(){
+  MP.tok++; mpClose(); MP.screen = 'menu'; mpCard(false);
+  card.innerHTML = `<h2>👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</h2>
+    <p><b style="color:var(--gold)">✨ ${L('سباق النجوم', 'Star Rush', 'Yıldız Yarışı')}</b> · ${L('مين بيجمع نجوم أكتر بـ' + N(3) + ' دقايق؟', 'Who grabs the most stars in 3 minutes?', '3 dakikada en çok yıldızı kim toplar?')}</p>
+    <button class="hero" id="bMyHero" style="flex:none;width:auto;padding:6px 14px 8px">${heroImg(heroId, 'mp-hero')}<b>${HERO_NAME[heroId]} 🔄</b></button>
+    <div class="row"><button class="big-btn" id="bCreate">🏠 ${L('اعمل غرفة', 'Create room', 'Oda kur')}</button>
+    <button class="big-btn mint" id="bJoin">🔢 ${L('فوت على غرفة', 'Join room', 'Odaya katıl')}</button></div>
+    <div class="row"><button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>`;
+  $('#bMyHero').onclick = () => { SFX.tap(); showSelect('mp'); };
+  $('#bCreate').onclick = () => { SFX.tap(); mpCreate(); };
+  $('#bJoin').onclick = () => { SFX.tap(); mpKeypad(''); };
+  $('#bBack').onclick = () => { SFX.tap(); showTitle(); };
+}
+function mpConnecting(){
+  MP.screen = 'connecting'; mpCard(false);
+  card.innerHTML = `<div class="bigstar"><span class="spin">⏳</span></div><h2>${L('عم نتصل…', 'Connecting…', 'Bağlanıyor…')}</h2>
+    <button class="ghost-btn" id="bCancel">↩️ ${L('رجوع', 'Back', 'Geri')}</button>`;
+  $('#bCancel').onclick = () => { SFX.tap(); mpMenu(); };
+}
+function mpError(retry){
+  MP.screen = 'error'; mpCard(false);
+  card.innerHTML = `<div class="bigstar">📡</div><h2>${L('ما في إنترنت؟ جرّب كمان مرة', 'No internet? Try again', 'İnternet yok mu? Tekrar dene')}</h2>
+    <div class="row"><button class="big-btn" id="bRetry">🔄 ${L('جرّب كمان مرة', 'Try again', 'Tekrar dene')}</button><button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>`;
+  $('#bRetry').onclick = () => { SFX.tap(); retry(); };
+  $('#bBack').onclick = () => { SFX.tap(); mpMenu(); };
+}
+async function mpCreate(){
+  mpConnecting();
+  try{
+    for(let i = 0; i < 4; i++){
+      const code = String(1000 + Math.floor(Math.random() * 9000));
+      const r = await mpOpen(code, 'create');
+      if(r === 'ok'){ mpLobby(); return; }
+    }
+    throw new Error('busy');
+  }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(mpCreate); }
+}
+async function mpJoin(code){
+  mpConnecting();
+  try{
+    const r = await mpOpen(code, 'join');
+    if(MP.screen !== 'connecting') return;
+    if(r === 'ok') mpLobby();
+    else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
+    else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
+  }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpJoin(code)); }
+}
+function mpKeypad(msg){
+  MP.screen = 'keypad'; MP.typed = ''; mpCard(true);
+  const keys9 = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-k="${d}">${N(d)}</button>`).join('');
+  card.innerHTML = `<h2>🔢 ${L('اكتب رقم الغرفة', 'Type the room number', 'Oda numarasını yaz')}</h2>
+    <div class="mp-cols"><div class="mp-col"><div class="mp-code" id="kpCode"></div><p class="mp-msg" id="kpMsg">${msg || ''}</p>
+      <button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>
+    <div class="keypad" id="keypad">${keys9}<button class="del" data-k="del" aria-label="${L('امسح', 'Delete', 'Sil')}">⌫</button><button data-k="0">${N(0)}</button><button class="ok" data-k="ok" aria-label="${L('تمام', 'OK', 'Tamam')}">✅</button></div></div>`;
+  card.querySelectorAll('#keypad button').forEach(b => b.onclick = () => mpKey(b.dataset.k));
+  $('#bBack').onclick = () => { SFX.tap(); mpMenu(); };
+  mpKeyDraw();
+}
+function mpKeyDraw(){
+  const el = $('#kpCode'); if(!el) return;
+  el.innerHTML = [0, 1, 2, 3].map(i => `<b class="${i === MP.typed.length ? 'cur' : ''}">${MP.typed[i] != null ? N(MP.typed[i]) : ''}</b>`).join('');
+}
+function mpKey(k){
+  if(MP.screen !== 'keypad') return;
+  if(k === 'del'){ MP.typed = MP.typed.slice(0, -1); SFX.tap(); }
+  else if(k === 'ok'){ if(MP.typed.length === 4) mpJoin(MP.typed); else SFX.hurt(); return; }
+  else if(/^\d$/.test(k) && MP.typed.length < 4){ MP.typed += k; SFX.tap(); }
+  const m = $('#kpMsg'); if(m) m.textContent = '';
+  mpKeyDraw();
+  if(MP.typed.length === 4){ const code = MP.typed; setTimeout(() => { if(MP.screen === 'keypad' && MP.typed === code) mpJoin(code); }, 300); }
+}
+addEventListener('keydown', e => {
+  if(state !== 'mp' || MP.screen !== 'keypad') return;
+  if(/^\d$/.test(e.key)) mpKey(e.key); else if(e.key === 'Backspace') mpKey('del'); else if(e.key === 'Enter') mpKey('ok');
+});
+function mpLobby(){ MP.screen = 'lobby'; mpCard(true); mpRenderLobby(); }
+function mpHeroChanged(){ if(MP.meta){ MP.meta.hero = heroId; mpTrack(); } if(MP.t) mpLobby(); else mpMenu(); }
+function mpRenderLobby(){
+  if(MP.screen !== 'lobby' || state !== 'mp') return;
+  const pl = MP.players, host = pl[0];
+  const busy = host && host.id !== MP.id && host.ph === 'match' && !(MP.match && MP.match.mid === host.mid);
+  const slots = [0, 1, 2, 3].map(c => {
+    const p = pl.find(x => x.c === c);
+    if(!p) return `<div class="slot empty" style="--c:${MP_COLORS[c]}">❔</div>`;
+    return `<div class="slot" style="--c:${MP_COLORS[c]}" data-id="${p.id}">${p === host ? '<span class="crown">👑</span>' : ''}${heroImg(heroes[p.hero] ? p.hero : 'bobo')}
+      <span><b>${mpLabel(c)}</b><small>${p.id === MP.id ? L('إنت', 'You', 'Sen') : HERO_NAME[p.hero] || ''}</small></span></div>`;
+  }).join('');
+  let status;
+  if(busy) status = L('في سباق شغّال هلّق، استنّى يخلص ⏳', 'A race is on right now — wait for it to finish ⏳', 'Şu an bir yarış var, bitmesini bekle ⏳');
+  else if(MP.isHost) status = pl.length < 2 ? L('استنّى أصحابك يفوتوا…', 'Waiting for friends to join…', 'Arkadaşlarının katılmasını bekle…') : L('كلّ شي جاهز؟ بلّش!', 'Everyone ready? Start!', 'Herkes hazır mı? Başla!');
+  else status = L('استنّى صاحب الغرفة يبلّش ⏳', 'Waiting for the room owner to start ⏳', 'Oda sahibinin başlatmasını bekle ⏳');
+  card.innerHTML = `<h2>👫 ${L('سباق النجوم', 'Star Rush', 'Yıldız Yarışı')}</h2>
+    <div class="mp-cols"><div class="mp-col"><span class="mp-lbl">${L('رقم الغرفة', 'Room number', 'Oda numarası')}</span>
+      <div class="mp-code" id="roomCode">${[...MP.code].map(d => `<b>${N(d)}</b>`).join('')}<button class="copy" id="bCopy" aria-label="${L('انسخ', 'Copy', 'Kopyala')}">📋</button></div>
+      <p>${L('قول لأصحابك هالرقم 👆', 'Tell your friends this number 👆', 'Bu numarayı arkadaşlarına söyle 👆')}</p></div>
+    <div class="mp-col"><div class="slots" id="slots">${slots}</div><p id="lobbyMsg">${status}</p></div></div>
+    <div class="row">${MP.isHost && !busy ? `<button class="big-btn" id="bStart"${pl.length < 2 ? ' disabled' : ''}>▶️ ${L('يلّا نبلّش', 'Start', 'Başla')}</button>` : ''}
+    <button class="ghost-btn" id="bHero">🦸 ${L('غيّر الشخصية', 'Change hero', 'Kahramanı değiştir')}</button>
+    <button class="ghost-btn" id="bLeave">🚪 ${L('اطلع', 'Leave', 'Ayrıl')}</button></div>`;
+  const bs = $('#bStart'); if(bs) bs.onclick = () => { SFX.tap(); mpStart(); };
+  $('#bHero').onclick = () => { SFX.tap(); showSelect('lobby'); };
+  $('#bLeave').onclick = () => { SFX.tap(); mpLeave(); };
+  $('#bCopy').onclick = () => {
+    SFX.tap(); const b = $('#bCopy'), done = () => { if(b.isConnected){ b.textContent = '✅'; setTimeout(() => { if(b.isConnected) b.textContent = '📋'; }, 1500); } };
+    try{ navigator.clipboard.writeText(MP.code).then(done, () => { mpCopyFallback(); done(); }); }catch(e){ mpCopyFallback(); done(); }
+  };
+}
+function mpCopyFallback(){ try{ const t = document.createElement('textarea'); t.value = MP.code; t.style.cssText = 'position:fixed;opacity:0'; document.body.appendChild(t); t.select(); document.execCommand('copy'); t.remove(); }catch(e){} }
+
 /* ---------- Main loop ---------- */
 let last = performance.now(), fpsN = 0, fpsT = 0, fps = 60, slowT = 0;
 function frame(now){
@@ -1276,15 +2168,18 @@ function frame(now){
     if(state === 'play' && fps < 42 && dpr > 1){ slowT++; if(slowT >= 2){ dpr = Math.max(1, dpr - .25); renderer.setPixelRatio(dpr); slowT = 0; } } else slowT = 0;
   }
   if(state === 'play'){
-    let rest = dt; while(rest > 0){ const h = Math.min(rest, 1 / 60); step(h); rest -= h; }
+    if(mpFrozen()){ P.move = 0; T += dt; }
+    else { let rest = dt; while(rest > 0){ const h = Math.min(rest, 1 / 60); step(h); rest -= h; } }
     updateCamera(dt); hudFrame();
-  } else if(state === 'title'){
+  } else if(state === 'title' || state === 'mp' || (state === 'select' && selFrom !== 'pause')){
     T += dt;
     const a = T * .06;
     camera.position.set(Math.sin(a) * 74, 30, Math.cos(a) * 74); camera.lookAt(0, portrait ? -16 : 0, 0);
     updateMovers(T);
   }
   animate(dt);
+  mpFrame(dt);
+  if(state === 'select') renderPreviews(dt);
   sky.position.copy(camera.position);
   sunGlow.position.copy(camera.position).add(_v.set(150, 210, -260));
   renderer.render(scene, camera);
@@ -1292,12 +2187,22 @@ function frame(now){
 
 /* debug / test hook */
 window.__adv3d = {
-  get state(){ return state; }, get fps(){ return fps; }, get dpr(){ return dpr; }, P, cam,
+  get state(){ return state; }, get hero(){ return heroId; }, get rot(){ return ROT; }, get stage(){ return [SW, SH]; }, toLayer, setHero:id => setHero(id, true), get fps(){ return fps; }, get dpr(){ return dpr; }, P, cam,
   get stars(){ return starsGot.slice(); }, get honey(){ return honeyCount; }, starPos:i => STARS[i].at.slice(),
   teleport(x, z, y){ P.x = x; P.z = z; P.y = y != null ? y : groundTop(x, z) + .1; P.vx = P.vz = P.vy = 0; snapCam = true; },
   collectStar(i){ unlocked.rings = unlocked.meadow = unlocked.race = true; collectStar(i); },
   unlockAll(){ unlocked.rings = unlocked.meadow = unlocked.race = true; },
-  info(){ return renderer.info.render; }, movers:() => movers.map(m => [m.cx, m.cy, m.cz]), enemies:() => enemies.map(e => [e.type, e.x, e.y, e.z, e.alive]), start:() => startPlay()
+  info(){ return renderer.info.render; }, movers:() => movers.map(m => [m.cx, m.cy, m.cz]), enemies:() => enemies.map(e => [e.type, e.x, e.y, e.z, e.alive]), start:() => startPlay(),
+  mp:{
+    get screen(){ return MP.screen; }, get code(){ return MP.code; }, get id(){ return MP.id; }, get isHost(){ return MP.isHost; }, get local(){ return MP_LOCAL; },
+    get players(){ return MP.players.map(p => ({ id:p.id, hero:p.hero, c:p.c, o:p.o, ph:p.ph })); }, get active(){ return mpActive(); }, get frozen(){ return mpFrozen(); },
+    get own(){ return MP.match ? MP.match.own.slice() : null; }, get scores(){ return MP.match ? mpCounts(MP.match.own) : null; }, get honey(){ return MP.match ? MP.match.hn : 0; },
+    get pool(){ return MP_POOL.length; }, get stars(){ return MP.match ? MP.match.stars.map(s => s.slice()) : null; }, get end(){ return MP.lastEnd; },
+    visibleStars(){ return raceStars.filter(s => s.grp.visible).length; },
+    remotes(){ return [...MP.remotes.values()].map(r => ({ id:r.id, hero:r.hero, c:r.c, visible:r.h.grp.visible, x:r.h.grp.position.x, y:r.h.grp.position.y, z:r.h.grp.position.z })); },
+    goStar(i){ const s = MP.match.stars[i]; P.x = s[0]; P.z = s[2]; P.y = s[1] - 1.25; P.vx = P.vz = P.vy = 0; snapCam = true; },
+    setTimeLeft(sec){ if(MP.match) MP.match.endAt = performance.now() + sec * 1000; }, skipCountdown(){ if(MP.match) MP.match.cdEnd = performance.now(); }
+  }
 };
 
 resize(); hud(); showTitle();
