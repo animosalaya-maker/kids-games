@@ -513,7 +513,12 @@ function frame(now){
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if('serviceWorker' in navigator && location.protocol === 'https:'){
+  const hadSW = !!navigator.serviceWorker.controller; let reloaded = false;
+  navigator.serviceWorker.register('sw.js').then(r => { try{ r.update(); }catch(e){} document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') try{ r.update(); }catch(e){} }); }).catch(() => {});
+  // a newer version took over: refresh once so the new games show right away
+  navigator.serviceWorker.addEventListener('controllerchange', () => { if(hadSW && !reloaded){ reloaded = true; location.reload(); } });
+}
 })();
 </script>
 </body>
