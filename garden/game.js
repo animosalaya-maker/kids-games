@@ -1412,7 +1412,7 @@ class LocalTransport{
     this.iv = setInterval(() => {
       if(this.meta) this.beat();
       const now = Date.now(); let ch = false;
-      for(const [k, p] of this.peers) if(now - p.last > 3500){ this.peers.delete(k); ch = true; }
+      for(const [k, p] of this.peers) if(now - p.last > 8000){ this.peers.delete(k); ch = true; }
       if(ch) this.sync();
     }, 1000);
     bc.postMessage({ k:'hello', from:id });
