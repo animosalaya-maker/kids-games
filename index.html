@@ -41,6 +41,12 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 .brand h1{font-family:var(--display);font-weight:800;font-size:clamp(30px,8.5vw,44px);line-height:1;margin:0;color:var(--gold);text-shadow:0 4px 0 var(--face)}
 .brand span{color:var(--muted);font-size:14px}
 .lang-btn{flex:none;border:0;width:44px;height:44px;border-radius:14px;background:var(--night-3);font-size:22px;box-shadow:0 4px 0 var(--face)}
+.fr-btn{position:relative}
+.fr-badge{position:absolute;top:-6px;inset-inline-end:-6px;min-width:22px;height:22px;padding:0 6px;border-radius:11px;background:#ff3b4e;color:#fff;font:800 13px/22px var(--display);font-style:normal;
+  box-shadow:0 0 0 3px var(--night);animation:pop 1.6s ease-in-out infinite}
+@keyframes pop{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}
+@media (max-width:420px){.top{gap:8px}#avatar{width:62px;height:62px}.lang-btn{width:42px;height:42px}.coins{padding:8px 11px;font-size:20px}.brand span{display:none}}
+.fr-code{direction:ltr;font-family:var(--display);font-weight:800;font-size:46px;letter-spacing:.08em;color:var(--gold);line-height:1;text-shadow:0 0 22px rgba(255,205,77,.4)}
 .coins{flex:none;display:flex;align-items:center;gap:6px;background:var(--night-3);border-radius:999px;padding:8px 14px;font-family:var(--display);font-weight:800;font-size:22px;font-variant-numeric:tabular-nums;box-shadow:0 4px 0 var(--face)}
 
 .row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
@@ -126,6 +132,7 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
     <canvas id="avatar" width="200" height="200" aria-label="بوبو" data-en-aria="Bobo" data-tr-aria="Bobo"></canvas>
     <div class="brand"><h1 data-en="Bobo Land" data-tr="Bobo Land">بوبو لاند</h1><span data-en="Play, collect coins, dress up Bobo" data-tr="Oyna, jeton topla, Bobo'yu giydir">العب، اجمع عملات، ولبّس بوبو</span></div>
     <button class="lang-btn" id="langBtn" aria-label="اللغة" data-en-aria="Language" data-tr-aria="Dil">🌐</button>
+    <button class="lang-btn fr-btn" id="frBtn" aria-label="أصحابي" data-en-aria="My friends" data-tr-aria="Arkadaşlarım">👫<i class="fr-badge" id="frBadge" hidden></i></button>
     <div class="coins" aria-label="العملات" data-en-aria="Coins" data-tr-aria="Jetonlar">🪙 <span id="coinCount">٠</span></div>
   </header>
 
@@ -203,6 +210,16 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
   <p id="saveMsg" style="min-height:1.5em;font-weight:700"></p>
 </div></div>
 
+<div class="sheet" id="friendSheet" hidden><div class="card">
+  <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
+  <div style="font-size:64px;line-height:1">👫</div>
+  <h2 data-en="Add this friend?" data-tr="Bu arkadaşı ekleyelim mi?">بدّك تضيف هالصاحب؟</h2>
+  <div class="fr-code" id="frCode"></div>
+  <p id="frMsg" data-en="Your friend sent you their code. Add them and play together!" data-tr="Arkadaşın sana kodunu gönderdi. Ekle ve birlikte oynayın!">صاحبك بعتلك رمزه. ضيفه والعبوا سوا!</p>
+  <div class="row-btns" id="frAsk"><button class="big-btn" id="frYes" data-en="Yes, add ✓" data-tr="Evet, ekle ✓">إيه، ضيفه ✓</button><button class="small-btn" data-close data-en="No" data-tr="Hayır">لا</button></div>
+  <div class="row-btns" id="frDone" hidden><a class="big-btn" href="friends/" id="frGo" style="text-decoration:none" data-en="👫 My friends" data-tr="👫 Arkadaşlarım">👫 أصحابي</a></div>
+</div></div>
+
 <div class="sheet" id="langSheet" hidden><div class="card">
   <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
   <h2>🌐</h2>
@@ -210,6 +227,7 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
 </div></div>
 
 <script src="world.js"></script>
+<script src="friends.js"></script>
 <script>
 (function(){
 'use strict';
@@ -382,7 +400,7 @@ function stickers(){
     ['🎩',L('خزانة مليانة','Full wardrobe','Dolu dolap'), W.owned.length >= 8, L('اشتري ٧ أغراض','Buy 7 items','7 eşya al')],
     ['🎮',L('١٠ ألعاب','10 games','10 oyun'), st.plays >= 10, L('العب ١٠ مرات','Play 10 times','10 kez oyna')],
     ['🕹️',L('٥٠ لعبة','50 games','50 oyun'), st.plays >= 50, L('العب ٥٠ مرة','Play 50 times','50 kez oyna')],
-    ['🌈',L('جرّب ١٠','Try 10','10 dene'), kinds.length >= 10, L('العب ١٠ ألعاب مختلفة','Play 10 different games','10 farklı oyun oyna')],
+    ['🧭',L('جرّب ١٠','Try 10','10 dene'), kinds.length >= 10, L('العب ١٠ ألعاب مختلفة','Play 10 different games','10 farklı oyun oyna')],
     ['🌍',L('جرّب الكل','Try them all','Hepsini dene'), kinds.length >= 30, L('العب ٣٠ لعبة مختلفة','Play 30 different games','30 farklı oyun oyna')],
     ['🏠',L('هربت!','Escaped!','Kaçtın!'), (g.bobo || 0) >= 1, L('اهرب من بيت بوبو',"Escape Bobo's House","Bobo'nun Evi'nden kaç")],
     ['🔦',L('القبو المعتم','Dark basement','Karanlık bodrum'), bestOf('bobo_best', 5) > 0, L('خلّص المرحلة ٦','Finish level 6','6. bölümü bitir')],
@@ -420,6 +438,32 @@ document.getElementById('restoreBtn').onclick = () => {
   confirmRestore = false; btn.textContent = L('رجّع اللعب','Restore','Geri yükle');
   if(W.importCode(code)){ msg.textContent = L('رجع كل شي! 🎉','Everything is back! 🎉','Her şey geri geldi! 🎉'); ding(); refresh(); renderAlbum(); } else { msg.textContent = L('الرمز مش صحيح. تأكد إنك نسخته كامل','That code is not right. Copy all of it','Kod hatalı. Tamamını kopyala'); nope(); }
 };
+
+/* friends: 👫 button with a badge (requests + invites), heartbeat while the app is open, ?friend=CODE links */
+const FR = window.Friends;
+function frBadge(c){ const n = c ? (c.requests | 0) + (c.invites | 0) : 0, b = document.getElementById('frBadge'); b.hidden = !n; b.textContent = AR(n > 9 ? 9 : n) + (n > 9 ? '+' : ''); }
+document.getElementById('frBtn').onclick = () => { location.href = FR && FR.MOCK ? 'friends/?fr=mock' : 'friends/'; };
+if(FR){
+  FR.startHeartbeat(frBadge, 30000);
+  const qs = new URLSearchParams(location.search), raw = qs.get('friend');
+  if(raw != null){
+    qs.delete('friend'); try{ history.replaceState(null, '', location.pathname + (qs.toString() ? '?' + qs : '') + location.hash); }catch(e){}
+    const code = FR.normCode(raw).slice(0, 6);
+    if(FR.isCode(code)){
+      document.getElementById('frCode').textContent = FR.fmtCode(code); open('friendSheet');
+      document.getElementById('frYes').onclick = async () => {
+        const y = document.getElementById('frYes'), msg = document.getElementById('frMsg'); y.disabled = true; msg.textContent = '⏳';
+        try{
+          const r = await FR.request(code);
+          msg.textContent = FR.statusText(r.status);
+          if(['sent', 'accepted', 'already_sent', 'already_friends', 'self'].includes(r.status)){ document.getElementById('frAsk').hidden = true; document.getElementById('frDone').hidden = false; if(r.status !== 'self') ding(); } else nope();
+          FR.heartbeat().then(frBadge, () => {});
+        }catch(e){ msg.textContent = FR.errText(e); nope(); }
+        y.disabled = false;
+      };
+    }
+  }
+}
 
 /* little animations */
 const BUD = [['#ff5a5f','#c23a40'],['#3fa9ff','#2276c4'],['#3fd47a','#249c55'],['#ffc233','#c48f12']];

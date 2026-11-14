@@ -65,12 +65,15 @@ const World = {
   get stats(){ const w = load(); return w.stats || { plays:0, games:{}, wins:0 }; },
   get total(){ return load().total || 0; },
   get owned(){ return load().owned.slice(); },
-  exportCode(){ const w = load(); return 'BOBO-' + btoa(unescape(encodeURIComponent(JSON.stringify(w)))).replace(/=+$/, ''); },
+  /* the save code also carries the friends identity (bobo_fr_secret), so friends move to the new phone too */
+  exportCode(){ const w = Object.assign({}, load()); try{ const s = localStorage.getItem('bobo_fr_secret'); if(s) w.fr = s; }catch(e){} return 'BOBO-' + btoa(unescape(encodeURIComponent(JSON.stringify(w)))).replace(/=+$/, ''); },
   importCode(code){
     try{
       const raw = String(code).trim().replace(/^BOBO-/, '').replace(/\s+/g, '');
       const data = JSON.parse(decodeURIComponent(escape(atob(raw))));
       if(typeof data !== 'object' || typeof data.coins !== 'number' || !Array.isArray(data.owned)) return false;
+      if(typeof data.fr === 'string' && /^[A-Za-z0-9_-]{43,128}$/.test(data.fr)){ try{ localStorage.setItem('bobo_fr_secret', data.fr); localStorage.removeItem('bobo_fr_code'); }catch(e){} }
+      delete data.fr;
       mem = Object.assign(blank(), data); save(); return true;
     }catch(e){ return false; }
   },

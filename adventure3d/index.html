@@ -1577,7 +1577,7 @@ function loadSupabase(){
   if(window.supabase && window.supabase.createClient) return Promise.resolve();
   if(loadSupabase.p) return loadSupabase.p;
   return (loadSupabase.p = new Promise((res, rej) => {
-    const s = document.createElement('script'); s.src = 'supabase.js';
+    const s = document.createElement('script'); s.src = '../supabase.js';
     s.onload = () => (window.supabase && window.supabase.createClient) ? res() : rej(new Error('no client'));
     s.onerror = () => { loadSupabase.p = null; s.remove(); rej(new Error('load')); };
     document.head.appendChild(s);
@@ -2079,7 +2079,7 @@ async function mpCreate(){
     for(let i = 0; i < 4; i++){
       const code = String(1000 + Math.floor(Math.random() * 9000));
       const r = await mpOpen(code, 'create');
-      if(r === 'ok'){ mpLobby(); return; }
+      if(r === 'ok'){ mpLobby(); mpSendInvite(); return; }
     }
     throw new Error('busy');
   }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(mpCreate); }
@@ -2093,6 +2093,16 @@ async function mpJoin(code){
     else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
     else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
   }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpJoin(code)); }
+}
+/* «تعا العب» from the friends page: ?host=1&invite=<friendCode> creates a room, then invites that friend to it (friends.js) */
+function mpSendInvite(){
+  const who = MP.inviteFor; if(!who || !MP.code || !window.Friends) return;
+  MP.inviteFor = null;
+  Friends.invite(who, MP.code).then(r => {
+    if(r && r.status === 'sent') toast(L('✉️ بعتنا دعوة لصاحبك! استنّاه يفوت', '✉️ Invite sent! Wait for your friend to join', '✉️ Davet gönderildi! Arkadaşının gelmesini bekle'));
+    else if(r && r.status === 'slow_down') toast(L('بعتت دعوات كتير، استنّى شوي ⏳', 'Too many invites, wait a little ⏳', 'Çok fazla davet, biraz bekle ⏳'));
+    else toast(L('ما قدرنا نبعت الدعوة 🙈', "Couldn't send the invite 🙈", 'Davet gönderilemedi 🙈'));
+  }, e => toast(Friends.errText(e)));
 }
 function mpKeypad(msg){
   MP.screen = 'keypad'; MP.typed = ''; mpCard(true);
@@ -2207,7 +2217,18 @@ window.__adv3d = {
 
 resize(); hud(); showTitle();
 requestAnimationFrame(frame);
+/* links from the friends page: ?join=<room> joins that room, ?host=1&invite=<friendCode> creates a room and invites the friend */
+(function(){
+  const q = new URLSearchParams(location.search), join = q.get('join'), host = q.get('host') === '1', inv = q.get('invite');
+  if(!/^\d{4}$/.test(join || '') && !host) return;
+  ['join', 'host', 'invite'].forEach(k => q.delete(k));
+  try{ history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
+  if(/^\d{4}$/.test(join || '')) mpJoin(join);
+  else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(); }
+})();
+if(window.Friends) Friends.startHeartbeat();
 </script>
+<script src="../friends.js"></script>
 <script src="../back.js"></script>
 <script>BoboBack.init({ visible: () => { const o = document.getElementById('overlay'); return !o.hidden && o.classList.contains('title'); }, mount: document.getElementById('stage') });</script>
 </body>
