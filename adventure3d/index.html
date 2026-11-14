@@ -1465,7 +1465,7 @@ function showPause(){
     <button class="big-btn" id="bRes">▶️ ${L('كمّل', 'Resume', 'Devam')}</button>
     <div class="row"><button class="ghost-btn" id="bCp">🚩 ${L('رجّعني للعلم', 'Back to checkpoint', 'Kontrol noktasına dön')}</button>
     <button class="ghost-btn" id="bHero">🦸 ${L('غيّر الشخصية', 'Change hero', 'Kahramanı değiştir')}</button>
-    <button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button>${HOME}</div>`;
+    <button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button></div><button class="exit-btn">🚪 ${L('خروج', 'Exit', 'Çıkış')}</button>`;
   $('#bRes').onclick = () => { SFX.tap(); resume(); };
   $('#bCp').onclick = () => { toCheckpoint(); resume(); };
   $('#bHero').onclick = () => { SFX.tap(); showSelect('pause'); };
@@ -2039,8 +2039,9 @@ function mpPause(){
   joy.id = null; joy.x = joy.y = 0; look.id = null; knob.style.transform = ''; for(const k in keys) keys[k] = false;
   card.innerHTML = `<h2>⏸️ ${L('استراحة', 'Paused', 'Mola')}</h2><p>${L('السباق لسّا ماشي!', 'The race is still going!', 'Yarış devam ediyor!')}</p>
     <button class="big-btn" id="bRes">▶️ ${L('كمّل', 'Resume', 'Devam')}</button>
-    <div class="row"><button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button><button class="ghost-btn" id="bLeave">🚪 ${L('اطلع من السباق', 'Leave the race', 'Yarıştan ayrıl')}</button></div>`;
+    <div class="row"><button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button><button class="ghost-btn" id="bLeave">🚪 ${L('اطلع من السباق', 'Leave the race', 'Yarıştan ayrıl')}</button></div><button class="exit-btn" id="bExit">🚪 ${L('خروج', 'Exit', 'Çıkış')}</button>`;
   $('#bRes').onclick = () => { SFX.tap(); if(mpActive()) resume(); };
+  $('#bExit').onclick = () => { SFX.tap(); try{ mpLeave(); }catch(e){} setTimeout(() => { location.href = '../'; }, 150); };
   $('#bSnd').onclick = () => { muted = !muted; store.set('muted', muted); $('#bSnd').innerHTML = (muted ? '🔇' : '🔊') + ' ' + L('الصوت', 'Sound', 'Ses'); SFX.tap(); };
   $('#bLeave').onclick = () => { SFX.tap(); mpLeave(); };
 }

@@ -1091,7 +1091,7 @@ function pause(){
   showOverlay(`<h2>⏸️ ${L('استراحة', 'Paused', 'Mola')}</h2>
     <button class="big-btn" id="bRes">▶️ ${L('كمّل', 'Keep going', 'Devam et')}</button>
     <div class="row"><button class="ghost-btn" id="bRe">🔄 ${L('من الأول', 'Restart', 'Baştan')}</button><button class="ghost-btn" id="bMap">🗺️ ${L('الخريطة', 'Map', 'Harita')}</button>
-    <button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'}</button><a class="ghost-btn" href="../">🏠</a></div>`);
+    <button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'}</button></div><button class="exit-btn">🚪 ${L('خروج', 'Exit', 'Çıkış')}</button>`);
   $('#bRes').onclick = () => { SFX.tap(); resume(); };
   $('#bRe').onclick = () => { SFX.tap(); startLevel(G.i); };
   $('#bMap').onclick = () => { SFX.tap(); showMap(); };
