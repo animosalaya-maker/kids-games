@@ -51,7 +51,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .hud-mid{flex:1;min-width:0;display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none}
 .chips{display:flex;gap:6px;flex:none;direction:ltr;flex-wrap:wrap;justify-content:flex-end;max-width:calc(var(--sw) * .4)}
 .chip{background:rgba(28,24,56,.78);border-radius:999px;padding:6px 12px;font-weight:700;font-size:17px;white-space:nowrap;font-variant-numeric:tabular-nums;display:flex;align-items:center;gap:4px}
-.chip.timer{font-family:var(--display);font-size:22px;background:rgba(28,24,56,.85);padding:2px 16px;min-width:96px;justify-content:center;box-shadow:inset 0 0 0 3px var(--gold)}
+.chip.timer{direction:ltr;unicode-bidi:isolate;font-family:var(--display);font-size:22px;background:rgba(28,24,56,.85);padding:2px 16px;min-width:96px;justify-content:center;box-shadow:inset 0 0 0 3px var(--gold)}
 .mpbar{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;direction:ltr;pointer-events:none}
 .chip.ps{box-shadow:inset 0 0 0 3px var(--c);padding:3px 10px 3px 3px;gap:5px}
 .chip.ps img{width:30px;height:30px;border-radius:50%;display:block;background:var(--night);object-fit:cover;object-position:top}
@@ -75,7 +75,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .guide p{margin:0 0 18px;background:#fff7e8;color:#2a1f4a;font-family:var(--display);font-weight:800;font-size:18px;line-height:1.3;padding:9px 15px;border-radius:20px;position:relative;box-shadow:0 6px 0 rgba(0,0,0,.2)}
 .guide p::before{content:"";position:absolute;bottom:10px;inset-inline-start:-9px;border:9px solid transparent;border-inline-end-color:#fff7e8;border-inline-start:0}
 [dir=rtl] .guide p::before{inset-inline-start:auto;inset-inline-end:-9px;border-inline-end-color:transparent;border-inline-start:9px solid #fff7e8;border-inline-end:0}
-.guide.hub{left:auto;right:max(14px,var(--sa-r));transform:none;bottom:calc(10px + var(--sa-b));max-width:min(380px,calc(var(--sw) * .44))}
+.guide.hub{z-index:25;left:auto;right:max(14px,var(--sa-r));transform:none;bottom:calc(10px + var(--sa-b));max-width:min(380px,calc(var(--sw) * .44))}
 @keyframes gIn{from{opacity:0;transform:translateX(-50%) translateY(30px) scale(.8)}to{opacity:1;transform:translateX(-50%) translateY(0) scale(1)}}
 .guide.hub{animation:gIn2 .4s cubic-bezier(.2,1.4,.4,1)}
 @keyframes gIn2{from{opacity:0;transform:translateY(30px) scale(.8)}to{opacity:1;transform:none}}
@@ -107,15 +107,14 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .tally span{background:var(--night);border-radius:16px;padding:7px 14px;font-weight:700;font-size:18px}
 .bigstar{font-size:70px;line-height:1;animation:spin .7s ease-out;filter:drop-shadow(0 6px 0 rgba(0,0,0,.25))}
 @keyframes spin{from{transform:scale(0) rotate(-200deg)}to{transform:scale(1) rotate(0)}}
-.rothint{display:flex;align-items:center;gap:10px;background:var(--gold);color:#3a2a00;border-radius:18px;padding:6px 16px 6px 12px;font-family:var(--display);font-weight:800;font-size:18px;box-shadow:0 4px 0 #c48f12}
+.rothint{flex:0 1 auto;min-width:0;display:flex;align-items:center;gap:10px;background:var(--gold);color:#3a2a00;border-radius:18px;padding:6px 16px 6px 12px;font-family:var(--display);font-weight:800;font-size:18px;box-shadow:0 4px 0 #c48f12}
 .rothint i{font-style:normal;font-size:30px;line-height:1;display:inline-block;animation:rotphone 2.6s ease-in-out infinite}
 @keyframes rotphone{0%,20%{transform:rotate(-90deg)}55%,85%{transform:rotate(-180deg)}100%{transform:rotate(-90deg)}}
 
 /* hub */
 .hub{width:100%;display:flex;flex-direction:column;gap:10px;margin:auto 0}
-.hub-top{display:flex;align-items:center;gap:12px;padding-inline-start:120px;min-height:52px}
-[dir=ltr] .hub-top{padding-inline-start:120px}
-.hub-top h1{flex:1;min-width:0;margin:0;font-family:var(--display);font-weight:800;font-size:36px;line-height:1;color:var(--gold);text-shadow:0 4px 0 var(--wall-face)}
+.hub-top{display:flex;align-items:center;gap:12px;padding-left:128px;min-height:52px}
+.hub-top h1{flex:1 0 auto;white-space:nowrap;margin:0;font-family:var(--display);font-weight:800;font-size:36px;line-height:1;color:var(--gold);text-shadow:0 4px 0 var(--wall-face)}
 .hub-top h1 small{display:block;font-size:16px;color:var(--ink);text-shadow:none;font-weight:700;margin-top:4px;opacity:.9}
 .hero-btn{flex:none;display:flex;align-items:center;gap:8px;border:0;border-radius:20px;background:rgba(42,36,82,.92);padding:4px 14px 4px 4px;box-shadow:0 0 0 3px var(--c,var(--gold)),0 5px 0 rgba(0,0,0,.3);font-family:var(--display);font-weight:800;font-size:18px}
 .hero-btn img{width:46px;height:46px;border-radius:14px;object-fit:cover;object-position:top;background:var(--night-3)}
@@ -194,7 +193,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .pod{display:flex;flex-direction:column;align-items:center;gap:3px;width:112px;min-width:0}
 .pod img{width:62px;height:62px;border-radius:16px;box-shadow:0 0 0 3px var(--c);display:block;object-fit:cover;object-position:top;background:var(--night-3)}
 .pod b{font-family:var(--display);font-weight:800;font-size:17px;color:var(--c);line-height:1.2}
-.pod span{font-weight:700;font-size:16px}
+.pod span{font-weight:700;font-size:16px;direction:ltr}
 .pod .blk{width:100%;border-radius:14px 14px 6px 6px;background:var(--c);display:grid;place-items:center;font-size:30px;box-shadow:0 4px 0 rgba(0,0,0,.25)}
 .rest{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;direction:ltr}
 .spin{display:inline-block;animation:spinL 1.2s linear infinite}
@@ -698,7 +697,9 @@ function animWorld(dt, T){
   if(WD.finish) WD.finish.flags.forEach((f, i) => { f.rotation.y = Math.sin(T * 2.6 + i * 2) * .25 + (i ? Math.PI : 0); });
   if(floorTex && WD.def.theme.floor.flow) floorTex.offset.set(T * WD.def.theme.floor.flow[0], T * WD.def.theme.floor.flow[1]);
   WD.helps.forEach((h, i) => { h.mesh.material.emissiveIntensity = .7 + Math.sin(T * 4 + i) * .3; });
-  if(WD.def.anim) WD.def.anim(T, dt);
+  const th = WD.def.theme;
+  if(th.embers && Math.random() < dt * 9) burst(cam.tx + (Math.random() - .5) * 34, .6, cam.tz + (Math.random() - .5) * 34 - 6, 1, [0xffb347, 0xff6a2a, 0xffd23f], .5, 1, -1.6, .6);
+  if(th.fireworks && WD.finish && Math.random() < dt * .8){ const f = WD.finish; burst(f.x + (Math.random() - .5) * 18, f.top + 9 + Math.random() * 6, f.z - 6 + (Math.random() - .5) * 8, 24, [pick(CONF_COL), pick(CONF_COL), 0xffffff], 6.5, 1.2, 3, 0); }
 }
 
 /* ---------- collisions ---------- */
@@ -737,6 +738,7 @@ const P = { x:0, y:0, z:0, vx:0, vy:0, vz:0, face:0, ground:null, grounded:false
 let cp = 0, state = 'boot', T = 0;
 const inp = { x:0, z:0, m:0 };
 let jumpQueued = false, jumpHeld = false;
+let SIM = false;
 const run = { t:0, started:false, falls:0, secFalls:[], helped:[], gems:0, over:false, lastFallT:-9, maxPi:0 };
 
 function spawnAt(i){
@@ -809,21 +811,23 @@ function step(dt){
   if(P.vy <= 0 && (P.y <= gi.h || (wasG && P.y - gi.h < .5 && !(P.ground && P.ground.kind === 'spring')))){
     if(!wasG && P.vy < -5){ P.sq = -clamp(-P.vy / 40, .1, .3); P.sqv = 0; }
     P.y = gi.h; P.vy = 0; P.grounded = true; P.jumps = 0; P.ground = gi.ref; P.coyote = PHYS.coyote; P.usedDouble = false;
-    const g = gi.ref;
+    const g = gi.ref; P.landed = g;
     if(g.kind === 'spring'){
       P.vy = g.power + (jumpHeld || P.buf > 0 ? 2.5 : 0); P.buf = 0; P.grounded = false; P.jumps = 1; P.ground = null; P.sq = .35; SFX.spring();
       burst(P.x, P.y, P.z, 10, [0xff5d8f, 0xffffff], 4);
       const a = WD.anim.find(a => a.c === g); if(a){ a.sq = -.35; a.sqv = 0; }
     }
-    if(g.cp != null && g.cp > cp && !mpActive()) reachCp(g.cp);
-    else if(g.cp != null && g.cp > cp) reachCp(g.cp);
-    if(g.pi != null && g.pi > run.maxPi) run.maxPi = g.pi;
-    if(g.finish) reachFinish();
+    if(!SIM){
+      if(g.cp != null && g.cp > cp) reachCp(g.cp);
+      if(g.pi != null && g.pi > run.maxPi) run.maxPi = g.pi;
+      if(g.finish) reachFinish();
+    }
     for(const k of WD.tiles) if(k.c === g && k.kind === 'crumble' && k.st === 0){ k.st = 1; k.t = 0; SFX.crack(); }
   } else { P.grounded = false; P.ground = null; }
   // hazards: spinning bars, swinging logs
   hazards();
   // falling
+  if(SIM) return;
   if(P.y < WD.killY || (WD.fallLimit && P.y < WD.cps[cp].top - WD.fallLimit)) respawn(WD.death);
   interact();
 }
@@ -999,7 +1003,7 @@ function updateCamera(dt){
   const pitch = cam.pitch, dist = cam.dist;
   const dx = Math.sin(cam.yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(cam.yaw) * Math.cos(pitch);
   const t = rayBlock(cam.tx, cam.ty, cam.tz, dx, dy, dz, dist), dd = Math.max(1.4, t - .35);
-  const x = cam.tx + dx * dd, y = cam.ty + dy * dd, z = cam.tz + dz * dd;
+  const x = cam.tx + dx * dd, z = cam.tz + dz * dd, y = Math.max(cam.ty + dy * dd, P.y + .5, WD.def.theme.floor.y + .8);
   if(snapCam){ camPos.set(x, y, z); snapCam = false; } else camPos.lerp(_v.set(x, y, z), 1 - Math.exp(-12 * dt));
   camera.position.copy(camPos); camera.lookAt(cam.tx, cam.ty + .25, cam.tz);
 }
@@ -1731,15 +1735,19 @@ function simJump(i, opts = {}){
   /* Bot check with the real physics: stand on path node i, walk toward node i+1, jump at the edge (double jump only if needed).
      Tries several start times (moving pieces). Returns { ok, wait, dbl } */
   const A = WD.path[i], Bn = WD.path[i + 1]; if(!A || !Bn) return { ok:false, err:'no node' };
-  const saved = { st:state, T, cp, run:JSON.stringify(run) };
-  state = 'sim';
+  const saved = { st:state, T, cp, run:JSON.stringify(run), P:Object.assign({}, P) };
+  state = 'sim'; SIM = true;
   const waits = opts.waits || [0, .4, .8, 1.2, 1.6, 2, 2.5, 3, 3.5, 4, 5, 6];
   let res = { ok:false };
   for(const w0 of waits){
     resetDynamics(0); T = 0;
     // stand on A
-    const ac0 = A.moving ? A : A;
-    P.x = ac0.cx; P.z = ac0.cz; P.y = ac0.y1 + .02; P.vx = P.vy = P.vz = 0; P.grounded = false; P.ground = null; P.jumps = 0; P.knock = 0; P.usedDouble = false; jumpQueued = false;
+    const ac0 = A, prev = WD.path[i - 1];
+    P.x = ac0.cx; P.z = ac0.cz;
+    if(prev && !A.fanAssist && A.kind !== 'spring'){
+      if(A.type === 'cyl'){ const dx = prev.cx - A.cx, dz = prev.cz - A.cz, d = Math.hypot(dx, dz) || 1, k = Math.max(0, A.r - .6); P.x = A.cx + dx / d * k; P.z = A.cz + dz / d * k; }
+      else { P.x = clamp(prev.cx, A.x0 + .6, A.x1 - .6); P.z = clamp(prev.cz, A.z0 + .6, A.z1 - .6); }
+    } P.y = ac0.y1 + .02; P.vx = P.vy = P.vz = 0; P.grounded = false; P.ground = null; P.jumps = 0; P.knock = 0; P.usedDouble = false; jumpQueued = false; P.landed = null;
     inp.x = inp.z = inp.m = 0;
     let t = 0, dbl = false, landed = false, fell = false;
     const dt = 1 / 60;
@@ -1760,12 +1768,14 @@ function simJump(i, opts = {}){
       }
       if(!P.grounded && P.jumps === 1 && !dbl && P.vy < 1.5 && P.y < Bn.y1 + .25 && rectDist(Bn, P.x, P.z) > .2 && !A.fanAssist && A.kind !== 'spring'){ jumpQueued = true; dbl = true; }
       stepSim(dt); tt += dt;
-      if(P.grounded && P.ground === Bn){ landed = true; break; }
+      if(P.landed === Bn){ landed = true; break; }
+      if(Bn.fanAssist && WD.fans.some(f => (P.x - f.x) ** 2 + (P.z - f.z) ** 2 < f.r * f.r && Math.abs(f.y - Bn.y1) < .5 && P.y > Bn.y1 - .2)){ landed = true; break; }
+      if(P.landed && P.landed !== A && P.landed !== Bn && P.landed.pi != null && P.landed.pi < i) break;
       if(killed()) break;
     }
     if(landed){ res = { ok:true, wait:w0, dbl }; if(!dbl) break; }
   }
-  state = saved.st; T = saved.T; cp = saved.cp; Object.assign(run, JSON.parse(saved.run)); inp.x = inp.z = inp.m = 0; jumpQueued = false; resetDynamics(0);
+  SIM = false; state = saved.st; T = saved.T; cp = saved.cp; Object.assign(run, JSON.parse(saved.run)); Object.assign(P, saved.P); inp.x = inp.z = inp.m = 0; jumpQueued = false; resetDynamics(0);
   return res;
 }
 function stepSim(dt){ const st = state; state = 'sim'; step(dt); state = st; }
