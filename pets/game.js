@@ -1442,6 +1442,8 @@ const okHero = id => HEROES[id] ? id : 'sara';
 const petMeta = () => { const d = activeData(); return d ? { sp:d.sp, st:d.st, hat:d.hat || null } : null; };
 /* «أصحابي»: tell friends which room I'm in. The server may not know the game id yet, so every call is guarded. */
 const FR_GAME = 'pets';
+/* «انضم»: invitepop.js answers a friend's join request with this room (and ?host=1&accept=<id> makes one first) */
+window.__boboRoom = () => (MP.t && MP.meta && MP.code) ? MP.code : null;
 let frRoomCode = null, frRoomIv = 0;
 function frRoom(code){
   try{
