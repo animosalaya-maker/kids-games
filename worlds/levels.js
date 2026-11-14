@@ -121,7 +121,7 @@ const island = {
 const R2 = 9.5, STEP = .42, RISE = .85;
 const pos2 = n => [R2 * Math.sin(n * STEP), 1 + n * RISE, R2 * Math.cos(n * STEP)];
 const candy = {
-  id:'candy', emoji:'🍭', name:T3('برج الحلوى', 'Candy Tower', 'Şeker Kulesi'),
+  id:'candy', emoji:'🧁', name:T3('برج الحلوى', 'Candy Tower', 'Şeker Kulesi'),
   sub:T3('اطلع لراس برج الكيك! في منصّات بتتحرّك، انتبه.', 'Climb to the top of the cake tower! Some platforms move — careful.', 'Pasta kulesinin tepesine tırman! Bazı platformlar hareket ediyor, dikkat.'),
   card:['#ff9ad0', '#c56bff', '#8a3fc0'], par:150, intro:'candy', fallLimit:6,
   theme:{ plat:0xc98a4b, cap:0xf3d7a8, mover:0x7fe0c4, skyTop:0xb98cff, skyHor:0xffd8ee, skyBot:0xffb3d9, hemiSky:0xfff0fa, hemiGround:0xb06a9a,

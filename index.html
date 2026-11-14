@@ -306,7 +306,7 @@ function tile(box, href, g, badge){
 const $id = id => document.getElementById(id);
 const SOLO_BY = Object.fromEntries(SOLO.map(g => [g.id, g]));
 tile($id('worldTiles'), 'worlds/', { title:L('كل العوالم','All worlds','Tüm dünyalar'), emoji:'🌍', bg:'#5b4bd6' }, L('جديد ✨','New ✨','Yeni ✨'));
-[['island','🏝️',L('جزيرة القفز','Hop Island','Zıplama Adası'),'#1b8fd6'],['candy','🍭',L('برج الحلوى','Candy Tower','Şeker Kulesi'),'#c56bff'],['lava','🌋',L('أرض الحمم','Lava Land','Lav Diyarı'),'#e8384f'],
+[['island','🏝️',L('جزيرة القفز','Hop Island','Zıplama Adası'),'#1b8fd6'],['candy','🧁',L('برج الحلوى','Candy Tower','Şeker Kulesi'),'#c56bff'],['lava','🌋',L('أرض الحمم','Lava Land','Lav Diyarı'),'#e8384f'],
  ['mushroom','🍄',L('غابة الفطر','Mushroom Forest','Mantar Ormanı'),'#2fa36b'],['clouds','☁️',L('مدينة الغيوم','Cloud City','Bulut Şehri'),'#5f8fff'],['ice','❄️',L('مملكة الثلج','Snow Kingdom','Kar Krallığı'),'#3f8fb8']]
   .forEach(([id, emoji, title, bg]) => tile($id('worldTiles'), 'worlds/?w=' + id, { title, emoji, bg }, L('جديد','New','Yeni')));
 tile($id('advTiles'), 'bobo/', { title:L('بيت بوبو',"Bobo's House","Bobo'nun Evi"), emoji:'🏠', bg:'#7b52e6' }, L('٦ مراحل','6 levels','6 bölüm'));
