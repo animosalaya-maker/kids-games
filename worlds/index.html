@@ -1394,7 +1394,19 @@ function mpUpdateRemotes(dt){
     r.badge.position.set(x, y + 1.85, z);
   }
 }
+/* «أصحابي»: tell friends which room I'm in (so they see «انضم»), every 60 s while in it, cleared on leave / page close */
+const FR_GAME = 'worlds';
+let frRoomCode = null, frRoomIv = 0;
+function frRoom(code){
+  if(!(window.Friends && Friends.has()) || code === frRoomCode) return;
+  clearInterval(frRoomIv); frRoomIv = 0; frRoomCode = code;
+  if(code){ const beat = () => Friends.setRoom(code, FR_GAME).catch(() => {}); beat(); frRoomIv = setInterval(beat, 60000); }
+  else Friends.setRoom(null).catch(() => {});
+}
+addEventListener('pagehide', () => { if(frRoomCode && window.Friends){ clearInterval(frRoomIv); frRoomIv = 0; frRoomCode = null; Friends.setRoom(null, null, true); } });
+addEventListener('pageshow', e => { if(e.persisted && MP.t && MP.meta && MP.code) frRoom(MP.code); });
 function mpClose(){
+  frRoom(null);
   clearInterval(MP.iv); MP.iv = 0;
   if(MP.t){ try{ MP.t.close(); }catch(e){} }
   MP.t = null; MP.meta = null; MP.list = []; MP.players = []; MP.isHost = false; MP.synced = false;
@@ -1429,6 +1441,7 @@ async function mpOpen(code, mode){
   MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0, w:hubPick };
   t.track(MP.meta);
   mpPresence(MP.list);
+  frRoom(code);
   return 'ok';
 }
 function mpTrack(){ if(MP.t && MP.meta) MP.t.track(MP.meta); }
@@ -1622,7 +1635,7 @@ async function mpCreate(){
     for(let i = 0; i < 4; i++){
       const code = String(1000 + Math.floor(Math.random() * 9000));
       const r = await mpOpen(code, 'create');
-      if(r === 'ok'){ mpLobby(); return; }
+      if(r === 'ok'){ mpLobby(); mpSendInvite(); return; }
     }
     throw new Error('busy');
   }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(mpCreate); }
@@ -1636,6 +1649,16 @@ async function mpJoin(code){
     else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
     else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
   }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpJoin(code)); }
+}
+/* «تعا العب» from the friends page: ?host=1&invite=<friendCode> creates a room, then invites that friend to it (friends.js) */
+function mpSendInvite(){
+  const who = MP.inviteFor; if(!who || !MP.code || !window.Friends) return;
+  MP.inviteFor = null;
+  Friends.invite(who, MP.code, FR_GAME).then(r => {
+    if(r && r.status === 'sent') say(L('✉️ بعتنا دعوة لصاحبك! استنّاه يفوت', '✉️ Invite sent! Wait for your friend to join', '✉️ Davet gönderildi! Arkadaşının gelmesini bekle'));
+    else if(r && r.status === 'slow_down') say(L('بعتت دعوات كتير، استنّى شوي ⏳', 'Too many invites, wait a little ⏳', 'Çok fazla davet, biraz bekle ⏳'));
+    else say(L('ما قدرنا نبعت الدعوة 🙈', "Couldn't send the invite 🙈", 'Davet gönderilemedi 🙈'));
+  }, e => say(Friends.errText(e)));
 }
 function mpKeypad(msg){
   MP.screen = 'keypad'; MP.typed = ''; mpCard(true);
@@ -1815,6 +1838,15 @@ resize();
   else { showHub(first); if(wi >= 0) setTimeout(() => say(LINES.locked), 600); }
 }
 requestAnimationFrame(frame);
+/* links from the friends page: ?join=<room> joins that room, ?host=1&invite=<friendCode> creates a room and invites the friend */
+(function(){
+  const q = new URLSearchParams(location.search), join = q.get('join'), host = q.get('host') === '1', inv = q.get('invite');
+  if(!/^\d{4}$/.test(join || '') && !host) return;
+  ['join', 'host', 'invite'].forEach(k => q.delete(k));
+  try{ history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
+  if(/^\d{4}$/.test(join || '')) mpJoin(join);
+  else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(); }
+})();
 </script>
 <script src="../back.js"></script>
 <script>BoboBack.init({

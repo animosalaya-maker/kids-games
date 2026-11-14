@@ -124,6 +124,34 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(32px,9vw,42px);lin
 .toast{position:fixed;left:50%;top:calc(16px + env(safe-area-inset-top,0px));transform:translateX(-50%);z-index:99;background:var(--gold);color:#3a2a00;max-width:calc(100% - 32px);text-align:center;
   font:800 18px var(--display);padding:8px 18px;border-radius:999px;box-shadow:0 6px 0 var(--gold-d),0 10px 30px rgba(0,0,0,.4);pointer-events:none;transition:opacity .4s,transform .4s}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
+/* «انضم» + «تعا العب» on a friend who is in an online room */
+.acts{display:flex;flex-direction:column;gap:7px;align-items:stretch;flex:none}
+.join{border:0;border-radius:18px;background:var(--gold);color:#3a2a00;font-family:var(--display);font-weight:800;font-size:19px;line-height:1.05;padding:8px 14px 7px;
+  box-shadow:0 5px 0 var(--gold-d),0 0 0 3px rgba(255,205,77,.25);display:flex;flex-direction:column;align-items:center;gap:2px;white-space:nowrap;animation:joinGlow 1.8s ease-in-out infinite}
+.join small{font-family:var(--body);font-weight:800;font-size:12px;opacity:.85}
+.join:active{transform:translateY(4px);box-shadow:0 1px 0 var(--gold-d)}
+@keyframes joinGlow{50%{box-shadow:0 5px 0 var(--gold-d),0 0 0 7px rgba(255,205,77,.35)}}
+.acts .play{font-size:14px;padding:6px 10px}
+.row.inroom{box-shadow:0 0 0 2px rgba(255,205,77,.6),0 5px 0 var(--face)}
+/* game picker (bottom sheet) */
+.sheet.bottom{place-items:end center;padding-bottom:0}
+.sheet.bottom .card{border-radius:30px 30px 0 0;padding-bottom:calc(20px + env(safe-area-inset-bottom,0px));animation:up .28s cubic-bezier(.2,1.2,.4,1)}
+@keyframes up{from{transform:translateY(60%)}}
+.gwho{display:flex;align-items:center;gap:10px;font-weight:800;color:var(--muted)}
+.games{display:flex;flex-direction:column;gap:12px;width:100%}
+.gcard{position:relative;border:0;border-radius:24px;min-height:104px;padding:12px 16px;display:flex;align-items:center;gap:14px;text-align:start;overflow:hidden;color:#fff;
+  background:radial-gradient(120% 140% at 0% 0%, rgba(255,255,255,.28), rgba(255,255,255,0) 55%), var(--gc);box-shadow:0 6px 0 var(--gd),0 12px 24px rgba(0,0,0,.3)}
+.gcard:active{transform:translateY(4px);box-shadow:0 2px 0 var(--gd)}
+.gcard .gpic{position:relative;width:104px;height:84px;flex:none;display:grid;place-items:center}
+.gcard .gpic .em{font-size:58px;line-height:1;filter:drop-shadow(0 4px 0 rgba(0,0,0,.18))}
+.gcard .gpic img{position:absolute;bottom:-14px;height:96px;filter:drop-shadow(0 3px 0 rgba(0,0,0,.2))}
+.gcard .gpic img:nth-of-type(1){inset-inline-start:-6px}.gcard .gpic img:nth-of-type(2){inset-inline-end:-6px}
+.gcard .gpic .em.small{position:absolute;top:-6px;inset-inline-end:-6px;font-size:34px;z-index:1}
+.gcard .gpic canvas{width:92px;height:92px}
+.gcard .gt{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.gcard .gt b{font-family:var(--display);font-weight:800;font-size:23px;line-height:1.1;text-shadow:0 2px 0 rgba(0,0,0,.2)}
+.gcard .gt small{font-weight:700;font-size:14px;opacity:.92;line-height:1.3}
+.gcard .go2{font-size:30px;flex:none}
 .name-in{width:100%;box-sizing:border-box;margin:6px 0 2px;padding:14px 16px;border-radius:16px;border:3px solid rgba(255,255,255,.18);background:rgba(0,0,0,.25);color:#fff;font:800 22px/1.2 inherit;font-family:inherit;text-align:center;outline:none}
 .name-in:focus{border-color:#ffcd4d}
 .name-note{font-size:13px;opacity:.8;margin:4px 0 10px}
@@ -190,6 +218,13 @@ h1{font-family:var(--display);font-weight:800;font-size:clamp(32px,9vw,42px);lin
   <button class="gold-btn" id="saveLook" data-en="Save ✓" data-tr="Kaydet ✓">احفظ ✓</button>
 </div></div>
 
+<div class="sheet bottom" id="gameSheet" hidden><div class="card">
+  <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
+  <h2 data-en="What do you want to play?" data-tr="Ne oynamak istersiniz?">شو بدكن تلعبوا؟</h2>
+  <div class="gwho" id="gameWho"></div>
+  <div class="games" id="gameList"></div>
+</div></div>
+
 <div class="sheet" id="askSheet" hidden><div class="card">
   <div id="askAv"></div>
   <h2 id="askH"></h2>
@@ -225,7 +260,7 @@ function offline(e){ $('offline').hidden = false; $('offText').textContent = F.e
 function online(){ $('offline').hidden = true; }
 
 /* sheets + back button */
-const sheets = ['addSheet', 'lookSheet', 'askSheet'];
+const sheets = ['addSheet', 'lookSheet', 'gameSheet', 'askSheet'];
 const openSheet = id => { $(id).hidden = false; };
 const closeSheets = () => sheets.forEach(id => { $(id).hidden = true; });
 document.querySelectorAll('[data-close]').forEach(b => b.onclick = () => { tap(); closeSheets(); });
@@ -277,10 +312,10 @@ function render(){
   data.invites.forEach(inv => {
     const mins = Math.max(1, Math.ceil(inv.left / 60));
     il.appendChild(row(inv.from, { cls:'invite', dot:true, size:58,
-      sub:L('بدّو يلعب معك! غرفة ' + N(inv.room), 'Wants to play with you! Room ' + inv.room, 'Seninle oynamak istiyor! Oda ' + inv.room) + ' · ' + L('⏱️ ' + N(mins) + ' د', '⏱️ ' + mins + ' min', '⏱️ ' + mins + ' dk'),
+      sub:L('بدّو يلعب معك ', 'Wants to play ', 'Seninle oynamak istiyor: ') + F.gameName(inv.game) + ' · ' + L('⏱️ ' + N(mins) + ' د', '⏱️ ' + mins + ' min', '⏱️ ' + mins + ' dk'),
       buttons:[
         btn('go', L('يلّا 🎮', "Let's go 🎮", 'Hadi 🎮'), null, b => {
-          tap(); b.disabled = true; const go = () => { location.href = F.gameUrl('../adventure3d/', { join:inv.room }); };
+          tap(); b.disabled = true; const go = () => { location.href = F.gameUrl('../' + F.GAMES[F.gameOf(inv.game)].path, { join:inv.room }); };
           // mark the invite as used first (a request still in flight is cancelled by the page change), but never wait long
           Promise.race([F.dismiss(inv.id).catch(() => {}), new Promise(r => setTimeout(r, 1500))]).then(go);
         }),
@@ -301,18 +336,62 @@ function render(){
   if(!data.friends.length){
     fl.innerHTML = `<div class="empty"><span class="big">🫂</span>${L('لسّا ما عندك أصحاب هون. شارك رمزك أو اكبس «ضيف صاحب»!', 'No friends here yet. Share your code or tap “Add a friend”!', 'Henüz arkadaşın yok. Kodunu paylaş veya “Arkadaş ekle”ye dokun!')}</div>`;
   }
-  data.friends.forEach(k => fl.appendChild(row(k, { dot:true,
-    sub:k.online ? L('موجود هلّق 🟢', 'Online now', 'Şu an çevrimiçi') : L('مش موجود هلّق', 'Not online now', 'Şu an çevrimdışı'), subOn:k.online,
-    buttons:[
-      btn('play' + (k.online ? '' : ' off'), L('تعا العب 🎮', 'Play 🎮', 'Oyna 🎮'), null, () => { tap(); location.href = F.gameUrl('../adventure3d/', { host:1, invite:k.code }); }),
-      btn('more', '⋯', L('أكتر', 'More', 'Daha fazla'), () => removeFriend(k))
-    ] })));
+  data.friends.forEach(k => {
+    const play = btn('play' + (k.online && !k.room ? '' : ' off'), L('تعا العب 🎮', 'Play 🎮', 'Oyna 🎮'), null, () => { tap(); pickGame(k); });
+    const more = btn('more', '⋯', L('أكتر', 'More', 'Daha fazla'), () => removeFriend(k));
+    let buttons = [play, more];
+    if(k.room){
+      // the friend is in an online room right now: «انضم» goes straight in, «تعا العب» stays as the second choice
+      const acts = document.createElement('div'); acts.className = 'acts';
+      const j = btn('join', `<span>${L('انضم 🚪', 'Join 🚪', 'Katıl 🚪')}</span><small>${F.gameName(k.game)}</small>`, null, b => { tap(); b.disabled = true; location.href = F.gameUrl('../' + F.GAMES[F.gameOf(k.game)].path, { join:k.room }); });
+      acts.appendChild(j); acts.appendChild(play); buttons = [acts, more];
+    }
+    fl.appendChild(row(k, { dot:true, cls:k.room ? 'inroom' : '',
+      sub:k.room ? L('عم يلعب هلّق 🎮', 'Playing now 🎮', 'Şu an oynuyor 🎮') : k.online ? L('موجود هلّق 🟢', 'Online now', 'Şu an çevrimiçi') : L('مش موجود هلّق', 'Not online now', 'Şu an çevrimdışı'), subOn:k.online || !!k.room,
+      buttons }));
+  });
   // outgoing
   const ol = $('outList'); ol.innerHTML = '';
   data.outgoing.forEach(k => ol.appendChild(row(k, { size:44, sub:L('بعتنالو طلب ✉️', 'Request sent ✉️', 'İstek gönderildi ✉️'), buttons:[
     btn('round no', '✕', L('الغي', 'Cancel', 'İptal'), b => { tap(); b.disabled = true; F.remove(k.code).then(load, e => { b.disabled = false; offline(e); }); })
   ] })));
   $('outSec').hidden = !data.outgoing.length;
+}
+
+/* «تعا العب»: pick the game first, then the game makes the room and invites this friend */
+const GAME_SUB = {
+  '3d':   ['مين بيجمع نجوم أكتر؟', 'Who grabs the most stars?', 'En çok yıldızı kim toplar?'],
+  worlds: ['مين بيوصل لخط النهاية أوّل؟', 'Who reaches the finish first?', 'Bitişe ilk kim varacak?'],
+  heist:  ['مين بيجمع أغلى بيض؟', 'Who collects the best eggs?', 'En değerli yumurtaları kim toplar?']
+};
+function gamePic(id){
+  const g = F.GAMES[id], el = document.createElement('span'); el.className = 'gpic';
+  if(g.pics){
+    g.pics.forEach(src => { const i = document.createElement('img'); i.src = '../' + src; i.alt = ''; i.loading = 'lazy'; i.onerror = () => i.remove(); el.appendChild(i); });
+    el.insertAdjacentHTML('beforeend', `<span class="em small">${g.emoji}</span>`);
+  } else {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 184; const c = cv.getContext('2d');
+    F.drawBobo(c, 92, 104, 58, (W.COLORS && W.COLORS[W.outfit.color]) || { color:'#9b6bff', light:'#d2bcff', belly:'#b993ff' });
+    if(W.drawOutfit) W.drawOutfit(c, 92, 104, 58, { hat:W.outfit.hat, glasses:W.outfit.glasses });
+    el.appendChild(cv); el.insertAdjacentHTML('beforeend', `<span class="em small">${g.emoji}</span>`);
+  }
+  return el;
+}
+function pickGame(k){
+  const who = $('gameWho'); who.innerHTML = ''; who.appendChild(F.avatarEl(k, 40));
+  const t = document.createElement('span'); t.textContent = L('مع ', 'with ', '') + label(k) + L('', '', ' ile'); who.appendChild(t);
+  const gl = $('gameList'); gl.innerHTML = '';
+  Object.keys(F.GAMES).forEach(id => {
+    const g = F.GAMES[id], b = document.createElement('button'); b.className = 'gcard'; b.dataset.game = id;
+    b.style.setProperty('--gc', g.color); b.style.setProperty('--gd', g.dark);
+    b.appendChild(gamePic(id));
+    const tx = document.createElement('span'); tx.className = 'gt';
+    tx.innerHTML = `<b></b><small></small>`; tx.querySelector('b').textContent = F.gameName(id).replace(/\s+[^\s\w]+$/u, ''); tx.querySelector('small').textContent = F.gameName(id, true) + ' · ' + L(...GAME_SUB[id]);
+    b.appendChild(tx); b.insertAdjacentHTML('beforeend', `<span class="go2">${I18N.dir === 'rtl' ? '◀' : '▶'}</span>`);
+    b.onclick = () => { tap(); gl.querySelectorAll('button').forEach(x => { x.disabled = true; }); location.href = F.gameUrl('../' + g.path, { host:1, invite:k.code }); };
+    gl.appendChild(b);
+  });
+  openSheet('gameSheet');
 }
 
 async function load(){
@@ -451,10 +530,10 @@ $('delBtn').onclick = async () => {
   catch(e){ offline(e); }
 };
 
-/* keep fresh: heartbeat (25 s) + reload lists every 15 s while visible */
+/* keep fresh: heartbeat (25 s) + reload lists every 10 s while visible (so «انضم» shows up quickly) */
 let stopHb = () => {};
 function live(){ stopHb(); stopHb = F.startHeartbeat(c => { if(c && (c.requests !== data.incoming.length || c.invites !== data.invites.length)) load(); }); }
-setInterval(() => { if(document.visibilityState === 'visible' && me) load(); }, 15000);
+setInterval(() => { if(document.visibilityState === 'visible' && me) load(); }, 10000);
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && me) load(); });
 boot().then(live);
 if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').catch(() => {});

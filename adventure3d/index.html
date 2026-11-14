@@ -1763,7 +1763,19 @@ function mpUpdateRemotes(dt){
 }
 
 /* Connection */
+/* «أصحابي»: tell friends which room I'm in (so they see «انضم»), every 60 s while in it, cleared on leave / page close */
+const FR_GAME = '3d';
+let frRoomCode = null, frRoomIv = 0;
+function frRoom(code){
+  if(!(window.Friends && Friends.has()) || code === frRoomCode) return;
+  clearInterval(frRoomIv); frRoomIv = 0; frRoomCode = code;
+  if(code){ const beat = () => Friends.setRoom(code, FR_GAME).catch(() => {}); beat(); frRoomIv = setInterval(beat, 60000); }
+  else Friends.setRoom(null).catch(() => {});
+}
+addEventListener('pagehide', () => { if(frRoomCode && window.Friends){ clearInterval(frRoomIv); frRoomIv = 0; frRoomCode = null; Friends.setRoom(null, null, true); } });
+addEventListener('pageshow', e => { if(e.persisted && MP.t && MP.meta && MP.code) frRoom(MP.code); });
 function mpClose(){
+  frRoom(null);
   clearInterval(MP.iv); MP.iv = 0;
   if(MP.t){ try{ MP.t.close(); }catch(e){} }
   MP.t = null; MP.meta = null; MP.list = []; MP.players = []; MP.isHost = false; MP.synced = false;
@@ -1798,6 +1810,7 @@ async function mpOpen(code, mode){
   MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0 };
   t.track(MP.meta);
   mpPresence(MP.list);
+  frRoom(code);
   return 'ok';
 }
 function mpTrack(){ if(MP.t && MP.meta) MP.t.track(MP.meta); }
@@ -2103,7 +2116,7 @@ async function mpJoin(code){
 function mpSendInvite(){
   const who = MP.inviteFor; if(!who || !MP.code || !window.Friends) return;
   MP.inviteFor = null;
-  Friends.invite(who, MP.code).then(r => {
+  Friends.invite(who, MP.code, FR_GAME).then(r => {
     if(r && r.status === 'sent') toast(L('✉️ بعتنا دعوة لصاحبك! استنّاه يفوت', '✉️ Invite sent! Wait for your friend to join', '✉️ Davet gönderildi! Arkadaşının gelmesini bekle'));
     else if(r && r.status === 'slow_down') toast(L('بعتت دعوات كتير، استنّى شوي ⏳', 'Too many invites, wait a little ⏳', 'Çok fazla davet, biraz bekle ⏳'));
     else toast(L('ما قدرنا نبعت الدعوة 🙈', "Couldn't send the invite 🙈", 'Davet gönderilemedi 🙈'));
