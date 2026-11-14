@@ -34,10 +34,10 @@ export function makeMaps(THREE, K, renderer){
   function mat(k){
     if(MATS[k]) return MATS[k];
     const map = k === 'plain' ? null : TX[k];
-    const rough = { plain:.75, wood:.62, planks:.6, tiles:.35, smallTiles:.3, dots:.95, knit:.95, paper:.9, stone:.85, soil:.95, grass:.95, starPaper:.9, paint:.9, gingham:.9 }[k] || .8;
+    const rough = { plain:.75, wood:.62, planks:.6, tiles:.35, smallTiles:.3, dots:.95, knit:.95, paper:.9, stone:.85, soil:.95, grass:.95, starPaper:.9, paint:.9 }[k] || .8;
     return (MATS[k] = new THREE.MeshStandardMaterial({ map, vertexColors:true, roughness:rough, metalness:0 }));
   }
-  const TS = { plain:1, wood:6, planks:16, tiles:8, smallTiles:3, dots:4, knit:3, paper:2, stone:6, soil:8, grass:6, starPaper:12, paint:10, gingham:6 };
+  const TS = { plain:1, wood:6, planks:16, tiles:8, smallTiles:3, dots:4, knit:3, paper:2, stone:6, soil:8, grass:6, starPaper:12, paint:10 };
 
   /* ---------------- geometry bags (merged per material, world-space UVs, soft floor shading) ---------------- */
   class Bag{
@@ -333,7 +333,7 @@ export function makeMaps(THREE, K, renderer){
       solid(9.5, 0, 3, 18.5, 2, 5);
       spot(-27.5, 12.5, 0, L('ورا الأصيص', 'behind the plant', 'saksının arkası'));
       W.spawn = { seeker:[0, -9], hiders:[[-3, 20.8], [3, 20.8], [10, 20], [-10, 20.5]] };
-      W.podium = { x:16, z:13, f:Math.PI * .85 };
+      W.podium = { x:17, z:10, f:Math.PI * .8 };
       W.disg = ['cookie', 'apple', 'sugar'];
     }
 
@@ -473,7 +473,7 @@ export function makeMaps(THREE, K, renderer){
       nav(-26, 13, 2.2); nav(-16, 13, 4.6); nav(-16, 18.6); nav(-16, 7.6);
       deco(GEO.cyl, 2, 1, 4, 1, 10, 1, 0xa5713f, 'wood', 0, 0, Math.PI / 2); solid(-3, 0, 3, 7, 2, 5);
       // a picnic blanket
-      texPlane(TX.gingham, 14, 10, 0, .04, -4, 0, { rx:-Math.PI / 2 });
+      box(-7, 0, -9, 7, .08, 1, 0xff9a9a, 'dots', { nocol:true });
       spot(9, 18.4, 0, L('ورا الأصيص', 'behind the pot', 'saksının arkası'));
       W.spawn = { seeker:[0, -6], hiders:[[-2, 9], [2, 9], [6, 8], [-6, 8]] };
       W.podium = { x:0, z:12, f:0 };

@@ -32,7 +32,7 @@ const AU = makeAudio(), SFX = AU.SFX;
    Rules and numbers
    ====================================================================== */
 const HIDE_T = 30, SEEK_T = 150, DISG_T = 8, DISG_CD = 20, WH_CD = 18, WH_SHOW = 3;
-const SPEED = 6.2, BOT_HIDE_SPEED = 5.2, BOT_SEEK_SPEED = 4.5, BOT_HELP_SPEED = 4;
+const SPEED = 6.2, BOT_HIDE_SPEED = 5.2, BOT_SEEK_SPEED = 4.2, BOT_HELP_SPEED = 3.6;
 const TOUCH_R = 1.15, TAP_R = 6.5, SEARCH_R = 2.6, NEAR_C = 2.4;
 const MAP_IDS = ['kitchen', 'bedroom', 'garden'];
 const MAP_E = { kitchen:'🍳', bedroom:'🧸', garden:'🌻' };
@@ -338,10 +338,10 @@ function faceMove(a, dt){ const v = Math.hypot(a.vx, a.vz); if(v > .4) a.f += an
 function canSee(s, h){
   if(h.st !== 'free') return false;
   const dx = h.x - s.x, dz = h.z - s.z, dy = h.y - s.y, d = Math.hypot(dx, dz, dy);
-  let range = 11;
+  let range = 9;
   if(h.disg > 0) range = Math.hypot(h.vx, h.vz) > .6 ? 4.5 : 1.8;
   if(d > range) return false;
-  if(d > 2.2){ const fx = Math.sin(s.f), fz = Math.cos(s.f); if((dx * fx + dz * fz) / Math.max(.01, Math.hypot(dx, dz)) < .15) return false; }
+  if(d > 2.2){ const fx = Math.sin(s.f), fz = Math.cos(s.f); if((dx * fx + dz * fz) / Math.max(.01, Math.hypot(dx, dz)) < .35) return false; }
   return W.P.rayHit(s.x, s.y + 1, s.z, h.x, h.y + .7, h.z) >= .999;
 }
 function botHider(a, dt){
@@ -381,7 +381,7 @@ function botSeeker(a, dt){
   if((b.look -= dt) <= 0){
     b.look = .22;
     const vis = hiders().filter(h => canSee(a, h));
-    if(vis.length){ const h = vis.sort((p, q) => Math.hypot(p.x - a.x, p.z - a.z) - Math.hypot(q.x - a.x, q.z - a.z))[0]; if(b.mode !== 'chase'){ b.react = .55; } b.mode = 'chase'; b.target = h; b.seenT = 2.6; }
+    if(vis.length){ const h = vis.sort((p, q) => Math.hypot(p.x - a.x, p.z - a.z) - Math.hypot(q.x - a.x, q.z - a.z))[0]; if(b.mode !== 'chase'){ b.react = .8; } b.mode = 'chase'; b.target = h; b.seenT = 2.6; }
   }
   if(b.mode === 'chase'){
     const h = b.target;
@@ -396,7 +396,7 @@ function botSeeker(a, dt){
   }
   if(b.wait > 0){ b.wait -= dt; W.P.step(a, 0, 0, false, dt); a.m = 0; a.f += Math.sin(T * 3 + a.c) * dt * 1.5; return; }
   // whistle now and then: go where it sparkles
-  if(a.role === 'seeker' && a.wcd <= 0 && Math.random() < dt * .25){ const t = whistle(a); if(t){ b.hint = t; b.path = null; } }
+  if(a.role === 'seeker' && a.wcd <= 0 && R.t < SEEK_T - 40 && Math.random() < dt * .06){ const t = whistle(a); if(t){ b.hint = t; b.path = null; } }
   if(!b.path){
     let goal = null;
     if(b.hint){ goal = b.hint; b.hint = null; }
@@ -415,12 +415,12 @@ function botSeeker(a, dt){
   if(done && b.goal){
     const g = b.goal; b.path = null; b.goal = null;
     if(g.k === 'c'){
-      b.visited.add('c' + g.c.i); b.wait = .9; a.f = Math.atan2(g.c.x - a.x, g.c.z - a.z);
+      b.visited.add('c' + g.c.i); b.wait = 1.4; a.f = Math.atan2(g.c.x - a.x, g.c.z - a.z);
       wobble(g.c, .8);
       const o = occupant(g.c.i);
-      if(o && Math.random() < .8) setTimeout(() => { if(o.st === 'in' && R.ph === 'seek') doFound(o, a); }, 450);
+      if(o && Math.random() < (a.role === 'seeker' ? .55 : .35)) setTimeout(() => { if(o.st === 'in' && R.ph === 'seek') doFound(o, a); }, 450);
       else if(!o) SFXat(a, 'empty');
-    } else if(g.k === 's'){ b.visited.add('s' + g.i); b.wait = .8; }
+    } else if(g.k === 's'){ b.visited.add('s' + g.i); b.wait = 1.2; }
     else b.wait = .4;
   }
 }
@@ -472,7 +472,7 @@ function updateCamera(dt){
   if(closeup){ camPos.lerp(_v.set(closeup.px, closeup.py, closeup.pz), 1 - Math.exp(-4 * dt)); camLook.lerp(_s.set(closeup.lx, closeup.ly, closeup.lz), 1 - Math.exp(-5 * dt)); camera.position.copy(camPos); camera.lookAt(camLook); return; }
   if(!me) return;
   let tx = me.x, ty = me.y + 1.1, tz = me.z, dist = 6.4;
-  if(me.st === 'in'){ const c = W.conts[me.cont]; if(c){ tx = c.x; ty = c.y + c.h * .6; tz = c.z; dist = 7.5 + c.r; } }
+  if(me.st === 'in'){ const c = W.conts[me.cont]; if(c){ tx = c.x; ty = c.y + c.h + .5; tz = c.z; dist = 6.5 + c.r; } }
   const pitch = clamp(cam.pitch + cam.pAdj, .08, 1.25);
   const dx = Math.sin(cam.yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(cam.yaw) * Math.cos(pitch);
   const hit = W.P.rayHit(tx, ty, tz, tx + dx * dist, ty + dy * dist, tz + dz * dist, true);
@@ -636,6 +636,7 @@ function doTool(){
 const guideEl = $('#guide'), guideT = $('#guideT');
 let sayTO = 0;
 function say(text, ms = 4200, top = false){
+  if(R.ph === 'count' && me && me.role === 'seeker' && state === 'play'){ $('#blindP').textContent = text; return; }   // the seeker's eyes are covered: Laila talks on the counting screen
   clearTimeout(sayTO); guideT.textContent = text; guideEl.classList.toggle('top', top);
   guideEl.hidden = false; guideEl.style.animation = 'none'; void guideEl.offsetWidth; guideEl.style.animation = '';
   sayTO = setTimeout(() => { guideEl.hidden = true; }, ms);
@@ -682,7 +683,7 @@ function hudFrame(){
   }
   // blindfold for the counting seeker
   const blind = R.ph === 'count' && me.role === 'seeker';
-  if(blindEl.hidden === blind){ blindEl.hidden = !blind; if(blind){ $('#blindT').textContent = L('عم عدّ…', "I'm counting…", 'Sayıyorum…'); $('#blindP').textContent = L('أصحابك عم يختبوا 🤫', 'Your friends are hiding 🤫', 'Arkadaşların saklanıyor 🤫'); } }
+  if(blindEl.hidden === blind){ blindEl.hidden = !blind; if(blind){ $('#blindT').textContent = L('عم عدّ…', "I'm counting…", 'Sayıyorum…'); if(!$('#blindP').textContent) $('#blindP').textContent = L('أصحابك عم يختبوا 🤫', 'Your friends are hiding 🤫', 'Arkadaşların saklanıyor 🤫'); } else $('#blindP').textContent = ''; }
   if(blind){ const n = String(Math.min(HIDE_T, Math.floor(HIDE_T - R.t) + 1)), el = $('#blindN'); if(el.textContent !== N(n)){ el.textContent = N(n); el.classList.remove('go'); void el.offsetWidth; el.classList.add('go'); } }
   // context button
   const c = ctx(), ak = c ? c.k + c.e + (c.c ? c.c.i : '') : '';
@@ -714,19 +715,31 @@ function showEnd(res){
   // rank: survivors first, then the seeker (by finds), then the found ones by time
   const score = e => e.role === 'hider' ? (e.st !== 'found' ? 1000 + e.tf : e.tf) : e.finds * 60 + (res.win === 'seeker' ? 600 : 0);
   const ranked = res.list.slice().sort((a, b) => score(b) - score(a));
-  // podium in the room
-  podium.position.set(W.podium.x, W.P.support(W.podium.x, W.podium.z, .5), W.podium.z); podium.rotation.y = W.podium.f; podium.visible = true;
+  // podium in the room: find a camera direction with a clear view, turn the podium and everyone toward it
+  const px = W.podium.x, pz = W.podium.z, py = W.P.support(px, pz, .5);
+  let bestA = W.podium.f, bestS = -1;
+  for(let k = 0; k < 24; k++){
+    const an = k / 24 * Math.PI * 2, cx = px + Math.sin(an) * 10, cz = pz + Math.cos(an) * 10;
+    if(cx < W.bx0 + 1 || cx > W.bx1 - 1 || cz < W.bz0 + 1 || cz > W.bz1 - 1) continue;
+    let sc = 0; for(const [dy, side] of [[4.4, 0], [2, 0], [3, 3], [3, -3]]){ const ox = Math.cos(an) * side, oz = -Math.sin(an) * side; sc += W.P.rayHit(px + ox, py + 1.5, pz + oz, cx + ox, py + dy, cz + oz, true); }
+    sc -= Math.abs(angDiff(an, W.podium.f)) * .02;
+    if(sc > bestS){ bestS = sc; bestA = an; }
+  }
+  const f = bestA;
+  podium.position.set(px, py, pz); podium.rotation.y = f; podium.visible = true;
   for(const a of ACT){ a.st === 'in' && (a.cont = -1); setDisg(a, false); }
+  const c = Math.cos(f), s = Math.sin(f);
   ranked.forEach((e, i) => {
     const a = actor(e.id); if(!a) return;
     a.podium = i;
-    if(i < 3){ const [lx, ly] = PODIUM_SPOTS[i], c = Math.cos(W.podium.f), s = Math.sin(W.podium.f); a.x = podium.position.x + lx * c; a.z = podium.position.z - lx * s; a.y = podium.position.y + ly; }
-    else { const c = Math.cos(W.podium.f), s = Math.sin(W.podium.f), lx = 4.4, lz = 1.2; a.x = podium.position.x + lx * c + lz * s; a.z = podium.position.z - lx * s + lz * c; a.y = podium.position.y; }
-    a.f = W.podium.f; a.vx = a.vz = a.vy = 0; a.gr = true;
+    if(i < 3){ const [lx, ly] = PODIUM_SPOTS[i]; a.x = px + lx * c; a.z = pz - lx * s; a.y = py + ly; }
+    else { const lx = 4.6, lz = .8; a.x = px + lx * c + lz * s; a.z = pz - lx * s + lz * c; a.y = py; }
+    a.f = f; a.vx = a.vz = a.vy = 0; a.gr = true;
   });
-  const c = Math.cos(W.podium.f), s = Math.sin(W.podium.f), fx = s, fz = c, rx = c, rz = -s;
-  const px = podium.position.x, py = podium.position.y, pz = podium.position.z;
-  closeup = { px:px + fx * 9.5 - rx * 2.6, py:py + 4.6, pz:pz + fz * 9.5 - rz * 2.6, lx:px - rx * 2.4, ly:py + 2.2, lz:pz - rz * 2.4 };
+  // the card covers one side of the screen (left in Arabic, right otherwise): put the podium on the other side
+  const fx = s, fz = c, side = (window.I18N && I18N.dir === 'rtl') ? 1 : -1, rx = -fz * -1, rz = fx * -1;   // screen-right when looking along -f
+  const sh = 3.2 * side;
+  closeup = { px:px + fx * 10 - rx * sh, py:py + 4.4, pz:pz + fz * 10 - rz * sh, lx:px - rx * sh, ly:py + 2, lz:pz - rz * sh };
   // me
   const mine = me ? res.list.find(e => e.id === me.id) : null;
   let stars = 0, coins = 0;
@@ -839,8 +852,10 @@ $('#btnPause').onclick = () => { SFX.tap(); showPause(); };
 /* ======================================================================
    Main loop
    ====================================================================== */
+let SIMK = 1;          // tests only: run the simulation several times per frame
 let last = performance.now(), fpsN = 0, fpsT = 0, fps = 60, slowT = 0, menuT = 0;
 function simRound(dt){
+  if(R.ph === 'end' || R.ph === 'idle') return;
   if(R.ph === 'count' || R.ph === 'seek'){
     if(isHost() || R.online){ R.t -= dt; }
     if(R.ph === 'seek' && R.t <= 10 && Math.ceil(R.t) !== R.lastBeep){ R.lastBeep = Math.ceil(R.t); if(R.t > 0) SFX.tick(); }
@@ -905,8 +920,7 @@ function frame(now){
   }
   const running = state === 'play' || state === 'end' || (state === 'pause' && R.online) || (state === 'select' && R.online && R.ph !== 'idle');
   if(running && R.ph !== 'idle'){
-    if(state === 'play') stepMe(dt);
-    simRound(dt);
+    for(let k = 0; k < SIMK; k++){ if(state === 'play') stepMe(dt); if(R.ph !== 'idle') simRound(dt); }
   }
   if(W && R.ph !== 'idle') poseActors(dt);
   if(state === 'play') hudFrame();
@@ -1314,7 +1328,7 @@ window.__hide = {
   get spark(){ return sparkAt ? { x:sparkAt.x, y:sparkAt.y, z:sparkAt.z, t:sparkAt.t } : null; },
   get mp(){ return { code:MP.code, active:mpActive(), isHost:MP.isHost, screen:MP.screen, players:MP.players.map(p => ({ id:p.id, hero:p.hero })), id:MP.id }; },
   mpStart:() => mpStart(), mpMap(m){ MP.map = m; mpLobbyDraw(); },
-  _dbg:() => ({ W, MAPS, PHYS }),
+  _dbg:() => ({ W, MAPS, PHYS }), fast(k){ SIMK = clamp(k | 0, 1, 8); },
   nav:() => W.nodes.map((n, i) => ({ i, x:+n.x.toFixed(1), z:+n.z.toFixed(1), y:+n.y.toFixed(2), k:n.kind, e:n.e.map(e => e[0]) })),
   get fps(){ return fps; }, get dpr(){ return dpr; }, get rot(){ return ROT; }, get shadows(){ return renderer.shadowMap.enabled; },
   shot(v){ closeup = v ? { px:v[0], py:v[1], pz:v[2], lx:v[3], ly:v[4], lz:v[5] } : null; if(v){ camPos.set(v[0], v[1], v[2]); camLook.set(v[3], v[4], v[5]); } },

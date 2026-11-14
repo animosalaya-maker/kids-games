@@ -107,10 +107,5 @@ export function makeTextures(THREE, aniso){
     [[250, '#5aa9e6'], [232, '#ffffff'], [214, '#5aa9e6'], [160, '#8cc8f2'], [146, '#5aa9e6'], [80, '#8cc8f2'], [64, '#ffffff'], [48, '#5aa9e6']].forEach(([r, c]) => { x.fillStyle = c; x.beginPath(); x.arc(0, 0, r, 0, 6.3); x.fill(); });
     x.fillStyle = '#ffffff'; for(let i = 0; i < 18; i++){ const a = i / 18 * 6.283; x.beginPath(); x.arc(Math.cos(a) * 187, Math.sin(a) * 187, 9, 0, 6.3); x.fill(); }
   }, false);
-  /* picnic blanket: one colour (red) gingham on white */
-  T.gingham = tex(256, 256, (x, w, h) => {
-    x.fillStyle = '#ffffff'; x.fillRect(0, 0, w, h);
-    x.fillStyle = 'rgba(232,70,80,.45)'; for(let i = 0; i < 8; i++){ x.fillRect(i * 32, 0, 16, h); x.fillRect(0, i * 32, w, 16); }
-  });
   return T;
 }
