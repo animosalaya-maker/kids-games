@@ -18,7 +18,7 @@
 @keyframes ipGlow{50%{box-shadow:0 10px 30px rgba(0,0,0,.4),0 0 0 10px rgba(255,205,77,.32)}}
 .ip-txt{flex:1;min-width:0;font-weight:800;font-size:16px;line-height:1.35}
 .ip-txt small{display:block;font-weight:600;font-size:13px;opacity:.85}
-.ip-go{border:0;border-radius:16px;padding:12px 16px;background:#ffcd4d;color:#3b2600;font:900 17px/1 inherit;font-family:inherit;box-shadow:0 4px 0 #c99418;cursor:pointer;white-space:nowrap}
+.ip-go{border:0;border-radius:16px;padding:12px 16px;background:#ffcd4d;color:#3b2600;font-family:inherit;font-weight:900;font-size:17px;line-height:1;box-shadow:0 4px 0 #c99418;cursor:pointer;white-space:nowrap}
 .ip-go:active{transform:translateY(3px);box-shadow:0 1px 0 #c99418}
 .ip-x{border:0;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.18);color:#fff;font-size:18px;cursor:pointer;flex:none}`;
   const st = document.createElement('style'); st.textContent = css; document.head.appendChild(st);
