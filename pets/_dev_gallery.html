@@ -1,0 +1,27 @@
+<!doctype html><html><head><meta charset="utf-8"><script src="../i18n.js"></script><style>body{margin:0;background:#cfe9ff}</style></head><body>
+<canvas id="c" width="1600" height="900"></canvas>
+<script type="module">
+import * as THREE from '../adventure3d/three.module.min.js';
+import { makeKit } from '../worlds/kit.js';
+import { makePetModels } from './models.js';
+const K = makeKit(THREE), PM = makePetModels(THREE, K);
+const r = new THREE.WebGLRenderer({ canvas:document.getElementById('c'), antialias:true }); r.setSize(1600, 900, false);
+r.shadowMap.enabled = true; r.shadowMap.type = THREE.PCFSoftShadowMap;
+const s = new THREE.Scene(); s.background = new THREE.Color(0xcfe9ff);
+s.add(new THREE.HemisphereLight(0xfff6e8, 0x8aa080, 1.6)); const d = new THREE.DirectionalLight(0xfff0d0, 2.2); d.position.set(5, 10, 8); d.castShadow = true; d.shadow.mapSize.set(2048, 2048); Object.assign(d.shadow.camera, { left:-12, right:12, top:8, bottom:-8 }); s.add(d);
+const fl = new THREE.Mesh(new THREE.PlaneGeometry(40, 30), new THREE.MeshStandardMaterial({ color:0x9fdc8a })); fl.rotation.x = -Math.PI / 2; fl.receiveShadow = true; s.add(fl);
+const mode = new URLSearchParams(location.search).get('m') || 'pets';
+const cam = new THREE.PerspectiveCamera(30, 16 / 9, .1, 100);
+if(mode === 'pets'){
+  PM.SP_IDS.forEach((sp, i) => [0, 1, 2].forEach(st => { const P = PM.buildPet(sp, st, st === 2 ? PM.HAT_IDS[i % 7] : null); P.grp.position.set((i - 4.5) * 1.15, 0, (st - 1) * -1.3); s.add(P.grp); PM.posePet(P, { t:i, dt:0, move:0, mode:'idle' }); }));
+  cam.position.set(0, 4.5, 11); cam.lookAt(0, .3, -.3);
+} else if(mode === 'one'){
+  const sp = new URLSearchParams(location.search).get('sp'); [0,1,2].forEach(st => { const P = PM.buildPet(sp, st, null); P.grp.position.set((st - 1) * 1.6, 0, 0); P.grp.rotation.y = .7; s.add(P.grp); PM.posePet(P, { t:1, dt:0, move:0, mode:'idle' }); });
+  cam.position.set(0, 2.2, 6); cam.lookAt(0, .4, 0);
+} else {
+  const ks = Object.keys(PM.FURN); ks.forEach((k, i) => { const m = PM.buildFurn(k); m.position.set((i % 6 - 2.5) * 3, 0, Math.floor(i / 6) * 3 - 3); s.add(m); });
+  PM.EGG_IDS.forEach((e, i) => { const E = PM.buildEgg(e); E.setCracks(i * 2); E.mesh.scale.setScalar(.5); E.mesh.position.set(-8 + i * 1.2, 0, 5); s.add(E.mesh); });
+  cam.position.set(0, 12, 16); cam.lookAt(0, 0, 0);
+}
+r.render(s, cam); window.done = true;
+</script></body></html>

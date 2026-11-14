@@ -131,6 +131,12 @@ function makeMock(load, save, now){
         .sort((x, y) => ((now() - y[0].seen < 60000) - (now() - x[0].seen < 60000)) || y[1] - x[1]).map(x => card(x[0]));
     },
     bobo_fr_heartbeat(d, a, me){ me.seen = now(); return counts(d, me.id); },
+    bobo_trial(d, a, me){
+      if(!/^[a-z_]{2,24}$/.test(a.p_map || '')) fail('22023', 'bad_map');
+      d.trial = d.trial || {}; const k = me.id + ':' + a.p_map, lim = 300;
+      const add = Math.max(0, Math.min(60, a.p_add_sec | 0)), used = Math.min(lim, (d.trial[k] || 0) + add); d.trial[k] = used;
+      return { used, left:lim - used, limit:lim };
+    },
     bobo_fr_set_room(d, a, me){
       if(a.p_room == null){ me.room = null; me.game = null; me.rt = 0; return { status:'cleared' }; }
       if(!/^[0-9]{4}$/.test(a.p_room)) fail('22023', 'bad_room');
@@ -350,6 +356,8 @@ window.Friends = {
   heartbeat: () => call('bobo_fr_heartbeat'),
   invite: (code, room, game) => call('bobo_fr_invite2', { p_code:code, p_room:String(room), p_game:gameOf(game) }),
   setRoom,
+  /* free-preview time of a premium map (300 s in total per kid): addSec 0 just reads it; at most 60 s per call */
+  trial: (map, addSec) => call('bobo_trial', { p_map:map, p_add_sec:Math.max(0, Math.min(60, Math.round(+addSec || 0))) }),
   invites: () => call('bobo_fr_invites'),
   dismiss: id => call('bobo_fr_dismiss', { p_id:id }),
   async deleteMe(){
