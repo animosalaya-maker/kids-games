@@ -22,6 +22,17 @@ const NOUN = {
   tiger:['نمر','Tiger','Kaplan'], lion:['أسد','Lion','Aslan'], rabbit:['أرنب','Rabbit','Tavşan'], falcon:['صقر','Falcon','Şahin'],
   dolphin:['دلفين','Dolphin','Yunus'], bear:['دب','Bear','Ayı'], fox:['ثعلب','Fox','Tilki'], penguin:['بطريق','Penguin','Penguen'],
   cat:['قط','Cat','Kedi'], elephant:['فيل','Elephant','Fil'], horse:['حصان','Horse','At'], star:['نجم','Star','Yıldız'] };
+/* the online games a friend can be invited to (ids match the server: bobo_fr_set_room / bobo_fr_invite2) */
+const GAMES = {
+  '3d':   { path:'adventure3d/', emoji:'⭐', color:'#ffb53d', dark:'#b8740f',
+            name:['سباق النجوم 3D ⭐', 'Star Rush 3D ⭐', 'Yıldız Yarışı 3D ⭐'], game:['مغامرة بوبو 3D', "Bobo's Adventure 3D", "Bobo'nun Macerası 3D"] },
+  worlds: { path:'worlds/', emoji:'🌍', color:'#5b8cff', dark:'#3555b8', pics:['worlds/chars/sara.png', 'worlds/chars/samir.png'],
+            name:['سباق العوالم 🌍', 'Worlds Race 🌍', 'Dünyalar Yarışı 🌍'], game:['عوالم بوبو', 'Bobo Worlds', 'Bobo Dünyaları'] },
+  heist:  { path:'heist/', emoji:'🥚', color:'#3fc47a', dark:'#23854f', pics:['worlds/chars/zaqzouq.png', 'worlds/chars/laila.png'],
+            name:['اسرق البيضة 🥚', 'Egg Heist 🥚', 'Yumurta Soygunu 🥚'], game:['اسرق البيضة', 'Egg Heist', 'Yumurta Soygunu'] }
+};
+const gameOf = g => GAMES[g] ? g : '3d';
+const gameName = (g, inGame) => { const x = GAMES[gameOf(g)][inGame ? 'game' : 'name']; return T(x[0], x[1], x[2]); };
 const COLORS = ['purple','pink','green','orange','blue','gold'], HATS = ['cap','bow','top','flower','grad','crown'], GLASSES = ['round','sun','goggles'];
 
 /* storage */
@@ -48,7 +59,9 @@ function makeMock(load, save, now){
   const ok = s => typeof s === 'string' && s.length >= 43 && s.length <= 128 && /^[A-Za-z0-9_-]+$/.test(s);
   const fail = (code, msg) => { const e = new Error(msg); e.code = code; throw e; };
   const fresh = () => ({ seq:1, kids:[], req:[], fr:[], inv:[] });
-  const card = k => ({ code:k.code, avatar:k.avatar, color:k.color, hat:k.hat, glasses:k.glasses, na:k.na, nn:k.nn, name:k.name || null, online:now() - k.seen < 60000 });
+  const inRoom = k => !!(k.room && now() - (k.rt || 0) < 90000);
+  const card = k => ({ code:k.code, avatar:k.avatar, color:k.color, hat:k.hat, glasses:k.glasses, na:k.na, nn:k.nn, name:k.name || null, online:now() - k.seen < 60000,
+    room:inRoom(k) ? k.room : null, game:inRoom(k) ? k.game : null });
   const isFr = (d, a, b) => d.fr.some(f => f[0] === a && f[1] === b);
   const nFr = (d, a) => d.fr.filter(f => f[0] === a).length;
   const counts = (d, id) => ({ requests:d.req.filter(r => r[1] === id).length,
@@ -118,18 +131,28 @@ function makeMock(load, save, now){
         .sort((x, y) => ((now() - y[0].seen < 60000) - (now() - x[0].seen < 60000)) || y[1] - x[1]).map(x => card(x[0]));
     },
     bobo_fr_heartbeat(d, a, me){ me.seen = now(); return counts(d, me.id); },
+    bobo_fr_set_room(d, a, me){
+      if(a.p_room == null){ me.room = null; me.game = null; me.rt = 0; return { status:'cleared' }; }
+      if(!/^[0-9]{4}$/.test(a.p_room)) fail('22023', 'bad_room');
+      if(!(a.p_game in GAMES)) fail('22023', 'bad_game');
+      Object.assign(me, { room:a.p_room, game:a.p_game, rt:now(), seen:now() }); return { status:'ok' };
+    },
+    bobo_fr_invite2(d, a, me){
+      if(!(a.p_game in GAMES)) fail('22023', 'bad_game');
+      return F.bobo_fr_invite(d, a, me);
+    },
     bobo_fr_invite(d, a, me){
       if(!/^[0-9]{4}$/.test(a.p_room || '')) fail('22023', 'bad_room');
       const o = byCode(d, a.p_code); if(!o || !isFr(d, me.id, o.id)) return { status:'not_friends' };
       if(d.inv.filter(i => i.from === me.id && now() - i.t < 60000).length >= 6) return { status:'slow_down' };
       d.inv = d.inv.filter(i => i.exp > now() - 864e5);
       d.inv.forEach(i => { if(i.from === me.id && i.to === o.id) i.dis = true; });
-      d.inv.push({ id:d.seq++, from:me.id, to:o.id, room:a.p_room, t:now(), exp:now() + 600000, dis:false }); me.seen = now();
+      d.inv.push({ id:d.seq++, from:me.id, to:o.id, room:a.p_room, game:a.p_game || '3d', t:now(), exp:now() + 600000, dis:false }); me.seen = now();
       return { status:'sent' };
     },
     bobo_fr_invites(d, a, me){
       return d.inv.filter(i => i.to === me.id && !i.dis && i.exp > now() && isFr(d, me.id, i.from)).sort((x, y) => y.t - x.t)
-        .map(i => ({ id:i.id, room:i.room, from:card(d.kids.find(k => k.id === i.from)), left:Math.max(0, Math.floor((i.exp - now()) / 1000)) }));
+        .map(i => ({ id:i.id, room:i.room, game:i.game || '3d', from:card(d.kids.find(k => k.id === i.from)), left:Math.max(0, Math.floor((i.exp - now()) / 1000)) }));
     },
     bobo_fr_dismiss(d, a, me){ d.inv.forEach(i => { if(i.id === +a.p_id && i.to === me.id) i.dis = true; }); return { status:'dismissed' }; },
     bobo_fr_delete_me(d, a, me){
@@ -269,6 +292,21 @@ function gameUrl(base, params){
   return base + '?' + u.toString();
 }
 
+/* "I'm in online room <room> of <game>" (null = left). The games call it on entering a room, every 60 s while in it,
+   and with null on leave. unload=true is for pagehide: no waiting, a keepalive request (or a direct write in mock mode). */
+function setRoom(room, game, unload){
+  const s = secret(false); if(!s) return Promise.resolve(null);
+  const args = { p_secret:s, p_room:room == null ? null : String(room), p_game:room == null ? null : gameOf(game) };
+  if(unload){
+    try{
+      if(mock) mock.call('bobo_fr_set_room', args);
+      else fetch(URL_ + '/rest/v1/rpc/bobo_fr_set_room', { method:'POST', keepalive:true, headers:{ 'Content-Type':'application/json', apikey:KEY }, body:JSON.stringify(args) }).catch(() => {});
+    }catch(e){}
+    return Promise.resolve(null);
+  }
+  return call('bobo_fr_set_room', { p_room:args.p_room, p_game:args.p_game });
+}
+
 /* heartbeat: tells the server "I'm here" every 25 s while the page is visible; cb gets the badge counts */
 function startHeartbeat(cb, ms){
   if(!secret(false)) return () => {};
@@ -310,7 +348,8 @@ window.Friends = {
   remove: code => call('bobo_fr_remove', { p_code:code }),
   list: () => call('bobo_fr_friends'),
   heartbeat: () => call('bobo_fr_heartbeat'),
-  invite: (code, room) => call('bobo_fr_invite', { p_code:code, p_room:String(room) }),
+  invite: (code, room, game) => call('bobo_fr_invite2', { p_code:code, p_room:String(room), p_game:gameOf(game) }),
+  setRoom,
   invites: () => call('bobo_fr_invites'),
   dismiss: id => call('bobo_fr_dismiss', { p_id:id }),
   async deleteMe(){
@@ -319,6 +358,7 @@ window.Friends = {
     put(IDS, K_SECRET, null); put(IDS, K_CODE, null); meCache = null; readyP = null;
     return { status:'deleted' };
   },
+  GAMES, gameOf, gameName, ROOT:BASE,
   normCode, isCode, fmtCode, nick, avatarEl, drawBobo, gameUrl, startHeartbeat,
   link: code => SITE + '?friend=' + encodeURIComponent(code),
   errText: e => (e && e.text) || friendlyError(e).text,

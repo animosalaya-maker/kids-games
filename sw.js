@@ -1,5 +1,5 @@
 // Keeps the games working offline. Bump VERSION after changing any file.
-const VERSION = 'kids-games-v23';
+const VERSION = 'kids-games-v24';
 const FILES = ['./', './index.html', './manifest.webmanifest', './manifest-en.webmanifest', './manifest-tr.webmanifest', './i18n.js', './icon-192.png', './icon-512.png', './privacy.html', './world.js', './back.js', './invitepop.js', './supabase.js', './friends.js', './friends/', './friends/index.html',
   './bobo/', './bobo/index.html', './party/', './party/index.html', './prank/', './prank/index.html', './adventure/', './adventure/index.html', './adventure3d/', './adventure3d/index.html', './adventure3d/three.module.min.js',
   './heist/', './heist/index.html', './worlds/', './worlds/index.html', './worlds/kit.js', './worlds/levels.js', './worlds/chars/sara.png', './worlds/chars/sidra.png', './worlds/chars/qamar.png', './worlds/chars/samir.png', './worlds/chars/mushakis.png', './worlds/chars/zaqzouq.png', './worlds/chars/laila.png',
