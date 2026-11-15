@@ -490,7 +490,7 @@ function buildWorld(){
     HOUSE_X.forEach((x, i) => {
       const h = new THREE.Mesh(GM.houseGeo(new THREE.Color(HOUSE_COL[i]).getHex(), HOUSE_ROOF[i]), MAT); h.position.set(x, 0, HOUSE_Z); h.rotation.y = Math.PI; h.castShadow = h.receiveShadow = true; world.add(h);
       box(x - 2.8, HOUSE_Z - 2.3, x + 2.8, HOUSE_Z + 2.3);
-      const n = signMesh(numTex(i + 1, HOUSE_COL[i]), .9, .9, x - 1.3, 2.5, HOUSE_Z - 2.25, Math.PI); n.rotation.y = 0; n.position.z = HOUSE_Z - 2.26;
+      signMesh(numTex(i + 1, HOUSE_COL[i]), 1, 1, x + 1.2, 2.55, HOUSE_Z - 2.27, Math.PI);
       // a mailbox in the house colour
       F.add(GEO.cyl8, x + 1.5, .5, 18.1, .05, 1, .05, 0, 0, 0, 0x8a5a36); F.add(GEO.box, x + 1.5, 1.05, 18.1, .3, .26, .45, 0, 0, 0, new THREE.Color(HOUSE_COL[i]).getHex());
       for(const s of [-1, 1]) for(let k = 0; k < 4; k++) F.add(GEO.sm, x + s * (1.4 + k * .3), .3, 19.45, .22, .2, .22, 0, 0, 0, 0x58b84e);
