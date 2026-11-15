@@ -38,7 +38,21 @@ const GAMES = {
   garden: { path:'garden/', emoji:'🌻', color:'#5cc46a', dark:'#2f8a3c',
             name:['حديقة بوبو 🌻', 'Bobo Garden 🌻', 'Bobo Bahçesi 🌻'], game:['حديقة بوبو', 'Bobo Garden', 'Bobo Bahçesi'] },
   hide:   { path:'hide/', emoji:'🙈', color:'#ff9f43', dark:'#b8661a',
-            name:['الغميضة 🙈', 'Hide and Seek 🙈', 'Saklambaç 🙈'], game:['الغميضة', 'Hide and Seek', 'Saklambaç'] }
+            name:['الغميضة 🙈', 'Hide and Seek 🙈', 'Saklambaç 🙈'], game:['الغميضة', 'Hide and Seek', 'Saklambaç'] },
+  restaurant: { path:'restaurant/', emoji:'🍕', color:'#ff6b4a', dark:'#b8391f',
+            name:['مطعم بوبو 🍕', 'Bobo Restaurant 🍕', 'Bobo Restoranı 🍕'], game:['مطعم بوبو', 'Bobo Restaurant', 'Bobo Restoranı'] },
+  city:   { path:'city/', emoji:'🏙️', color:'#4aa3ff', dark:'#2167b8',
+            name:['مدينة بوبو 🏙️', 'Bobo City 🏙️', 'Bobo Şehri 🏙️'], game:['مدينة بوبو', 'Bobo City', 'Bobo Şehri'] },
+  park:   { path:'park/', emoji:'🎡', color:'#ff7ac2', dark:'#b8407f',
+            name:['ملاهي بوبو 🎡', 'Bobo Theme Park 🎡', 'Bobo Lunaparkı 🎡'], game:['ملاهي بوبو', 'Bobo Theme Park', 'Bobo Lunaparkı'] },
+  bees:   { path:'bees/', emoji:'🐝', color:'#ffc53d', dark:'#b8860f',
+            name:['نحلات بوبو 🐝', 'Bobo Bees 🐝', 'Bobo Arıları 🐝'], game:['نحلات بوبو', 'Bobo Bees', 'Bobo Arıları'] },
+  fashion:{ path:'fashion/', emoji:'👗', color:'#c77dff', dark:'#8a3fc2',
+            name:['عرض أزياء بوبو 👗', 'Bobo Fashion Show 👗', 'Bobo Moda Şovu 👗'], game:['عرض أزياء بوبو', 'Bobo Fashion Show', 'Bobo Moda Şovu'] },
+  surprise:{ path:'surprise/', emoji:'🌪️', color:'#3dc1c9', dark:'#1f8288',
+            name:['جزيرة المفاجآت 🌪️', 'Surprise Island 🌪️', 'Sürpriz Adası 🌪️'], game:['جزيرة المفاجآت', 'Surprise Island', 'Sürpriz Adası'] },
+  island: { path:'island/', emoji:'🏝️', color:'#2fb7a6', dark:'#1b7a6e',
+            name:['جزيرة بوبو الكبيرة 🏝️', 'Bobo Big Island 🏝️', 'Bobo Büyük Ada 🏝️'], game:['جزيرة بوبو الكبيرة', 'Bobo Big Island', 'Bobo Büyük Ada'] }
 };
 const gameOf = g => GAMES[g] ? g : '3d';
 const gameName = (g, inGame) => { const x = GAMES[gameOf(g)][inGame ? 'game' : 'name']; return T(x[0], x[1], x[2]); };
@@ -168,6 +182,7 @@ function makeMock(load, save, now){
       d.inv.push({ id:d.seq++, from:me.id, to:o.id, room:a.p_room, game:a.p_game || '3d', t:now(), exp:now() + 600000, dis:false }); me.seen = now();
       return { status:'sent' };
     },
+    bobo_fr_claim_coins(d, a, me){ return { coins:0 }; },
     bobo_fr_invites(d, a, me){
       return d.inv.filter(i => i.to === me.id && !i.dis && i.exp > now() && isFr(d, me.id, i.from)).sort((x, y) => y.t - x.t)
         .map(i => ({ id:i.id, room:i.room, game:i.game || '3d', from:card(d.kids.find(k => k.id === i.from)), left:Math.max(0, Math.floor((i.exp - now()) / 1000)) }));
@@ -436,6 +451,7 @@ window.Friends = {
       return (r && typeof r === 'object') ? r : {};
     });
   },
+  claimCoins: () => call('bobo_fr_claim_coins'),
   dismiss: id => call('bobo_fr_dismiss', { p_id:id }),
   async deleteMe(){
     const s = secret(false);
