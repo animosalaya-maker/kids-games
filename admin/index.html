@@ -47,8 +47,8 @@ th{color:var(--mute);font-weight:600}
 <body>
 <div id="login" class="login" hidden>
   <h1>🔒 لوحة التحكم</h1>
-  <p class="muted">اكتب مفتاح المدير</p>
-  <input id="key" autocomplete="off" spellcheck="false" placeholder="bobo-…">
+  <p class="muted">اكتب رقم المدير</p>
+  <input id="key" type="password" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="••••••••••">
   <button class="btn" id="go">فوت</button>
   <p class="err" id="err"></p>
 </div>
@@ -82,8 +82,10 @@ const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); ret
 let key = ''; try{ key = localStorage.getItem('bobo_admin_key') || ''; }catch(e){}
 async function load(){
   const r = await fetch(URL_ + '/rest/v1/rpc/bobo_admin_stats', { method:'POST', headers:{ apikey:KEY, Authorization:'Bearer ' + KEY, 'Content-Type':'application/json' }, body:JSON.stringify({ p_key:key }) });
-  if(!r.ok){ const t = await r.text(); throw new Error(/not_admin/.test(t) ? 'not_admin' : 'net'); }
-  return r.json();
+  if(!r.ok) throw new Error('net');
+  const j = await r.json();
+  if(j && j.error) throw new Error(j.error);
+  return j;
 }
 function bars(el, obj){
   const e = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]); const max = Math.max(1, ...e.map(x => x[1]));
@@ -112,7 +114,7 @@ function render(s){
 }
 async function refresh(){
   try{ render(await load()); $('login').hidden = true; $('app').hidden = false; }
-  catch(e){ if(e.message === 'not_admin'){ try{ localStorage.removeItem('bobo_admin_key'); }catch(_){} $('app').hidden = true; $('login').hidden = false; $('err').textContent = key ? 'المفتاح غلط' : ''; } else { $('upd').textContent = '⚠️ ما في اتصال، رح جرّب كمان شوي'; } }
+  catch(e){ if(e.message === 'not_admin' || e.message === 'locked'){ try{ localStorage.removeItem('bobo_admin_key'); }catch(_){} $('app').hidden = true; $('login').hidden = false; $('err').textContent = e.message === 'locked' ? 'محاولات كتير غلط، استنّى 10 دقايق' : (key ? 'الرقم غلط' : ''); } else { $('upd').textContent = '⚠️ ما في اتصال، رح جرّب كمان شوي'; } }
 }
 $('go').onclick = () => { key = $('key').value.trim(); try{ localStorage.setItem('bobo_admin_key', key); }catch(e){} refresh(); };
 $('key').addEventListener('keydown', e => { if(e.key === 'Enter') $('go').click(); });
