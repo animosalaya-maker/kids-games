@@ -127,16 +127,15 @@ export function makeCityModels(THREE, K){
     car:      { e:'🚗', name:L('سيارة', 'Car', 'Araba'), speed:13, acc:9, turn:2.1, r:1.3, len:3.3 },
     scooter:  { e:'🛵', name:L('موتور', 'Scooter', 'Scooter'), speed:11, acc:9, turn:2.6, r:.8, len:1.8 },
     bicycle:  { e:'🚲', name:L('بسكليت', 'Bicycle', 'Bisiklet'), speed:8, acc:7, turn:2.8, r:.7, len:1.7 },
-    bus:      { e:'🚌', name:L('باص', 'Bus', 'Otobüs'), speed:10, acc:5, turn:1.4, r:2, len:7 },
-    icecream: { e:'🍦', name:L('سيارة البوظة', 'Ice-cream truck', 'Dondurma arabası'), speed:10, acc:6, turn:1.7, r:1.6, len:4.6, unlock:'icecream' },
-    firetruck:{ e:'🚒', name:L('سيارة الإطفاء', 'Fire truck', 'İtfaiye aracı'), speed:11, acc:6, turn:1.5, r:1.8, len:6, unlock:'firefighter' },
+    bus:      { e:'🚌', name:L('باص', 'Bus', 'Otobüs'), speed:10, acc:6.5, turn:1.4, r:2, len:7 },
+    icecream: { e:'🍦', name:L('سيارة البوظة', 'Ice-cream truck', 'Dondurma arabası'), speed:10, acc:7.5, turn:1.7, r:1.6, len:4.6, unlock:'icecream' },
+    firetruck:{ e:'🚒', name:L('سيارة الإطفاء', 'Fire truck', 'İtfaiye aracı'), speed:11, acc:7, turn:1.5, r:1.8, len:6, unlock:'firefighter' },
     boat:     { e:'🚤', name:L('شختورة', 'Boat', 'Tekne'), speed:10, acc:5, turn:1.6, r:1.6, len:4.4, water:true, unlock:'pier' }
   };
   const VEH_IDS = Object.keys(VEH);
   function vehicleGeo(k){
-    const M = new Merge(), W = new Merge(), wheels = [];
+    const M = new Merge(), wheels = [];
     let seats = [], extra = {};
-    const tire = 0x2f2f3a, hub = 0xe8e8f0;
     const wheel = (x, y, z, r, w) => { wheels.push([x, y, z, r, w]); };
     switch(k){
       case 'car': {
@@ -225,7 +224,6 @@ export function makeCityModels(THREE, K){
         extra = { prop:[0, 1.1, 3.5] };
         break; }
     }
-    for(const [x, y, z, r, w] of wheels){ W.add(WHEEL, x, y, z, w, r, r, 0, 0, 0, tire); W.add(WHEEL, x + Math.sign(x || 1) * .01, y, z, w + .02, r * .5, r * .5, 0, 0, 0, hub); }
     return { body:M.geometry(), wheels, seats, extra };
   }
   const VCACHE = {};
