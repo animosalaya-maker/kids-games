@@ -346,6 +346,7 @@ tile($id('advTiles'), 'adventure/', { title:L('مغامرة بوبو',"Bobo's Ad
 tile($id('partyTiles'), 'party/', { title:L('حفلة الأصحاب','Friends Party','Arkadaş Partisi'), emoji:'🎉', bg:'#e8494e' }, L('12 لعبة','12 games','12 oyun'));
 DUEL.forEach(g => tile($id('duelTiles'), 'duel/#' + g.id, g, AR(2)));
 
+addEventListener('bobo-coins', () => refresh());
 function refresh(){
   document.getElementById('coinCount').textContent = AR(W.coins);
   document.getElementById('coinCount2').textContent = AR(W.coins);

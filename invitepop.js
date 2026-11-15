@@ -125,13 +125,18 @@
     await Promise.race([Friends.dismiss(inv.id).catch(() => {}), new Promise(r => setTimeout(r, 1500))]);
     location.href = Friends.gameUrl(ROOT + Friends.GAMES[Friends.gameOf(inv.game)].path, { join:inv.room });
   }
-  let lastPlay = 0, playingSet = false;
+  let lastPlay = 0, playingSet = false, lastCoin = 0;
   async function tick(){
     if(busy || cur || document.visibilityState === 'hidden') return; busy = true;
     try{
       let c;
       if(canHost() && Date.now() - lastPlay > 24000){ lastPlay = Date.now(); c = await Friends.setPlaying(GAME); playingSet = true; }
       else c = await Friends.heartbeat();
+      // coins sent from Bobo Land (admin gift): add them to this phone's wallet
+      if(window.World && World.addCoins && Friends.claimCoins && Date.now() - lastCoin > 45000){
+        lastCoin = Date.now();
+        try{ const g = await Friends.claimCoins(); if(g && g.coins > 0){ World.addCoins(g.coins); toast('🎁 ' + T('وصلك ' + g.coins + ' عملة من بوبو لاند!', 'You got ' + g.coins + ' coins from Bobo Land!', 'Bobo Land\'dan ' + g.coins + ' altın geldi!'), 5000); try{ window.dispatchEvent(new Event('bobo-coins')); }catch(e){} } }catch(e){}
+      }
       if(c && c.joins > 0 && !cur){
         const list = await Friends.joinReqs(), s = seen();
         const req = (list || []).find(r => !s.includes('j' + r.id) && r.left > 5);
