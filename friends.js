@@ -182,6 +182,7 @@ function makeMock(load, save, now){
       d.inv.push({ id:d.seq++, from:me.id, to:o.id, room:a.p_room, game:a.p_game || '3d', t:now(), exp:now() + 600000, dis:false }); me.seen = now();
       return { status:'sent' };
     },
+    bobo_fr_claim_coins(d, a, me){ return { coins:0 }; },
     bobo_fr_invites(d, a, me){
       return d.inv.filter(i => i.to === me.id && !i.dis && i.exp > now() && isFr(d, me.id, i.from)).sort((x, y) => y.t - x.t)
         .map(i => ({ id:i.id, room:i.room, game:i.game || '3d', from:card(d.kids.find(k => k.id === i.from)), left:Math.max(0, Math.floor((i.exp - now()) / 1000)) }));
@@ -435,6 +436,7 @@ window.Friends = {
   /* free-preview time of a premium map (300 s in total per kid): addSec 0 just reads it; at most 60 s per call */
   trial: (map, addSec) => call('bobo_trial', { p_map:map, p_add_sec:Math.max(0, Math.min(60, Math.round(+addSec || 0))) }),
   invites: () => call('bobo_fr_invites'),
+  claimCoins: () => call('bobo_fr_claim_coins'),
   dismiss: id => call('bobo_fr_dismiss', { p_id:id }),
   async deleteMe(){
     const s = secret(false);
