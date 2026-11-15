@@ -1592,22 +1592,26 @@ function mpEnter(){
   if(MP.isHost) say(L('رقم غرفتك ', 'Your room number is ', 'Oda numaran ') + [...MP.code].map(N).join('') + L(' — قولو لأصحابك 👫', ' — tell your friends 👫', ' — arkadaşlarına söyle 👫'), 6000);
   else { mpSend('hreq', {}); say(L('أهلا! هاد بيت صاحبك 🏡', "Welcome! This is your friend's house 🏡", 'Hoş geldin! Burası arkadaşının evi 🏡'), 3500); }
 }
-async function mpCreate(){
+async function mpCreate(want){
   mpConnecting();
   try{
     for(let i = 0; i < 4; i++){
-      const code = String(1000 + Math.floor(Math.random() * 9000));
+      const code = i === 0 && /^\d{4}$/.test(want || '') ? String(want) : String(1000 + Math.floor(Math.random() * 9000));
       const r = await mpOpen(code, 'create');
       if(r === 'ok'){ mpEnter(); mpSendInvite(); return; }
     }
     throw new Error('busy');
   }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(mpCreate); }
 }
-async function mpJoin(code){
+async function mpJoin(code, until){
   mpConnecting();
   try{
-    const r = await mpOpen(code, 'join');
+    let r = await mpOpen(code, 'join');
     if(MP.screen !== 'connecting') return;
+    while(r === 'nobody' && until && performance.now() < until){
+      await new Promise(res => setTimeout(res, 700)); if(MP.screen !== 'connecting') return;
+      r = await mpOpen(code, 'join'); if(MP.screen !== 'connecting') return;
+    }
     if(r === 'ok') mpEnter();
     else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
     else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
@@ -1769,10 +1773,10 @@ resize();
 showMenu();
 requestAnimationFrame(frame);
 (function(){
-  const join = QS.get('join'), host = QS.get('host') === '1', inv = QS.get('invite');
+  const join = QS.get('join'), host = QS.get('host') === '1', inv = QS.get('invite'), room = QS.get('room');
   if(!/^\d{4}$/.test(join || '') && !host) return;
-  const q = new URLSearchParams(location.search); ['join', 'host', 'invite'].forEach(k => q.delete(k));
+  const q = new URLSearchParams(location.search); ['join', 'host', 'invite', 'room'].forEach(k => q.delete(k));
   try{ history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
-  if(/^\d{4}$/.test(join || '')) mpJoin(join);
-  else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(); }
+  if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 10000);
+  else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(room); }
 })();

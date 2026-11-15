@@ -201,6 +201,12 @@ function makeMock(load, save, now){
       return { status:j.st === 'pending' && j.exp <= now() ? 'expired' : j.st, room:j.room, game:j.game };
     },
     bobo_fr_dismiss(d, a, me){ d.inv.forEach(i => { if(i.id === +a.p_id && i.to === me.id) i.dis = true; }); return { status:'dismissed' }; },
+    /* «جزيرة بوبو»: names for friend codes seen on the island (no secret needed; up to 40 codes; only kids with a name) */
+    bobo_island_names(d, a){
+      const cs = Array.isArray(a.p_codes) ? a.p_codes.slice(0, 40) : [], out = {};
+      cs.forEach(c => { const k = byCode(d, c); if(k && k.name) out[k.code] = k.name; });
+      return out;
+    },
     bobo_fr_delete_me(d, a, me){
       const id = me.id; d.kids = d.kids.filter(k => k.id !== id);
       d.req = d.req.filter(r => r[0] !== id && r[1] !== id); d.fr = d.fr.filter(f => f[0] !== id && f[1] !== id); d.inv = d.inv.filter(i => i.from !== id && i.to !== id);
@@ -212,7 +218,7 @@ function makeMock(load, save, now){
     call(fn, args){
       if(!F[fn]) fail('PGRST202', 'no such function');
       const d = load() || fresh(); let me = null;
-      if(fn !== 'bobo_fr_me'){
+      if(fn !== 'bobo_fr_me' && fn !== 'bobo_island_names'){
         if(!ok(args.p_secret)) fail('22023', 'bad_secret');
         me = d.kids.find(k => k.h === args.p_secret);
         if(!me){ if(fn === 'bobo_fr_delete_me') return { status:'deleted' }; fail('P0002', 'not_registered'); }
@@ -421,6 +427,15 @@ window.Friends = {
   /* free-preview time of a premium map (300 s in total per kid): addSec 0 just reads it; at most 60 s per call */
   trial: (map, addSec) => call('bobo_trial', { p_map:map, p_add_sec:Math.max(0, Math.min(60, Math.round(+addSec || 0))) }),
   invites: () => call('bobo_fr_invites'),
+  /* «جزيرة بوبو»: {code: name} for up to 40 friend codes (server RPC bobo_island_names; names are checked by the server) */
+  names: codes => {
+    const cs = [...new Set((Array.isArray(codes) ? codes : []).map(c => String(c || '').toUpperCase()).filter(isCode))].slice(0, 40);
+    if(!cs.length) return Promise.resolve({});
+    return rpc('bobo_island_names', { p_codes:cs }).then(r => {
+      if(Array.isArray(r)){ const o = {}; r.forEach(x => { if(x && x.code && x.name) o[x.code] = x.name; }); return o; }
+      return (r && typeof r === 'object') ? r : {};
+    });
+  },
   dismiss: id => call('bobo_fr_dismiss', { p_id:id }),
   async deleteMe(){
     const s = secret(false);
