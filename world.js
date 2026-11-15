@@ -47,6 +47,9 @@ const World = {
   owns(id){ return load().owned.includes(id); },
   buy(id, price){ const w = load(); if(w.owned.includes(id)) return true; if(w.coins < price) return false; w.coins -= price; w.owned.push(id); save(); return true; },
   wear(kind, key){ const w = load(); w.outfit[kind] = key; save(); },
+  /* "my character" (avatar.js): a versioned plain object kept in the same save, so the save code carries it too */
+  get avatar(){ const a = load().avatar; return a && typeof a === 'object' ? JSON.parse(JSON.stringify(a)) : null; },
+  setAvatar(a){ const w = load(); w.avatar = Object.assign({}, a, { v:1 }); save(); },
   palette(){ return COLORS[load().outfit.color] || COLORS.purple; },
   giftReady(){ return load().gift.last !== today(); },
   openGift(){

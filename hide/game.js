@@ -800,7 +800,7 @@ function showMenu(){
   $('#bMp').onclick = () => { AU.ac(); SFX.tap(); mpMenu(); };
   $('#bHero').onclick = () => { AU.ac(); SFX.tap(); showSelect('menu'); };
 }
-function botHeroes(n, used){ return shuffle(HERO_IDS.filter(h => !used.includes(h))).slice(0, n); }
+function botHeroes(n, used){ return shuffle(HERO_IDS.filter(h => h !== 'me' && !used.includes(h))).slice(0, n); }
 function startSolo(map, pref){
   if(ROT) rawSet('hide_rothint', '1');
   R.online = false; claimed.clear();
