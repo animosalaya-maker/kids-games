@@ -299,7 +299,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <script type="module" src="./game.js"></script>
 <script src="../back.js"></script>
 <script>BoboBack.init({
-  visible: () => { const o = document.getElementById('overlay'); const h = window.__fashion; return !o.hidden && h && (['menu', 'select', 'wardrobe'].includes(h.state) || (h.state === 'mp' && ['menu', 'keypad', 'error'].includes(h.mpScreen))); },
+  visible: () => { const o = document.getElementById('overlay'); const h = window.__fashion; return !o.hidden && h && (['menu', 'select'].includes(h.state) || (h.state === 'mp' && ['menu', 'keypad', 'error'].includes(h.mpScreen))); },
   onBack: () => { const h = window.__fashion; if(!h || h.state === 'menu') location.href = '../'; else h.menu(); },
   mount: document.getElementById('stage')
 });</script>

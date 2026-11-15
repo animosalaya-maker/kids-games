@@ -1016,7 +1016,7 @@ function updateCamera(dt){
   } else if(mode === 'runway'){
     const w = ph === 'runway' ? walkAt(R.tt) : walkAt(TURN_T);
     const end = w.end != null;
-    wantPos.set(end ? 1.3 : 1.7, RUN.top + (end ? 1.35 : 1.8), Math.min(w.z + (end ? 3.6 : 5.0), 8.5)); wantLook.set(0, RUN.top + .75, w.z - (end ? 0 : .6)); focus = [0, w.z];
+    wantPos.set(end ? 1.2 : 1.7, RUN.top + (end ? 1.4 : 1.8), Math.min(w.z + (end ? 4.3 : 5.0), 8.5)); wantLook.set(0, RUN.top + .75, w.z - (end ? 0 : .6)); focus = [0, w.z];
   } else if(mode === 'podium'){
     wantPos.set(Math.sin(T * .2) * .6 + (RTL ? -1.9 : 1.9), 2.2, RUN.endZ + 5.2); wantLook.set(RTL ? -2.0 : 2.0, 1.25, RUN.endZ); focus = [0, RUN.endZ];
   }
@@ -1400,7 +1400,7 @@ addEventListener('keydown', e => {
 window.__fashion = {
   get state(){ return state; }, get mpScreen(){ return MP.screen; }, menu:() => showMenu(), solo:() => startSolo(),
   get ph(){ return R ? R.ph : null; }, get round(){ return R ? JSON.parse(JSON.stringify({ n:R.n, ph:R.ph, th:R.th, theme:THEMES[R.th].id, left:R.left, turn:R.turn, tt:R.tt, order:R.order, slots:R.slots, votes:R.votes, res:R.res, reward:R.mine.reward || null })) : null; },
-  setLeft(s){ if(R) R.left = s; }, skipTurn(){ if(R && R.ph === 'runway') R.tt = TURN_T; }, setTT(s){ if(R) R.tt = s; },
+  setLeft(s){ if(R) R.left = s; }, skipTurn(){ if(R && R.ph === 'runway') R.tt = TURN_T; }, setTT(s){ if(R){ R.tt = s; snapCam = true; } },
   ready:() => { if(canDress() && !R.mine.ready) readyBtn.onclick(); }, get mySlot(){ return mySlot(); },
   wear:(slot, id, c, p) => { if(!canDress()) return false; if(!owns(id)) return false; const ok = wear(slot, id, c, p); drawPanel(); return ok; },
   pick:id => pickItem(id), color:c => pickColor(c), print:p => pickPrint(p), tab:s => { dressTab = s; if(canDress()) drawPanel(); },
