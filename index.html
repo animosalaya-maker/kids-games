@@ -101,6 +101,7 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
 .feat.pets{background:linear-gradient(135deg,#1fa37a,#7bd88f);box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 6px 0 #137255}
 .feat.pets:active{box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 2px 0 #137255}
 .feat.hide{background:linear-gradient(135deg,#2b7be4,#58c4f0);box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 6px 0 #1b56a8}
+.feat.surprise{background:linear-gradient(135deg,#18a6b8,#5fd6c9);box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 6px 0 #0f6f7b}
 .feat.granny{background:linear-gradient(135deg,#d9488f,#ff9e7a);box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 6px 0 #a3306a}
 .feat.granny:active{box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 2px 0 #a3306a}
 .feat .badge{position:absolute;top:10px;inset-inline-end:12px;background:#ff3b4e;color:#fff;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:800}
@@ -122,6 +123,22 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
 .card p{margin:0;color:var(--muted);line-height:1.5}
 .x{align-self:flex-start;border:0;width:40px;height:40px;border-radius:12px;background:var(--night-3);font-size:18px}
 #closetCv{width:200px;height:190px}
+#meCv{width:200px;height:220px}
+.pane{display:flex;flex-direction:column;align-items:center;gap:12px;width:100%}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;background:var(--night);border-radius:18px;padding:5px}
+.modes button{border:0;border-radius:14px;padding:9px 4px;background:transparent;font-family:var(--display);font-weight:800;font-size:17px}
+.modes button[aria-pressed="true"]{background:var(--bobo);color:#fff}
+.tabs.t4{grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tabs.t4 button{font-size:14px;padding:8px 2px}
+.me-items{width:100%;display:flex;flex-direction:column;gap:8px}
+.sec-t{font-weight:800;font-size:14px;color:var(--muted);text-align:start;margin-top:4px}
+.item canvas{width:56px;height:56px;display:block}
+.sws{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.sws button{border:0;width:32px;height:32px;border-radius:50%;box-shadow:inset 0 -5px 0 rgba(0,0,0,.18),0 0 0 3px var(--night-3)}
+.sws button[aria-pressed="true"]{box-shadow:inset 0 -5px 0 rgba(0,0,0,.18),0 0 0 3px var(--gold),0 0 0 6px var(--night-2)}
+.sws.nums button{background:var(--night-3);font-family:var(--display);font-weight:800;font-size:17px;box-shadow:none}
+.sws.nums button[aria-pressed="true"]{background:var(--gold);color:#3a2a00}
+#meBtns .small-btn{font-family:var(--display);font-weight:800;font-size:18px;padding:10px 22px}
 .tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
 .tabs button{border:0;border-radius:14px;padding:9px 4px;background:var(--night-3);font-weight:700}
 .tabs button[aria-pressed="true"]{background:var(--gold);color:#3a2a00}
@@ -175,6 +192,7 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
   <section class="sec">
     <div class="sec-h"><h2 data-en="Adventures" data-tr="Maceralar">مغامرات</h2><span data-en="🏃 1 player" data-tr="🏃 1 oyuncu">🏃 لاعب واحد</span></div>
     <a class="feat hide" id="hideTile" href="hide/"><span class="badge" data-en="New" data-tr="Yeni">جديد</span><span class="em">🙈</span><span><b data-en="Bobo Hide & Seek 🙈" data-tr="Bobo Saklambaç 🙈">غميضة بوبو 🙈</b><small data-en="You're tiny in a giant house! Hide or seek with friends" data-tr="Dev bir evde minicik oldun! Arkadaşlarınla saklan ya da ara">صرت صغير ببيت ضخم! تخبّى أو دوّر مع أصحابك</small></span></a>
+    <a class="feat surprise" id="surpriseTile" href="surprise/"><span class="badge" data-en="New" data-tr="Yeni">جديد</span><span class="em">🌪️</span><span><b data-en="Surprise Island 🌪️" data-tr="Sürpriz Adası 🌪️">جزيرة المفاجآت 🌪️</b><small data-en="Rising water, wind, snowballs… survive to the end!" data-tr="Yükselen su, rüzgar, kar topları… sonuna kadar dayan!">مي طالعة، ريح، كرات تلج… اصمد للآخر!</small></span></a>
     <a class="feat granny" id="grannyTile" href="granny/"><span class="badge" data-en="New" data-tr="Yeni">جديد</span><span class="em">👵🏻</span><span><b data-en="Grandma Nona's House 👵🏻" data-tr="Nona Ninenin Evi 👵🏻">بيت الجدّة نونا 👵🏻</b><small data-en="Sneak out while Grandma naps — shhh! 🤫" data-tr="Nine uyurken sessizce kaç — şşş! 🤫">اهرب من البيت والجدّة نايمة… هسّ! 🤫</small></span></a>
     <div class="tiles" id="advTiles"></div>
   </section>
@@ -215,11 +233,21 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
 
 <div class="sheet" id="closetSheet" hidden><div class="card">
   <button class="x" data-close aria-label="سكّر" data-en-aria="Close" data-tr-aria="Kapat">✕</button>
+  <div class="modes" role="group"><button data-mode="bobo" aria-pressed="true" data-en="Bobo" data-tr="Bobo">بوبو</button><button data-mode="me" aria-pressed="false" data-en="My character 👧👦" data-tr="Karakterim 👧👦">شخصيتي 👧👦</button></div>
+  <div class="pane" id="boboPane">
   <h2 data-en="Bobo's wardrobe" data-tr="Bobo'nun dolabı">خزانة بوبو</h2>
   <canvas id="closetCv" width="400" height="380" aria-label="بوبو بلبسه" data-en-aria="Bobo in his outfit" data-tr-aria="Bobo kıyafetiyle"></canvas>
+  </div>
+  <div class="pane" id="mePane" hidden>
+  <h2 data-en="My character" data-tr="Karakterim">شخصيتي</h2>
+  <canvas id="meCv" width="400" height="440" aria-label="شخصيتي بلبسها" data-en-aria="My character in the outfit" data-tr-aria="Karakterim kıyafetiyle"></canvas>
+  </div>
   <div class="coins" style="box-shadow:none">🪙 <span id="coinCount2">0</span></div>
-  <div class="tabs"><button data-tab="color" aria-pressed="true" data-en="Colours" data-tr="Renkler">الألوان</button><button data-tab="hat" aria-pressed="false" data-en="Hats" data-tr="Şapkalar">القبعات</button><button data-tab="glasses" aria-pressed="false" data-en="Glasses" data-tr="Gözlükler">النضارات</button></div>
+  <div class="tabs" id="boboTabs"><button data-tab="color" aria-pressed="true" data-en="Colours" data-tr="Renkler">الألوان</button><button data-tab="hat" aria-pressed="false" data-en="Hats" data-tr="Şapkalar">القبعات</button><button data-tab="glasses" aria-pressed="false" data-en="Glasses" data-tr="Gözlükler">النضارات</button></div>
   <div class="items" id="items"></div>
+  <div class="tabs t4" id="meTabs" hidden><button data-mt="body" aria-pressed="true" data-en="Body" data-tr="Beden">الجسم</button><button data-mt="hair" aria-pressed="false" data-en="Hair" data-tr="Saç">الشعر</button><button data-mt="face" aria-pressed="false" data-en="Face" data-tr="Yüz">الوجه</button><button data-mt="top" aria-pressed="false" data-en="Clothes" data-tr="Kıyafet">الملابس</button><button data-mt="bottom" aria-pressed="false" data-en="Bottoms" data-tr="Alt">البنطلون</button><button data-mt="shoes" aria-pressed="false" data-en="Shoes" data-tr="Ayakkabı">الأحذية</button><button data-mt="acc" aria-pressed="false" data-en="Extras" data-tr="Aksesuar">إكسسوار</button></div>
+  <div id="meItems" class="me-items" hidden></div>
+  <div class="row-btns" id="meBtns" hidden><button class="small-btn" id="meRand" data-en="Random 🎲" data-tr="Rastgele 🎲">عشوائي 🎲</button><button class="small-btn gold" id="meSave" data-en="Save ✓" data-tr="Kaydet ✓">احفظ ✓</button></div>
   <p id="closetMsg" style="font-size:14px;min-height:1.5em" data-en="Play more to collect coins 🪙" data-tr="Jeton toplamak için daha çok oyna 🪙">العب أكتر لتجمع عملات 🪙</p>
 </div></div>
 
@@ -259,6 +287,7 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
 </div></div>
 
 <script src="world.js"></script>
+<script src="avatar.js"></script>
 <script src="friends.js"></script>
 <script src="invitepop.js"></script>
 <script>
@@ -414,7 +443,101 @@ function renderItems(){
   });
 }
 document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => { tab = b.dataset.tab; document.querySelectorAll('[data-tab]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderItems(); });
-document.getElementById('closetBtn').onclick = () => { open('closetSheet'); renderItems(); };
+/* "my character": girl or boy avatar the kid dresses up (avatar.js draws it; world.js keeps it in the save, the 3D games build it as a hero) */
+const AV = window.Avatar;
+let mode = 'bobo', meTab = 'body', draft = null, dirty = false;
+try{ if(localStorage.getItem('bobo_closet_mode') === 'me') mode = 'me'; }catch(e){}
+function setMode(m){
+  mode = m; try{ localStorage.setItem('bobo_closet_mode', m); }catch(e){}
+  document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
+  const me = m === 'me';
+  ['boboPane', 'boboTabs', 'items'].forEach(id => { $id(id).hidden = me; });
+  ['mePane', 'meTabs', 'meItems', 'meBtns'].forEach(id => { $id(id).hidden = !me; });
+  $id('closetMsg').textContent = L('العب أكتر لتجمع عملات 🪙', 'Play more to collect coins 🪙', 'Jeton toplamak için daha çok oyna 🪙');
+  if(me){ if(!draft) draft = AV.normalize(W.avatar); renderMe(); } else renderItems();
+}
+document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { if(b.dataset.mode !== mode){ tone(660, .08); setMode(b.dataset.mode); } });
+document.querySelectorAll('[data-mt]').forEach(b => b.onclick = () => { meTab = b.dataset.mt; document.querySelectorAll('[data-mt]').forEach(x => x.setAttribute('aria-pressed', x === b)); renderMe(); });
+function saveMe(quiet){ W.setAvatar(draft); dirty = false; if(!quiet){ ding(); $id('closetMsg').textContent = L('انحفظت شخصيتك! بتلاقيها بالألعاب الـ3D ✓', 'Saved! Find your character in the 3D games ✓', 'Kaydedildi! Karakterin 3D oyunlarda ✓'); } }
+$id('meSave').onclick = () => saveMe();
+$id('meRand').onclick = () => { draft = AV.random(draft.body, id => W.owns(id)); dirty = true; tone(520, .07); tone(780, .09, 'triangle', .12, .07); renderMe(); };
+/* a section: title + a grid of item buttons; each item = { id (owned id or null if free), price, name, on, thumb:{ a, crop } | e (emoji), set() } */
+function meSec(title, list){
+  const box = document.createElement('div'); box.className = 'me-sec';
+  box.innerHTML = '<div class="sec-t">' + title + '</div>';
+  const grid = document.createElement('div'); grid.className = 'items'; box.appendChild(grid);
+  for(const o of list){
+    const owned = !o.price || W.owns(o.id);
+    const b = document.createElement('button'); b.className = 'item' + (o.on ? ' on' : ''); b.setAttribute('aria-pressed', !!o.on);
+    if(o.thumb){ const cv = document.createElement('canvas'); cv.width = 112; cv.height = 112; b.appendChild(cv); AV.drawFit(cv, o.thumb, o.crop); }
+    else { const e = document.createElement('span'); e.className = 'ie'; e.textContent = o.e; b.appendChild(e); }
+    b.insertAdjacentHTML('beforeend', '<b>' + o.name + '</b>' + (o.on ? '<small class="own">✔</small>' : owned ? '<small class="own">' + (o.price ? L('عندك', 'Yours', 'Senin') : L('ببلاش', 'Free', 'Bedava')) + '</small>' : '<small>🪙 ' + AR(o.price) + '</small>'));
+    b.onclick = () => {
+      const msg = $id('closetMsg');
+      if(!owned){
+        if(!W.buy(o.id, o.price)){ nope(); b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); msg.textContent = L('بدك كمان ' + AR(o.price - W.coins) + ' 🪙. العب لتجمع!', 'You need ' + (o.price - W.coins) + ' more 🪙. Play to collect!', (o.price - W.coins) + ' 🪙 daha lazım. Oynayıp topla!'); return; }
+        msg.textContent = L('اشتريت ' + o.name + '! 🎉', 'You got: ' + o.name + '! 🎉', o.name + ' senin! 🎉'); ding(); refresh();
+      } else tone(700, .07);
+      o.set(); dirty = true; renderMe();
+    };
+    grid.appendChild(b);
+  }
+  return box;
+}
+/* a row of colour dots (always free) */
+function meSw(title, cols, cur, set, nums){
+  const box = document.createElement('div');
+  box.innerHTML = '<div class="sec-t">' + title + '</div>';
+  const row = document.createElement('div'); row.className = 'sws' + (nums ? ' nums' : ''); box.appendChild(row);
+  cols.forEach((c, i) => { const b = document.createElement('button'); b.setAttribute('aria-pressed', i === cur);
+    if(nums) b.textContent = AR(c); else { b.style.background = c.c; b.setAttribute('aria-label', c.n); b.title = c.n; }
+    b.onclick = () => { set(i); dirty = true; tone(600 + i * 40, .06); renderMe(); }; row.appendChild(b); });
+  return box;
+}
+const withA = patch => Object.assign({}, draft, patch);
+function catalog(slot, list, key, crop, extra){
+  return Object.entries(list).map(([k, v]) => Object.assign({ id:'av:' + slot + ':' + k, price:v.price, name:v.name, on:draft[key] === k, thumb:withA({ [key]:k }), crop, set:() => { draft[key] = k; } }, extra ? extra(k) : {}));
+}
+function noneItem(key, crop, e){ return { id:null, price:0, name:L('بلا', 'None', 'Yok'), on:!draft[key], thumb:crop ? withA({ [key]:null }) : null, e:e || '🚫', crop, set:() => { draft[key] = null; } }; }
+function renderMe(){
+  const el = $id('meItems'); el.innerHTML = ''; const add = n => el.appendChild(n);
+  if(meTab === 'body'){
+    add(meSec(L('بنت ولا ولد؟', 'Girl or boy?', 'Kız mı erkek mi?'), ['girl', 'boy'].map(g => ({ id:null, price:0, name:g === 'girl' ? L('بنت 👧', 'Girl 👧', 'Kız 👧') : L('ولد 👦', 'Boy 👦', 'Erkek 👦'), on:draft.body === g,
+      thumb:g === draft.body ? draft : AV.normalize(Object.assign({}, AV.DEFAULT[g], { skin:draft.skin })), crop:'all', set:() => { if(draft.body !== g) draft = AV.normalize(Object.assign({}, AV.DEFAULT[g], { skin:draft.skin })); } }))));
+    add(meSw(L('لون البشرة', 'Skin', 'Ten rengi'), AV.SKINS.map(c => ({ c, n:'' })), draft.skin, i => { draft.skin = i; }));
+  } else if(meTab === 'hair'){
+    const order = Object.keys(AV.HAIR).sort((p, q) => (AV.HAIR[p].g === draft.body ? 0 : 1) - (AV.HAIR[q].g === draft.body ? 0 : 1));
+    add(meSec(L('التسريحة', 'Hairstyle', 'Saç modeli'), order.map(k => ({ id:'av:hair:' + k, price:AV.HAIR[k].price, name:AV.HAIR[k].name, on:draft.hair === k, thumb:withA({ hair:k, hat:null, extra:null }), crop:'head', set:() => { draft.hair = k; } }))));
+    add(meSw(L('لون الشعر', 'Hair colour', 'Saç rengi'), AV.HAIRC, draft.hairCol, i => { draft.hairCol = i; }));
+    if(draft.hair === 'hijab') add(meSw(L('لون الحجاب', 'Hijab colour', 'Başörtüsü rengi'), AV.CLOTH, draft.hijabCol, i => { draft.hijabCol = i; }));
+  } else if(meTab === 'face'){
+    add(meSec(L('العيون', 'Eyes', 'Gözler'), catalog('eyes', AV.EYES, 'eyes', 'face')));
+    add(meSec(L('النضارات', 'Glasses', 'Gözlükler'), [noneItem('glasses', 'face')].concat(Object.entries(W.GLASSES).map(([k, v]) => ({ id:'glasses:' + k, price:v.price, name:v.name, on:draft.glasses === k, thumb:withA({ glasses:k }), crop:'face', set:() => { draft.glasses = k; } })))));
+    add(meSec(L('زيادات', 'Extras', 'Ekstralar'), [
+      { id:null, price:0, name:L('نمش', 'Freckles', 'Çil'), on:draft.freckles, thumb:withA({ freckles:true }), crop:'face', set:() => { draft.freckles = !draft.freckles; } },
+      { id:null, price:0, name:L('خدود وردية', 'Rosy cheeks', 'Pembe yanak'), on:draft.cheeks, thumb:withA({ cheeks:true }), crop:'face', set:() => { draft.cheeks = !draft.cheeks; } }]));
+  } else if(meTab === 'top'){
+    add(meSec(L('شو بدك تلبس؟', 'What to wear?', 'Ne giyelim?'), catalog('top', AV.TOPS, 'top', 'top')));
+    add(meSw(L('اللون', 'Colour', 'Renk'), AV.CLOTH, draft.topCol, i => { draft.topCol = i; }));
+    add(meSec(L('الرسمة', 'Print', 'Desen'), catalog('pat', AV.PATS, 'pat', 'top')));
+    if(draft.top === 'jersey') add(meSw(L('رقم القميص', 'Shirt number', 'Forma numarası'), [1, 2, 3, 4, 5, 6, 7, 8, 9], draft.num - 1, i => { draft.num = i + 1; }, true));
+  } else if(meTab === 'bottom'){
+    add(meSec(L('تحت', 'Bottoms', 'Alt giyim'), catalog('bottom', AV.BOTTOMS, 'bottom', 'bottom', k => ({ thumb:withA({ bottom:k, top:draft.top === 'robe' ? 'tee' : draft.top }) }))));
+    add(meSw(L('اللون', 'Colour', 'Renk'), AV.PANTS, draft.botCol, i => { draft.botCol = i; }));
+  } else if(meTab === 'shoes'){
+    add(meSec(L('الأحذية', 'Shoes', 'Ayakkabılar'), catalog('shoes', AV.SHOES, 'shoes', 'shoes')));
+    add(meSw(L('اللون', 'Colour', 'Renk'), AV.CLOTH, draft.shoeCol, i => { draft.shoeCol = i; }));
+  } else {
+    add(meSec(L('القبعات', 'Hats', 'Şapkalar'), [noneItem('hat')].concat(Object.entries(W.HATS).map(([k, v]) => ({ id:'hat:' + k, price:v.price, name:v.name, on:draft.hat === k, e:v.e, set:() => { draft.hat = k; } })))));
+    add(meSec(L('عالضهر', 'On the back', 'Sırtta'), [noneItem('back', 'all')].concat(catalog('back', AV.BACKS, 'back', 'all'))));
+    add(meSec(L('كمان', 'More', 'Daha fazla'), [noneItem('extra', 'head')].concat(catalog('extra', AV.EXTRAS, 'extra', 'head'))));
+    add(meSw(L('لون الإكسسوار', 'Extras colour', 'Aksesuar rengi'), AV.CLOTH, draft.accCol, i => { draft.accCol = i; }));
+  }
+}
+document.getElementById('closetBtn').onclick = () => { open('closetSheet'); draft = null; dirty = false; setMode(mode); };
+/* closing the wardrobe keeps the changes too (kids forget to press save) */
+document.querySelectorAll('#closetSheet [data-close]').forEach(b => b.addEventListener('click', () => { if(dirty && draft) saveMe(true); }));
+$id('closetSheet').addEventListener('click', e => { if(e.target === $id('closetSheet') && dirty && draft) saveMe(true); });
 
 /* language */
 document.getElementById('langBtn').onclick = () => {
@@ -514,7 +637,10 @@ function frame(now){
   const t = now / 1000, pal = W.palette();
   const [ca, cc] = ctxs;
   ca.clearRect(0, 0, 200, 200); drawBobo(ca, 100, 112, 66, t, { x:Math.sin(t * .8) * .7, y:.2 }, 'idle', pal); W.drawOutfit(ca, 100, 112, 66);
-  if(!document.getElementById('closetSheet').hidden){ cc.clearRect(0, 0, 400, 380); drawBobo(cc, 200, 215, 130, t, { x:Math.sin(t) * .6, y:.1 }, 'idle', pal); W.drawOutfit(cc, 200, 215, 130); }
+  if(!document.getElementById('closetSheet').hidden){
+    if(mode === 'me'){ if(draft) AV.drawFit($id('meCv'), draft, [-50, -116, 100, 122], { t }); }
+    else { cc.clearRect(0, 0, 400, 380); drawBobo(cc, 200, 215, 130, t, { x:Math.sin(t) * .6, y:.1 }, 'idle', pal); W.drawOutfit(cc, 200, 215, 130); }
+  }
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
