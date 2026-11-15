@@ -717,7 +717,7 @@ function bounceStep(){
 function startBoat(){
   const a = BOAT_A0; P.mode = 'boat'; P.boat = { a, r:MOAT_MID, v:0, boost:0, prog:0, slow:0 }; myBoat.visible = true;
   RINGS.forEach(r => r.t = -9);
-  const [x, z] = polar(a, MOAT_MID); P.x = x; P.z = z; P.y = WATER_Y + .55; cam.yaw = Math.atan2(-Math.cos(a), Math.sin(a)) + Math.PI; cam.pitch = .32; snapCam = true;
+  const [x, z] = polar(a, MOAT_MID); P.x = x; P.z = z; P.y = WATER_Y + .55; cam.yaw = Math.atan2(-Math.cos(a), Math.sin(a)); cam.pitch = .32; snapCam = true;
 }
 function stopBoat(){ P.mode = 'walk'; P.boat = null; myBoat.visible = false; tp(STN.boat.x, null, STN.boat.z, BOAT_A0); }
 function boatStep(dt){
@@ -875,7 +875,7 @@ function fireworks(dt){
    ====================================================================== */
 function updateCamera(dt){
   let tx = P.x, ty = P.y, tz = P.z, dist = cam.dist, pitch = cam.pitch;
-  if(P.mode === 'boat' && P.boat){ const a = P.boat.a, want = Math.atan2(-Math.cos(a), Math.sin(a)) + Math.PI; if(look.id == null) cam.yaw += angDiff(want, cam.yaw) * Math.min(1, 3 * dt); dist = 9; pitch = .3; }
+  if(P.mode === 'boat' && P.boat){ const a = P.boat.a, want = Math.atan2(-Math.cos(a), Math.sin(a)); if(look.id == null) cam.yaw += angDiff(want, cam.yaw) * Math.min(1, 3 * dt); dist = 9; pitch = .3; }
   if(P.mode === 'zip'){ dist = 9; }
   if(P.mode === 'cake'){
     const top = W.cakeTable.y + CAKE.layers.length * LAYER_H;
