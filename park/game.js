@@ -919,7 +919,7 @@ function updateCamera(dt){
     const rr = RIDES.get(P.ride.u), W = seatWorld(rr, P.ride.s);
     _v2.setFromMatrixPosition(W); _q.setFromRotationMatrix(W);
     if(rideCam.mode === 'seat'){
-      _v.set(0, 1.45, -2.6).applyQuaternion(_q).add(_v2); _s.set(0, .7, 3).applyQuaternion(_q).add(_v2);
+      _v.set(0, 1.9, -2.7).applyQuaternion(_q).add(_v2); _s.set(0, .7, 3).applyQuaternion(_q).add(_v2);
       if(_v.y < .6) _v.y = .6;
       const k = 1 - Math.exp(-7 * dt); camPos.lerp(_v, snapCam ? 1 : k); camLook.lerp(_s, snapCam ? 1 : k);
       fov = 50 + Math.min(14, rr.sp * 8 + (rr.k === 'coaster' || rr.k === 'drop' ? 6 * rr.sp : 0));
@@ -1132,7 +1132,7 @@ $('#btnZoomOut').onclick = () => { bcam.dist *= 1.25; SFX.tap(); };
 placeBtn.onclick = () => {
   SFX.tap();
   if(build.delSel){ doOp({ op:'remove', u:build.delSel }); build.delSel = 0; updateGhost(); return; }
-  if(build.pend){ const p = build.pend; doOp({ op:'place', k:p.k, c:p.c, r:p.r, o:p.o }); }
+  if(build.pend){ const p = build.pend; doOp({ op:'place', k:p.k, c:p.c, r:p.r, o:p.o }); updateGhost(); }
 };
 function cellFromScreen(p){ const g = groundAt(p.x, p.y); return g ? cellAtXZ(g.x, g.z) : -1; }
 function anchorFor(k, i, o){ const f = fpOf(k, o), c = i % GW, r = (i / GW) | 0; return { c:clamp(c - Math.floor((f.w - 1) / 2), 0, GW - f.w), r:clamp(r - Math.floor((f.d - 1) / 2), 0, GH - f.d) }; }
@@ -1185,7 +1185,7 @@ function buildTap(i){
   if(!unlockedK(k, bestNow())){ SFX.bonk(); bmsg('🔒 ' + WHY.lock); return; }
   if(CAT[k].cat === 'ride'){
     const pd = build.pend;
-    if(pd && pd.k === k && itemCells(pd).includes(i)){ doOp({ op:'place', k, c:pd.c, r:pd.r, o:pd.o }); return; }
+    if(pd && pd.k === k && itemCells(pd).includes(i)){ doOp({ op:'place', k, c:pd.c, r:pd.r, o:pd.o }); updateGhost(); return; }
     const a = anchorFor(k, i, build.rot); build.pend = { k, c:a.c, r:a.r, o:build.rot }; SFX.tap();
     const why = placeWhy(lay, k, a.c, a.r, build.rot) || (moneyNow() < CAT[k].price ? 'money' : '');
     if(why) bmsg(WHY[why]); else if(SAVE.tut === 2 && !visiting) bmsg(L('كبوس ✅ لتحطها', 'Press ✅ to place it', 'Koymak için ✅ bas'));
