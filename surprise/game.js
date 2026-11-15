@@ -498,7 +498,7 @@ const targets = () => roster().filter(a => alive(a));
    The round on the host (or solo): timers, hazards, catching
    ====================================================================== */
 function simRound(dt){
-  if(RS.ph === 'warn'){ RS.t += dt; if(RS.t >= WARN_T) goRun(); }
+  if(RS.ph === 'warn'){ RS.t += dt; EVS.lava = Math.max(0, EVS.lava - dt); EVS.wl = Math.max(WL_BASE, EVS.wl - dt * 1.5); EVS.wg = Math.max(0, EVS.wg - dt); if(RS.t >= WARN_T) goRun(); }
   else if(RS.ph === 'run'){
     const t0 = RS.t; RS.t += dt;
     if(RS.ev[1] && t0 < E2_ON && RS.t >= E2_ON) onEvStart(RS.ev[1]);
@@ -1650,7 +1650,7 @@ window.__surprise = {
   snowAt(x, z){ const sx = x - 7, sz = z; EVS.snow.push({ id:++EVS.id, x:sx, z:sz, vx:7, vz:0, r:1.2, rot:0 }); },
   bubbleAt(x, y, z){ EVS.bub.push({ id:++EVS.id, x, z, y, by:y, r:1, a:0, sp:0, t:0, ph:0, vx:0, vz:0 }); },
   emote:e => myEmote(e), get emotes(){ return emos.map(o => ({ who:o.a.id, e:o.el.textContent })); },
-  highs, perches:perches.length, houses:houses.map(h => ({ x0:h.x0, x1:h.x1, z0:h.z0, z1:h.z1, door:h.door, inside:h.inside, fade:h.fade, roof:h.roof.visible })), BAL, PIER, spawns,
+  highs, perches:perches.length, get houses(){ return houses.map(h => ({ x0:h.x0, x1:h.x1, z0:h.z0, z1:h.z1, door:h.door, inside:h.inside, fade:h.fade, roof:h.roof.visible })); }, BAL, PIER, spawns,
   topAt, sheltered:() => { me.shelT = 0; return sheltered(me, 0); },
   save:() => JSON.parse(JSON.stringify(SAVE)), saveNow:() => persist(), lastGain:() => lastGain,
   get mp(){ return { code:MP.code, active:mpActive(), isHost:MP.isHost, id:MP.id, players:MP.players.map(p => ({ id:p.id, hero:p.hero })), remotes:[...ACT.values()].filter(a => a.kind === 'remote').map(actInfo) }; },
