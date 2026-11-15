@@ -1077,7 +1077,12 @@ function ghostFor(k){
   g.traverse(o => { if(o.isMesh){ o.material = ghostMat; o.castShadow = false; o.receiveShadow = false; o.renderOrder = 4; } });
   g.visible = false; scene.add(g); ghosts[k] = g; return g;
 }
-function bbarH(){ if(!bbar.hidden) stage.style.setProperty('--bbh', bbar.offsetHeight + 'px'); }
+function bbarH(){
+  const on = build.on && !bbar.hidden, h = on ? bbar.offsetHeight : 0;
+  if(on) stage.style.setProperty('--bbh', h + 'px');
+  if(on && h) camera.setViewOffset(SW, SH, 0, Math.round(h * .5), SW, SH); else camera.clearViewOffset();
+  camera.updateProjectionMatrix();
+}
 function setBuild(on){
   if(on && visiting && !visiting.help){ say(WHY.nohelp, 2500); return; }
   if(on && P.ride) return;
@@ -1089,14 +1094,14 @@ function setBuild(on){
   joyEl.hidden = on || state !== 'play'; actBtn.hidden = true; actKey = '';
   P.goal = null; P.wait = 0; clearInput();
   if(on){
-    bcam.x = clamp(P.x * .6, -10, 10); bcam.z = clamp(P.z * .5, -6, 6); bcam.dist = 30; snapCam = false;
+    bcam.x = clamp(P.x * .6, -10, 10); bcam.z = clamp(P.z * .5, -6, 6); bcam.dist = 33; snapCam = false;
     if(SAVE.tut <= 1 && !visiting){ SAVE.tut = 2; persist(); selectTab('ride'); build.sel = 'carousel'; say(LINES.placeRide, 7000, true); }
     else if(SAVE.tut === 3 && !visiting){ selectTab('path'); say(LINES.makePath, 7000, true); }
   } else {
     hideGhost(); snapCam = true;
     if(SAVE.tut === 4 && !visiting) say(LINES.visitors, 6000);
   }
-  renderBuildBar(); requestAnimationFrame(bbarH); hudKey = '';
+  renderBuildBar(); bbarH(); requestAnimationFrame(bbarH); hudKey = '';
 }
 function selectTab(id){ build.tab = id; const t = TABS.find(t => t.id === id); if(!t.items.includes(build.sel)) build.sel = t.items[0]; build.pend = null; build.del = false; build.delSel = 0; build.dirty = true; }
 const bestNow = () => visiting ? (visiting.best || visiting.rating) : SAVE.best;
@@ -1391,7 +1396,7 @@ function setPlayUI(on){
   bbar.hidden = !on || !build.on;
   if(!on){ actBtn.hidden = true; actKey = ''; rideBar.hidden = true; rideKey = ''; placeBtn.hidden = true; }
   else if(build.on) updateGhost();
-  hudKey = '';
+  bbarH(); hudKey = '';
 }
 function openCard(wide){
   state = 'card'; setPlayUI(false); clearInput(); P.goal = null;

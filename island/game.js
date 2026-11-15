@@ -184,7 +184,11 @@ function updateCamera(dt){
   const k = snapCam ? 1 : 1 - Math.exp(-8 * dt);
   cam.tx = lerp(cam.tx, P.x, k); cam.tz = lerp(cam.tz, P.z, k); cam.ty = lerp(cam.ty, P.y, snapCam ? 1 : 1 - Math.exp(-5 * dt));
   const dx = Math.sin(cam.yaw) * Math.cos(cam.pitch), dy = Math.sin(cam.pitch), dz = Math.cos(cam.yaw) * Math.cos(cam.pitch);
-  _v.set(cam.tx + dx * cam.dist, cam.ty + 1.2 + dy * cam.dist, cam.tz + dz * cam.dist);
+  // don't let walls, houses and towers come between the camera and the kid: pull the camera in
+  let dist = cam.dist;
+  for(let i = 1; i <= 10; i++){ const d = cam.dist * i / 10, h = W.solidTop(cam.tx + dx * d, cam.tz + dz * d); if(h > cam.ty + 1.2 + dy * d - .3){ dist = Math.max(1.6, d - cam.dist * .12); break; } }
+  cam.d2 = cam.d2 == null || snapCam ? dist : (dist < cam.d2 ? dist : lerp(cam.d2, dist, Math.min(1, dt * 2.5)));
+  _v.set(cam.tx + dx * cam.d2, cam.ty + 1.2 + dy * cam.d2, cam.tz + dz * cam.d2);
   if(snapCam){ camPos.copy(_v); snapCam = false; } else camPos.lerp(_v, 1 - Math.exp(-10 * dt));
   camLook.set(cam.tx, cam.ty + 1.1, cam.tz);
   camera.position.copy(camPos); camera.lookAt(camLook);
@@ -295,7 +299,7 @@ function emoPose(h, emo, t){
 }
 
 /* ---------- free play: water a plant, pet a pet, carry an egg, hide in a cup, climb ---------- */
-let ctx = null, actKey = '';
+let ctx = null, actKey = '?';
 function context(){
   if(P.cup) return { k:'out', e:'👀', b:L('اطلع', 'Come out', 'Çık') };
   if(!P.grounded) return null;
@@ -331,10 +335,10 @@ function doAction(){
   else if(c.k === 'out'){ leaveCup(); }
   else if(c.k === 'egg'){ P.carry = true; SFX.pop(); burst(P.x, 1.8, P.z, 10, [0xfff3d6, 0xffc23d], 2, .6); mpPos(true); say(L('خدها لعش من الأعشاش 🪺', 'Take it to one of the nests 🪺', 'Onu bir yuvaya götür 🪺'), 2600); }
   else if(c.k === 'nest'){ P.carry = false; W.addNestEgg(o); SFX.star(); burst(o.x, .8, o.z, 22, CONFETTI, 3.4, .8); mpPos(true); mpSend('fx', { k:'egg', x:Math.round(o.x * 10) / 10, z:Math.round(o.z * 10) / 10 }); }
-  actKey = '';
+  actKey = '?';
 }
-function enterCup(c){ P.cup = c; P.x = c.x; P.z = c.z; P.vx = P.vz = 0; P.y = 0; SFX.pop(); burst(c.x, 1.7, c.z, 10, [0xffffff, 0xffc23d], 2, .6); mpPos(true); actKey = ''; }
-function leaveCup(){ const c = P.cup; if(!c) return; P.cup = null; const a = cam.yaw; P.x = c.x + Math.sin(a) * (c.r + .7); P.z = c.z + Math.cos(a) * (c.r + .7); P.y = 0; P.vy = 5; P.grounded = false; SFX.jump(); mpPos(true); actKey = ''; }
+function enterCup(c){ P.cup = c; P.x = c.x; P.z = c.z; P.vx = P.vz = 0; P.y = 0; SFX.pop(); burst(c.x, 1.7, c.z, 10, [0xffffff, 0xffc23d], 2, .6); mpPos(true); actKey = '?'; }
+function leaveCup(){ const c = P.cup; if(!c) return; P.cup = null; const a = cam.yaw; P.x = c.x + Math.sin(a) * (c.r + .7); P.z = c.z + Math.cos(a) * (c.r + .7); P.y = 0; P.vy = 5; P.grounded = false; SFX.jump(); mpPos(true); actKey = '?'; }
 function remoteFx(p){
   const x = +p.x || 0, z = +p.z || 0;
   if(p.k === 'water'){ burst(x, 1.4, z, 14, [0x6cc4ff, 0xbfe8ff], 2.2, .6, 9); const pl = W.plants.find(q => Math.hypot(q.x - x, q.z - z) < .5); if(pl && pl.st < 4) setTimeout(() => W.setPlant(pl, pl.st + 1), 700); }
@@ -557,7 +561,7 @@ function remoteSync(list){
   for(const p of list){
     here.add(p.id);
     let a = RM.get(p.id);
-    if(!a){ a = { id:p.id, hero:null, h:null, x:0, z:0, y:0, f:0, m:0, buf:[], seen:false, t:Math.random() * 5, vy:0, jy:0, r:-1, e:0, hid:0, emo:null, lbl:labelEl(), bub:bubbleEl(), code:null, o:0, c:0, lastPos:0 }; RM.set(p.id, a); if(mpActive()) setTimeout(() => mpPos(true), 100 + Math.random() * 400); SFX.join(); }
+    if(!a){ a = { id:p.id, hero:null, h:null, x:0, z:0, y:0, f:0, m:0, buf:[], seen:false, t:Math.random() * 5, vy:0, jy:0, r:-1, e:0, hid:0, emo:null, lbl:labelEl(), bub:bubbleEl(), code:null, o:0, c:0, lastPos:0, born:performance.now() }; RM.set(p.id, a); if(mpActive()) setTimeout(() => mpPos(true), 100 + Math.random() * 400); SFX.join(); }
     // only the friend code, character and join order come from presence. A name in presence is never read.
     a.code = (typeof p.code === 'string' && /^[A-Z2-9]{6}$/.test(p.code)) ? p.code : null;
     a.o = +p.o || 0; a.c = p.c | 0;
@@ -626,6 +630,8 @@ function stepRemotes(dt){
       _m.compose(_v.set(a.x, yy, a.z), _q.identity(), _s.set(1, 1, 1)); lowMesh.setMatrixAt(low, _m); lowMesh.setColorAt(low, _c.set(HERO_COLOR[a.hero] || '#9c7be3')); low++;
     }
   }
+  // someone we can't place yet (missed their last position): ask everyone for a position once in a while
+  if(mpActive() && now - (MP.askT || 0) > 2500 && [...RM.values()].some(a => !a.seen && now - (a.born || now) > 1500)){ MP.askT = now; mpSend('hi', {}); }
   lowMesh.count = low; lowMesh.instanceMatrix.needsUpdate = true; blobMesh.count = blob; blobMesh.instanceMatrix.needsUpdate = true; if(lowMesh.instanceColor) lowMesh.instanceColor.needsUpdate = true;
 }
 
@@ -806,7 +812,7 @@ function placeArrows(dt){
    ====================================================================== */
 const overlay = $('#overlay'), card = $('#card');
 let state = 'loading';
-function setPlayUI(on){ hudEl.hidden = !on; joyEl.hidden = !on; jumpBtn.hidden = !on; emoBtn.hidden = !on; if(!on){ actBtn.hidden = true; actKey = ''; emosEl.hidden = true; frPanel.hidden = true; } }
+function setPlayUI(on){ hudEl.hidden = !on; joyEl.hidden = !on; jumpBtn.hidden = !on; emoBtn.hidden = !on; if(!on){ actBtn.hidden = true; actKey = '?'; emosEl.hidden = true; frPanel.hidden = true; } }
 function showLoading(){
   state = 'loading'; setPlayUI(false); overlay.hidden = false; overlay.className = 'overlay clear'; card.className = 'card bare';
   card.innerHTML = `<div class="menu"><div class="logo">🏝️</div><h1>${L('جزيرة بوبو الكبيرة', 'Bobo Big Island', 'Büyük Bobo Adası')}</h1><p class="sub"><span class="spin">⏳</span></p></div>`;

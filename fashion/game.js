@@ -443,7 +443,22 @@ function thumb(id, c, p){
   x.putImageData(img, 0, 0);
   return (thumbCache[key] = thumbCv.toDataURL());
 }
-const itemPic = (id, c, p) => { const it = ITEMS[id], u = thumb(id, c, p); return u ? `<img src="${u}" alt="">` : `<span class="em">${it ? it.e : '❓'}</span>`; };
+/* pictures are drawn a couple per frame (an emoji stands in until then) */
+const thumbQ = [];
+const itemPic = (id, c, p) => {
+  const it = ITEMS[id], key = id + '_' + c + '_' + p;
+  if(thumbCache[key]) return `<img src="${thumbCache[key]}" alt="">`;
+  if(it && it.build && !thumbQ.some(q => q.key === key)) thumbQ.push({ key, id, c, p });
+  return `<span class="em" data-tk="${key}">${it ? it.e : '❓'}</span>`;
+};
+function thumbPump(){
+  const t0 = performance.now();
+  while(thumbQ.length && performance.now() - t0 < 14){
+    const q = thumbQ.shift(), u = thumb(q.id, q.c, q.p); if(!u) continue;
+    document.querySelectorAll(`[data-tk="${q.key}"]`).forEach(el => { const img = document.createElement('img'); img.src = u; img.alt = ''; el.replaceWith(img); });
+    if(thumbQ.length && performance.now() - t0 > 6) break;
+  }
+}
 
 /* ======================================================================
    Aunt Laila + small UI helpers
@@ -1056,7 +1071,7 @@ function frame(now){
   stageFrame(dt); roomFrame(dt);
   updateCamera(dt);
   if(state === 'game'){ hudFrame(); drawVote(false); }
-  mpFrame(dt);
+  mpFrame(dt); thumbPump();
   updateParts(dt);
   renderer.render(scene, camera);
 }
@@ -1218,7 +1233,11 @@ function mpPresence(list){
   if(MP.isHost && R){
     // humans who left become bots; heroes follow what players picked
     const here = new Map(MP.players.map(p => [p.id, p]));
-    R.slots.forEach(s => { if(s.bot) return; const p = here.get(s.id); if(!p){ s.bot = true; s.id = null; s.ready = true; s.skill = .7; if(!s.o) s.o = W.botOutfit(THEMES[R.th], .7); } else s.hero = okHero(p.hero); });
+    R.slots.forEach(s => {
+      if(s.bot){ if(s.was && here.has(s.was)){ s.bot = false; s.id = s.was; s.was = null; } return; }   // back after a short drop-out
+      const p = here.get(s.id);
+      if(!p){ s.was = s.id; s.bot = true; s.id = null; s.ready = true; s.skill = .7; if(!s.o) s.o = W.botOutfit(THEMES[R.th], .7); } else s.hero = okHero(p.hero);
+    });
     if(R.ph === 'lobby'){ R.slots = hostSlots(); if(state === 'game') lobbyCard(); }
     hostBroadcast(true);
   }
@@ -1402,6 +1421,12 @@ window.__fashion = {
 buildStage(); buildRoom();
 buildMe();
 resize();
+/* warm up the shader programs once (prints, glass, the mask) so the first dressing room doesn't stutter */
+try{
+  const warm = W.okOutfit({ hat:['helmet', 8, 0], top:['tee', 0, 1], glasses:['heromask', 9, 0], prop:['lantern', 10, 0] });
+  W.dress(ME, warm); room.visible = true; renderer.compile(scene, camera); thumb('tee', 0, 1);
+  meKey = ''; dressMe();
+}catch(e){}
 showMenu();
 requestAnimationFrame(frame);
 (function(){

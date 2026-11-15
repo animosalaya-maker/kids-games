@@ -238,7 +238,7 @@ export function makeWardrobe(THREE, K){
   item('hat', 'helmet', '👩‍🚀', L('خوذة فضاء', 'Space helmet', 'Uzay kaskı'), ['space'], 6, 8, (B, f) => {
     const R = Math.max(f.hairR, f.hr) * 1.32;
     B.g('head', CG.sph, 0, .02, .02, R, R, R);
-    B.m('head', CG.torus, 0, -f.hr * .85, 0, R * .75, R * .75, 1.4, PI / 2, 0, 0).m('head', CG.cyl8, R * .55, R * .65, 0, .02, .2, .02, 0, 0, -.5);
+    B.m('head', torus(.16), 0, -f.hr * .9, 0, R * .66, R * .66, R * .66, PI / 2, 0, 0).m('head', CG.cyl8, R * .55, R * .65, 0, .02, .2, .02, 0, 0, -.5);
     B.a('head', CG.sm, R * .62, R * .78, 0, .045, .045, .045, 0, 0, 0, 0xe8304f);
   });
   item('hat', 'fez', '🟥', L('طربوش', 'Fez', 'Fes'), ['heritage'], 4, 1, (B, f) => {
@@ -288,7 +288,7 @@ export function makeWardrobe(THREE, K){
   });
   item('hair', 'asba', '🪙', L('عصبة ليرات', 'Coin headband', 'Altınlı taç'), ['heritage'], 4, 1, (B, f) => {
     const R = f.hairR * 1.01, y = f.hr * .35;
-    B.m('head', torus(.12, PI * 1.1), 0, y, 0, R, R, R, PI / 2, 0, PI * -.05);
+    B.m('head', torus(.06, PI * 1.1), 0, y, 0, R, R, R, PI / 2, 0, PI * -.05);
     for(let i = -3; i <= 3; i++){ const a = i * .28; B.a('head', CG.cyl, Math.sin(a) * R * 1.02, y - .05, Math.cos(a) * R * 1.02, .03, .008, .03, PI / 2, a, 0, 0xe2b33c); }
   });
 

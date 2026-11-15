@@ -99,6 +99,16 @@ export function buildIsland(THREE, K, scene, deps){
     if(h != null) return h;
     return wet ? -1 : 0;
   }
+  /* how tall the solid things at this point are (walls, houses, towers…; thin posts and trees are ignored): for the camera */
+  function solidTop(x, z){
+    let top = -1;
+    for(const c of near(x, z)){
+      if(c.t === 'c'){ if(c.r < .8) continue; if((x - c.x) ** 2 + (z - c.z) ** 2 < c.r * c.r && c.top > top) top = c.top; }
+      else if(c.t === 'b'){ if(c.noCam || c.hw < .25 || c.hd < .25) continue; if(Math.abs(locX(c, x, z)) < c.hw && Math.abs(locZ(c, x, z)) < c.hd && c.top > top) top = c.top; }
+      else if(c.t === 'p'){ const y = platY(c, x, z); if(y != null && y > top) top = y; }
+    }
+    return top;
+  }
   /* push a walker (x, z, radius r, feet at y) out of solid things that reach above its feet */
   function pushOut(o, r, y){
     for(const c of near(o.x, o.z)){
@@ -134,6 +144,7 @@ export function buildIsland(THREE, K, scene, deps){
       if(sub){ x.font = `800 40px ${FONT}`; x.fillStyle = 'rgba(255,255,255,.92)'; x.fillText(sub, w / 2, 128); }
     });
   }
+  function twoSided(m){ m.material.side = THREE.FrontSide; const back = new THREE.Mesh(m.geometry, m.material); back.rotation.y = Math.PI; m.add(back); return m; }
   const waterTex = canvasTex(128, 128, (x, w) => { x.fillStyle = '#5cc8f0'; x.fillRect(0, 0, w, w); x.strokeStyle = 'rgba(255,255,255,.45)'; x.lineWidth = 3; x.lineCap = 'round'; for(let i = 0; i < 7; i++){ const px = (i * 47) % 128, py = (i * 71) % 128; x.beginPath(); x.moveTo(px, py); x.quadraticCurveTo(px + 8, py - 5, px + 16, py); x.stroke(); } });
   waterTex.wrapS = waterTex.wrapT = THREE.RepeatWrapping; waterTex.repeat.set(10, 10);
   const oceanTex = waterTex.clone(); oceanTex.needsUpdate = true; oceanTex.wrapS = oceanTex.wrapT = THREE.RepeatWrapping; oceanTex.repeat.set(60, 60);
@@ -209,7 +220,7 @@ export function buildIsland(THREE, K, scene, deps){
     Z.obj = (o, lx, y, lz, lr = 0) => { o.position.set(wx(lx, lz), y, wz(lx, lz)); o.rotation.y = ry + lr; grp.add(o); return o; };
     Z.sign = (text, lx, y, lz, w = 4.4, lr = 0, sub) => {
       const m = new THREE.Mesh(new THREE.PlaneGeometry(w, w * 168 / 512), new THREE.MeshBasicMaterial({ map:signTex(text, d.css, sub), transparent:true, side:THREE.DoubleSide }));
-      return Z.obj(m, lx, y, lz, lr);
+      return Z.obj(twoSided(m), lx, y, lz, lr);
     };
     Z.post = (lx, lz, h, col = 0xa0703f) => { Z.add(G.cyl8, lx, h / 2, lz, .12, h, .12, 0, 0, 0, col); };
     // the zone's ground: a soft disc in the zone colour family + the path to the centre
@@ -467,7 +478,7 @@ export function buildIsland(THREE, K, scene, deps){
     for(let i = 0; i < 6; i++) for(let j = 0; j < 10; j++){ const x = X0 + .9 + i * 1.83, z = Z0 + .95 + j * 1.9; Z.add(G.box, x, .07, z, 1.8, .04, 1.87, 0, 0, 0, (i + j) % 2 ? 0xffffff : 0xcfe6f7); }
     Z.add(G.box, 5.5, .07, -5.5, 11, .04, 19, 0, 0, 0, 0xd9a46a); Z.add(GE.disc, 5.5, .1, -1.5, 3.2, 1, 2.4, 0, 0, 0, 0x8fb4ff);
     // the walls (they sink while you are inside: dollhouse view)
-    const WB = new Bag(), wall = (x, z, w, d) => { WB.add(G.box, x, WH / 2, z, w, WH, d, 0, 0, 0, WALL); Z.far(G.box, x, WH / 2, z, w, WH, d, 0, 0, 0, WALL); Z.box(x, z, w / 2, d / 2); };
+    const WB = new Bag(), wall = (x, z, w, d) => { WB.add(G.box, x, WH / 2, z, w, WH, d, 0, 0, 0, WALL); Z.far(G.box, x, WH / 2, z, w, WH, d, 0, 0, 0, WALL); Z.box(x, z, w / 2, d / 2).noCam = true; };
     wall(0, Z0, X1 - X0 + T, T); wall(X0, (Z0 + Z1) / 2, T, Z1 - Z0); wall(X1, (Z0 + Z1) / 2, T, Z1 - Z0);
     wall((X0 - 2.8) / 2, Z1, -2.8 - X0, T); wall((X1 + 2.8) / 2, Z1, X1 - 2.8, T);
     wall(0, -11.5, .5, 7);
@@ -568,7 +579,7 @@ export function buildIsland(THREE, K, scene, deps){
     Z.circ(-2.6, er, .2); Z.circ(2.6, er, .2);
     Z.sign(Z.emoji + ' ' + Z.name, 0, 2.9, er, 5.2, 0, Z.soon ? L('قريباً', 'Coming soon', 'Yakında') : null);
     const fs = new THREE.Mesh(new THREE.PlaneGeometry(9, 9 * 168 / 512), new THREE.MeshBasicMaterial({ map:signTex(Z.emoji + ' ' + Z.name, Z.css, Z.soon ? L('قريباً', 'Coming soon', 'Yakında') : null), transparent:true, side:THREE.DoubleSide, fog:false }));
-    fs.position.set(Z.cx, 9, Z.cz); fs.rotation.y = Z.ry; Z.farGrp.add(fs);
+    twoSided(fs); fs.position.set(Z.cx, 9, Z.cz); fs.rotation.y = Z.ry; Z.farGrp.add(fs);
     if(!Z.portal) continue;
     const { lx, lz } = Z.portal, px = Z.wx(lx, lz), pz = Z.wz(lx, lz), col = Z.col;
     const g = new THREE.Group(); Z.obj(g, lx, 0, lz);
@@ -584,7 +595,7 @@ export function buildIsland(THREE, K, scene, deps){
     const sparks = [];
     for(let k = 0; k < 6; k++){ const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, color:0xffffff, transparent:true, depthWrite:false, blending:THREE.AdditiveBlending })); sp.scale.setScalar(.35); g.add(sp); sparks.push({ sp, t:k / 6 }); }
     const top = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 4.6 * 168 / 512), new THREE.MeshBasicMaterial({ map:signTex(Z.emoji + ' ' + Z.name, Z.css), transparent:true, side:THREE.DoubleSide }));
-    top.position.y = 5.1; g.add(top);
+    twoSided(top); top.position.y = 5.1; g.add(top);
     Z.far(G.torus, lx, 2, lz, PR, PR, 1.6, 0, 0, 0, col);
     portals.push({ zone:Z.i, id:Z.id, x:px, z:pz, r:PR, g, swirl, ring, glow, sparks, arch });
   }
@@ -633,7 +644,7 @@ export function buildIsland(THREE, K, scene, deps){
     { const a = zoneAng(0), ux = Math.sin(a), uz = Math.cos(a), r = 15.5;
       for(const s of [-1, 1]){ const x = ux * r + uz * s * 3.2, z = uz * r - ux * s * 3.2; P.add(G.cyl, x, 2.5, z, .3, 5, .3, 0, 0, 0, 0xffffff); P.add(G.sph, x, 5.2, z, .45, .45, .45, 0, 0, 0, 0xffcd4d); addCirc(x, z, .35); }
       const m = new THREE.Mesh(new THREE.PlaneGeometry(7, 7 * 168 / 512), new THREE.MeshBasicMaterial({ map:signTex(L('جزيرة بوبو 🏝️', 'Bobo Island 🏝️', 'Bobo Adası 🏝️'), '#ff9f43'), transparent:true, side:THREE.DoubleSide }));
-      m.position.set(ux * r, 4.6, uz * r); m.rotation.y = a; root.add(m); }
+      twoSided(m); m.position.set(ux * r, 4.6, uz * r); m.rotation.y = a; root.add(m); }
   }
   root.add(plaza.mesh());
 
@@ -724,6 +735,6 @@ export function buildIsland(THREE, K, scene, deps){
       x.font = `${Math.round(S * .085)}px system-ui,sans-serif`; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(Z.emoji, zx, zy); }
   }
 
-  return { zones, portals, plants, setPlant, cups, nests, addNestEgg, eggStalls, roamPets, climbTops, heightAt, pushOut, animate, drawMap, zoneAng, COLL,
+  return { solidTop, zones, portals, plants, setPlant, cups, nests, addNestEgg, eggStalls, roamPets, climbTops, heightAt, pushOut, animate, drawMap, zoneAng, COLL,
     spawn:{ x:0, z:7, f:Math.PI }, mapScale:S => S / (2 * (ISL.R + 8)) };
 }

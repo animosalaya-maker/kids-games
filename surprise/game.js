@@ -774,7 +774,7 @@ function detour(from, to){
   }
   return [];
 }
-function mkPath(b, pts){ const out = []; let cur = { x:b.x, z:b.z }; for(const p of pts){ for(const d of detour(cur, p)) out.push(d); out.push(p); cur = p; } return out; }
+function mkPath(b, pts){ if(!pts.length) return []; return detour({ x:b.x, z:b.z }, pts[0]).concat(pts); }
 function setGoal(b, kind, pts, extra){ const ai = b.ai; if(ai.claim){ ai.claim.claim = null; ai.claim = null; } ai.goal = Object.assign({ kind }, extra || {}); ai.path = mkPath(b, pts); ai.pi = 0; ai.stuckN = 0; ai.lastD = 1e9; ai.stuckT = 0; }
 function highGoal(b, minY){
   if(b.grounded && b.y >= minY - .05) return setGoal(b, 'stay', []);
@@ -800,6 +800,7 @@ function perchGoal(b, minY){
   let best = null, bs = 1e9;
   for(const p of perches){
     if(p.y < minY || (p.claim && p.claim !== b.id && ACT.has(p.claim))) continue;
+    if([...ACT.values()].some(a => a !== b && !a.out && Math.abs(a.y - p.y) < .3 && Math.hypot(a.x - p.x, a.z - p.z) < p.r + .6)) continue;
     const s = Math.hypot(p.x - b.x, p.z - b.z) + rr(0, 3) + (p.y > 1.1 ? 1.5 : 0);
     if(s < bs){ bs = s; best = p; }
   }
@@ -828,7 +829,7 @@ function candyGoal(b){
 function wanderGoal(b){ const g = randomGround(ISL.PZ.x, ISL.PZ.z, 9, 10) || { x:rr(-4, 4), z:rr(-2, 6) }; setGoal(b, 'wander', [g]); b.ai.think = rr(2.5, 5); }
 function chooseGoal(b){
   const ai = b.ai, evs = RS.ev.filter(evSoon);
-  ai.think = 3;
+  ai.think = 999;
   if(RS.ph === 'end' || RS.ph === 'idle' || !evs.length) return wanderGoal(b);
   if(Math.random() < (1 - ai.skill) * .3) return wanderGoal(b);           // a silly moment
   const has = k => evs.includes(k);
@@ -836,7 +837,7 @@ function chooseGoal(b){
   if(has('frog')) return Math.random() < .65 ? houseGoal(b) : highGoal(b, 3);
   if(has('lava')) return perchGoal(b, .3);
   if(has('snow')) return Math.random() < .55 ? perchGoal(b, .85) : highGoal(b, 1.8);
-  if(has('wind')){ ai.think = 6; return shelterGoal(b); }
+  if(has('wind')) return shelterGoal(b);
   if(has('candy')) return candyGoal(b);
   return wanderGoal(b);
 }
@@ -1188,8 +1189,21 @@ function tick(dt, force){
       a.x = lerp(a.x, a.tx, k); a.y = lerp(a.y, a.ty, k); a.z = lerp(a.z, a.tz, k); a.f += angDiff(a.tf, a.f) * k; a.m = lerp(a.m, a.tm, k);
     }
   }
+  separate(auth);
   for(const a of ACT.values()) meters(a, dt);
   if(auth) simRound(dt); else clientHazards(dt);
+}
+/* bodies don't stand inside each other (only the ones this device moves are pushed) */
+function separate(auth){
+  const L = [...ACT.values()].filter(a => !a.fl);
+  for(let i = 0; i < L.length; i++) for(let j = i + 1; j < L.length; j++){
+    const a = L[i], b = L[j]; if(Math.abs(a.y - b.y) > 1) continue;
+    let dx = b.x - a.x, dz = b.z - a.z; const d = Math.hypot(dx, dz); if(d >= .8) continue;
+    if(d < 1e-4){ dx = 1; dz = 0; } else { dx /= d; dz /= d; }
+    const ma = a === me || (auth && a.kind === 'bot'), mb = b === me || (auth && b.kind === 'bot'), push = .8 - d;
+    if(ma && mb){ a.x -= dx * push / 2; a.z -= dz * push / 2; b.x += dx * push / 2; b.z += dz * push / 2; }
+    else if(ma){ a.x -= dx * push; a.z -= dz * push; } else if(mb){ b.x += dx * push; b.z += dz * push; }
+  }
 }
 function drawActors(dt){
   for(const a of ACT.values()){
