@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>لوحة تحكم بوبو لاند</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#171236;--card:#241c52;--card2:#2e2566;--ink:#fff;--mute:#b9b2e6;--gold:#ffcd4d;--green:#43d39e;--pink:#ff7aa8;--blue:#5fb8ff;--line:rgba(255,255,255,.08)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Baloo Bhaijaan 2',system-ui,sans-serif;font-variant-numeric:tabular-nums}
+.wrap{max-width:1100px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+h1{margin:0;font-size:26px}
+h1 small{display:block;font-size:13px;color:var(--mute);font-weight:500}
+.btn{border:0;border-radius:14px;padding:10px 16px;background:var(--gold);color:#3b2600;font:inherit;font-weight:800;cursor:pointer}
+.btn.ghost{background:var(--card2);color:#fff}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px;margin-bottom:12px}
+.stat{background:var(--card);border-radius:18px;padding:14px;border:1px solid var(--line)}
+.stat b{display:block;font-size:30px;line-height:1.1}
+.stat span{color:var(--mute);font-size:14px}
+.stat.live b{color:var(--green)}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media (max-width:760px){.row{grid-template-columns:1fr}}
+.panel{background:var(--card);border-radius:18px;padding:14px;border:1px solid var(--line);margin-bottom:12px;min-width:0}
+.panel h2{margin:0 0 10px;font-size:18px}
+.bars .b{display:grid;grid-template-columns:120px 1fr 44px;align-items:center;gap:8px;margin:6px 0;font-size:14px}
+.bars .t{height:14px;border-radius:7px;background:var(--card2);overflow:hidden}
+.bars .t i{display:block;height:100%;background:var(--blue);border-radius:7px}
+.cols{display:flex;align-items:flex-end;gap:4px;height:130px;padding-top:6px;border-bottom:1px solid var(--line)}
+.cols div{flex:1;background:var(--pink);border-radius:5px 5px 0 0;min-height:2px;position:relative}
+.cols div:hover::after{content:attr(data-t);position:absolute;bottom:100%;left:50%;transform:translateX(-50%);background:#000;padding:2px 6px;border-radius:6px;font-size:12px;white-space:nowrap}
+.axis{display:flex;justify-content:space-between;color:var(--mute);font-size:12px;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+td,th{padding:7px 6px;border-bottom:1px solid var(--line);text-align:start;vertical-align:top}
+th{color:var(--mute);font-weight:600}
+.tag{display:inline-block;padding:1px 8px;border-radius:999px;font-size:12px;background:var(--card2)}
+.tag.join{background:#1f6d52}.tag.name{background:#6d4b1f}.tag.play{background:#2a4c8a}
+.scroll{max-height:420px;overflow:auto}
+.login{max-width:380px;margin:12vh auto;background:var(--card);padding:22px;border-radius:22px;text-align:center}
+.login input{width:100%;padding:12px 14px;border-radius:14px;border:2px solid var(--line);background:#120e2c;color:#fff;font:inherit;margin:12px 0;text-align:center;direction:ltr}
+.err{color:var(--pink);min-height:22px}
+.muted{color:var(--mute);font-size:13px}
+</style>
+</head>
+<body>
+<div id="login" class="login" hidden>
+  <h1>🔒 لوحة التحكم</h1>
+  <p class="muted">اكتب مفتاح المدير</p>
+  <input id="key" autocomplete="off" spellcheck="false" placeholder="bobo-…">
+  <button class="btn" id="go">فوت</button>
+  <p class="err" id="err"></p>
+</div>
+<div class="wrap" id="app" hidden>
+  <header>
+    <h1>📊 لوحة تحكم بوبو لاند<small id="upd">…</small></h1>
+    <div><button class="btn ghost" id="refresh">🔄 حدّث</button> <button class="btn ghost" id="out">🚪 طلوع</button></div>
+  </header>
+  <div class="grid" id="stats"></div>
+  <div class="row">
+    <div class="panel"><h2>🎮 مين عم يلعب هلّق</h2><div class="bars" id="nowBars"></div></div>
+    <div class="panel"><h2>🔥 أكتر الألعاب (آخر 7 أيام)</h2><div class="bars" id="playBars"></div></div>
+  </div>
+  <div class="row">
+    <div class="panel"><h2>🆕 حسابات جديدة باليوم (30 يوم)</h2><div class="cols" id="newCols"></div><div class="axis" id="newAxis"></div></div>
+    <div class="panel"><h2>👥 لاعبين نشيطين باليوم (30 يوم)</h2><div class="cols" id="actCols"></div><div class="axis" id="actAxis"></div></div>
+  </div>
+  <div class="row">
+    <div class="panel"><h2>🟢 فاتحين آخر 5 دقايق</h2><div class="scroll"><table><thead><tr><th>الاسم</th><th>الرمز</th><th>عم يلعب</th><th>آخر مرة</th></tr></thead><tbody id="online"></tbody></table></div></div>
+    <div class="panel"><h2>📜 آخر الأحداث</h2><div class="scroll"><table><thead><tr><th>شو صار</th><th>مين</th><th>التفاصيل</th><th>إمتى</th></tr></thead><tbody id="recent"></tbody></table></div></div>
+  </div>
+  <p class="muted">بتتحدّث لحالها كل 20 ثانية. «الشراء» رح يبلّش يتعدّ لما نشغّل الدفع الحقيقي.</p>
+</div>
+<script>
+const URL_ = 'https://vgpwtrzplggvlsuvqsas.supabase.co', KEY = 'sb_publishable_D9thEhZlZnfn0t06j8h1Rw_H-LVF786';
+const $ = id => document.getElementById(id);
+const GAMES = { '3d':'مغامرة 3D ⭐', worlds:'العوالم 🌍', heist:'اسرق البيضة 🥚', pets:'الحيوانات 🐾', castle:'القلعة 🏰', garden:'الجنينة 🌻', hide:'الغميضة 🙈', restaurant:'المطعم 🍕', city:'المدينة 🏙️', park:'الملاهي 🎡', bees:'النحلات 🐝', fashion:'الأزياء 👗', surprise:'المفاجآت 🌪️', island:'الجزيرة 🏝️' };
+const gname = g => GAMES[g] || g || '—';
+const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;' })[c]);
+const ago = t => { const s = Math.max(0, (Date.now() - new Date(t)) / 1000); return s < 60 ? Math.round(s) + ' ث' : s < 3600 ? Math.round(s / 60) + ' د' : s < 86400 ? Math.round(s / 3600) + ' س' : Math.round(s / 86400) + ' يوم'; };
+let key = ''; try{ key = localStorage.getItem('bobo_admin_key') || ''; }catch(e){}
+async function load(){
+  const r = await fetch(URL_ + '/rest/v1/rpc/bobo_admin_stats', { method:'POST', headers:{ apikey:KEY, Authorization:'Bearer ' + KEY, 'Content-Type':'application/json' }, body:JSON.stringify({ p_key:key }) });
+  if(!r.ok){ const t = await r.text(); throw new Error(/not_admin/.test(t) ? 'not_admin' : 'net'); }
+  return r.json();
+}
+function bars(el, obj){
+  const e = Object.entries(obj || {}).sort((a, b) => b[1] - a[1]); const max = Math.max(1, ...e.map(x => x[1]));
+  el.innerHTML = e.length ? e.map(([g, n]) => `<div class="b"><span>${esc(gname(g))}</span><span class="t"><i style="width:${n / max * 100}%"></i></span><b>${n}</b></div>`).join('') : '<p class="muted">ولا حدا هلّق</p>';
+}
+function cols(el, ax, list){
+  const days = []; for(let i = 29; i >= 0; i--){ const d = new Date(Date.now() - i * 864e5); days.push(d.toISOString().slice(0, 10)); }
+  const m = {}; (list || []).forEach(x => { m[x.d] = x.n; }); const max = Math.max(1, ...days.map(d => m[d] || 0));
+  el.innerHTML = days.map(d => `<div style="height:${(m[d] || 0) / max * 100}%" data-t="${d.slice(5)}: ${m[d] || 0}"></div>`).join('');
+  ax.innerHTML = `<span>${days[0].slice(5)}</span><span>${days[29].slice(5)}</span>`;
+}
+function render(s){
+  const st = [
+    ['live', s.online_now, '🟢 فاتحين هلّق'], ['', s.active_today, 'لعبوا اليوم'], ['', s.active_7d, 'لعبوا آخر 7 أيام'],
+    ['', s.kids_total, 'كل الحسابات'], ['', s.new_today, 'حسابات جديدة اليوم'], ['', s.kids_named, 'حطّوا اسم'],
+    ['', s.friend_links, 'صداقات'], ['', s.invites_today, 'دعوات اليوم'], ['', s.joins_today, 'طلبات انضمام اليوم'],
+    ['', s.trial_kids, 'جرّبوا القلعة'], ['', s.trial_done, 'خلّصوا التجربة'], ['', s.purchases, '💰 مشتريات']
+  ];
+  $('stats').innerHTML = st.map(([c, n, t]) => `<div class="stat ${c}"><b>${n ?? 0}</b><span>${t}</span></div>`).join('');
+  bars($('nowBars'), s.playing_now); bars($('playBars'), s.plays_7d);
+  cols($('newCols'), $('newAxis'), s.new_by_day); cols($('actCols'), $('actAxis'), s.active_by_day);
+  $('online').innerHTML = (s.online_list || []).map(k => `<tr><td>${esc(k.name || '—')}</td><td>${esc(k.code)}</td><td>${esc(k.playing ? gname(k.playing) : '—')}</td><td>${ago(k.seen)}</td></tr>`).join('') || '<tr><td colspan="4" class="muted">ما حدا</td></tr>';
+  const KIND = { join:['join', 'حساب جديد'], name:['name', 'غيّر اسمه'], play:['play', 'فات يلعب'] };
+  $('recent').innerHTML = (s.recent || []).map(e => { const k = KIND[e.kind] || ['', e.kind]; const det = e.kind === 'play' ? gname(e.data) : (e.data || ''); return `<tr><td><span class="tag ${k[0]}">${k[1]}</span></td><td>${esc(e.name || e.code || '—')}</td><td>${esc(det)}</td><td>${ago(e.at)}</td></tr>`; }).join('') || '<tr><td colspan="4" class="muted">لسا ما في أحداث</td></tr>';
+  $('upd').textContent = 'آخر تحديث: ' + new Date().toLocaleTimeString('en-GB');
+}
+async function refresh(){
+  try{ render(await load()); $('login').hidden = true; $('app').hidden = false; }
+  catch(e){ if(e.message === 'not_admin'){ try{ localStorage.removeItem('bobo_admin_key'); }catch(_){} $('app').hidden = true; $('login').hidden = false; $('err').textContent = key ? 'المفتاح غلط' : ''; } else { $('upd').textContent = '⚠️ ما في اتصال، رح جرّب كمان شوي'; } }
+}
+$('go').onclick = () => { key = $('key').value.trim(); try{ localStorage.setItem('bobo_admin_key', key); }catch(e){} refresh(); };
+$('key').addEventListener('keydown', e => { if(e.key === 'Enter') $('go').click(); });
+$('refresh').onclick = refresh;
+$('out').onclick = () => { try{ localStorage.removeItem('bobo_admin_key'); }catch(e){} key = ''; $('app').hidden = true; $('login').hidden = false; };
+if(key) refresh(); else $('login').hidden = false;
+setInterval(() => { if(key && document.visibilityState === 'visible') refresh(); }, 20000);
+</script>
+</body>
+</html>
