@@ -1,0 +1,21 @@
+name: island-live-test
+on:
+  push:
+    branches: [claude/mp-test]
+    paths: ['scripts/island-live.js', '.github/workflows/island-test.yml']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: claude/integ, path: site }
+      - run: (cd site && python3 -m http.server 8765 &) && sleep 2
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm i playwright@1.47.2 && npx playwright install --with-deps chromium
+      - run: node scripts/island-live.js
+        env: { SITE: 'http://localhost:8765/' }
+      - run: node scripts/rt-live.js
+        env: { SITE: 'http://localhost:8765/' }
