@@ -1598,22 +1598,26 @@ function mpError(retry){
   $('#bRetry').onclick = () => { SFX.tap(); retry(); };
   $('#bBack').onclick = () => { SFX.tap(); mpMenu(); };
 }
-async function mpCreate(){
+async function mpCreate(want){
   mpConnecting();
   try{
     for(let i = 0; i < 4; i++){
-      const code = String(1000 + Math.floor(Math.random() * 9000));
+      const code = i === 0 && /^\d{4}$/.test(want || '') ? String(want) : String(1000 + Math.floor(Math.random() * 9000));
       const r = await mpOpen(code, 'create');
       if(r === 'ok'){ mpLobby(); mpSendInvite(); return; }
     }
     throw new Error('busy');
   }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(mpCreate); }
 }
-async function mpJoin(code){
+async function mpJoin(code, until){
   mpConnecting();
   try{
-    const r = await mpOpen(code, 'join');
+    let r = await mpOpen(code, 'join');
     if(MP.screen !== 'connecting') return;
+    while(r === 'nobody' && until && performance.now() < until){
+      await new Promise(res => setTimeout(res, 700)); if(MP.screen !== 'connecting') return;
+      r = await mpOpen(code, 'join'); if(MP.screen !== 'connecting') return;
+    }
     if(r === 'ok') mpLobby();
     else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
     else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
@@ -1765,12 +1769,12 @@ showMenu();
 requestAnimationFrame(frame);
 /* links from the friends page: ?join=<room> joins that room, ?host=1&invite=<friendCode> creates a room and invites the friend */
 (function(){
-  const q = new URLSearchParams(location.search), join = q.get('join'), host = q.get('host') === '1', inv = q.get('invite');
+  const q = new URLSearchParams(location.search), join = q.get('join'), host = q.get('host') === '1', inv = q.get('invite'), room = q.get('room');
   if(!/^\d{4}$/.test(join || '') && !host) return;
-  ['join', 'host', 'invite'].forEach(k => q.delete(k));
+  ['join', 'host', 'invite', 'room'].forEach(k => q.delete(k));
   try{ history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
-  if(/^\d{4}$/.test(join || '')) mpJoin(join);
-  else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(); }
+  if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 20000);
+  else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(room); }
 })();
 </script>
 <script src="../back.js"></script>
