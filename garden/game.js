@@ -1364,39 +1364,18 @@ function loadSupabase(){
     document.head.appendChild(s);
   }));
 }
+/* the room connection itself (re-join after a drop, no HTTP fallback, watchdog) lives in the shared ../rt.js */
 class SupabaseTransport{
   async open(code, id, h){
     if(navigator.onLine === false) throw new Error('offline');
     await loadSupabase();
-    if(!SupabaseTransport.client) SupabaseTransport.client = window.supabase.createClient(MP_URL, MP_KEY, {
-      auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:30 } } });
-    const sb = SupabaseTransport.client;
-    const ch = this.ch = sb.channel('bobo-garden-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id, enabled:true } } });
-    ch.on('presence', { event:'sync' }, () => {
-      const st = ch.presenceState(), list = [];
-      for(const k in st){ const m = st[k]; if(m && m.length) list.push(Object.assign({}, m[m.length - 1], { id:k })); }
-      h.presence(list);
-    });
-    MP_EVENTS.forEach(ev => ch.on('broadcast', { event:ev }, m => h.msg(ev, m && m.payload)));
-    await new Promise((res, rej) => {
-      let first = true;
-      const to = setTimeout(() => { if(first){ first = false; rej(new Error('timeout')); } }, 9000);
-      ch.subscribe(status => {
-        if(status === 'SUBSCRIBED'){ if(first){ first = false; clearTimeout(to); res(); } else h.status('up'); }
-        else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
-          if(first){ first = false; clearTimeout(to); rej(new Error(status)); } else if(!this.closed) h.status('down');
-        }
-      });
-    });
+    if(this.closed) throw new Error('cancelled');
+    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:'bobo-garden-' + code, id, events:MP_EVENTS, eps:30, h });
+    await this.rt.ready;
   }
-  track(meta){ try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  send(ev, payload){ try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  close(){
-    this.closed = true; const ch = this.ch, sb = SupabaseTransport.client; this.ch = null;
-    if(!ch || !sb) return;
-    try{ const p = ch.untrack(); if(p && p.catch) p.catch(() => {}); }catch(e){}
-    try{ const p = sb.removeChannel(ch); if(p && p.catch) p.catch(() => {}); }catch(e){}
-  }
+  track(meta){ if(this.rt) this.rt.track(meta); }
+  send(ev, payload){ if(this.rt) this.rt.send(ev, payload); }
+  close(){ this.closed = true; if(this.rt){ this.rt.close(); this.rt = null; } }
 }
 class LocalTransport{
   open(code, id, h){
