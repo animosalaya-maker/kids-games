@@ -1211,7 +1211,7 @@ async function mpOpen(code, how){
   frRoom(code);
   return 'ok';
 }
-function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.meta.av = myAv(); MP.t.track(MP.meta); } }
+function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.meta.av = myAv(); MP.meta.fc = MP.meta.fc || BoboRT.fc(); MP.t.track(MP.meta); } }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
 function mpPresence(list){
   list = (list || []).filter(p => p && p.ph !== 'probe');
@@ -1595,7 +1595,13 @@ function mpFrame(dt){
     toast(L('صاحب الغرفة طلع 🚪 بتقدر تلعب لحالك أو تعمل غرفة جديدة', 'The room owner left 🚪 play alone or make a new room', 'Oda sahibi çıktı 🚪 tek başına oyna ya da yeni oda kur'), 5000);
     return;
   }
-  MP.stT -= dt; MP.lobT -= dt;
+  MP.stT -= dt; MP.lobT -= dt; MP.fcT = (MP.fcT || 0) - dt;
+  // a room made right at page start can be ahead of the friend code: add it as soon as it is known (friends then see the name)
+  if(MP.meta && !MP.meta.fc && MP.fcT <= 0){
+    MP.fcT = 2; const c = BoboRT.fc();
+    if(c){ MP.meta.fc = c; MP.t.track(MP.meta); }
+    else if(!MP.fcAsked && window.Friends && Friends.has && Friends.has()){ MP.fcAsked = true; try{ const q = Friends.me(); if(q && q.catch) q.catch(() => {}); }catch(e){} }
+  }
   if(R.co && GS && !GS.over && state !== 'mp') mpPos(false);
   if(MP.isHost && R.co && GS && !GS.over && MP.stT <= 0){ MP.stT = .15; hostSnap(); }
   if(MP.isHost && MP.screen === 'lobby' && MP.lobT <= 0){ MP.lobT = 1; mpSend('lob', { diff:diffId, ph:'idle' }); }
@@ -1777,7 +1783,7 @@ window.__granny = {
   /* online co-op */
   get mpScreen(){ return MP.screen; }, get co(){ return R.co; }, get run(){ return R.n; },
   get mp(){ return { code:MP.code, active:mpActive(), isHost:MP.isHost, hostId:MP.hostId, screen:MP.screen, id:MP.id, players:MP.players.map(p => ({ id:p.id, hero:p.hero, c:p.c })) }; },
-  get peers(){ return [...PEERS.values()].map(a => ({ id:a.id, hero:a.hero, x:a.x, y:a.y, z:a.z, hid:a.hid, inRun:a.inRun, seen:a.seen, visible:!!(a.h && a.h.grp.visible), label:a.lbl.hidden ? null : a.lbl.textContent, held:heldBy(a.id) })); },
+  get peers(){ return [...PEERS.values()].map(a => ({ id:a.id, hero:a.hero, x:a.x, y:a.y, z:a.z, tx:a.tx, tz:a.tz, hid:a.hid, inRun:a.inRun, seen:a.seen, visible:!!(a.h && a.h.grp.visible), label:a.lbl.hidden ? null : a.lbl.textContent, held:heldBy(a.id) })); },
   get itemsBy(){ return GS ? Object.fromEntries(['key', 'pliers', 'note'].map(id => [id, GS.items[id].state === 'held' ? GS.items[id].by : GS.items[id].state])) : null; },
   get kid(){ return G.kid; }, get mpErr(){ return MP.err || ''; }, get over(){ return GS && GS.over; },
   mpMenu:() => mpMenu(), mpCreate:(c) => mpCreate(c), mpJoin:(c) => mpJoin(c), mpStart:() => coStartRun(), mpLeave:() => { coStop(); showTitle(); },
