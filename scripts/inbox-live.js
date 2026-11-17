@@ -105,6 +105,18 @@ async function until(page, fn, arg, max){
       if (await C.evaluate(() => window.__p.some(k => /^again/.test(k)))) back = Date.now() - t6;
     }
     log('bell: after 12 s offline, pings reach C again within', sec(back), JSON.stringify(await C.evaluate(() => window.__p)));
+    if (!MOCK) {
+      await C.evaluate(() => { window.__p = []; Friends._bell.cut(); });
+      const t7 = Date.now(); let back2 = -1; const states = [];
+      for (let i = 0; i < 40 && back2 < 0; i++) {
+        states.push(await C.evaluate(() => Friends._bell.state));
+        await A.evaluate((a) => Friends.ping(a.c, 'cut' + a.i), { c:codeC, i });
+        await C.waitForTimeout(500);
+        if (await C.evaluate(() => window.__p.some(k => /^cut/.test(k)))) back2 = Date.now() - t7;
+      }
+      log('bell: socket cut → pings reach C again within', sec(back2), 'states', states.join(','), JSON.stringify(await C.evaluate(() => window.__p)));
+      log('C sockets', net.filter(x => /^C /.test(x)).join(', '));
+    }
   } catch (e) { log('bell reconnect test failed', e.message); }
   log('NET', [...new Set(net)].join(' | '));
   log('ERRORS', errs.slice(0, 15).join('\n'));
