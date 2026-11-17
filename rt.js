@@ -7,7 +7,7 @@
    - coming back to the app (visibilitychange / pageshow) or to the network (online) checks the channel at once;
    - watchdog: with other players in the room, 12 s of total silence forces a new join (a small '_hb' message every 5 s keeps a
      quiet room from looking dead);
-   - a player who drops out of the member list is kept for 20 s before the game is told (a '_bye' message on a real exit skips the wait);
+   - a player who drops out of the member list is kept for 25 s before the game is told (a '_bye' message on a real exit skips the wait);
    - a small «عم نرجع نتصل… 📡» chip shows while reconnecting.
    Names: BoboRT.fc() is this player's friend code for the presence meta, BoboRT.want(list, cb) looks the codes up on the server
    (Friends.names), BoboRT.name(fc) / BoboRT.label(p, fallback) read the saved name. Names never travel between players:
@@ -15,7 +15,7 @@
 (function(){
 'use strict';
 const T = (ar, en, tr) => window.L ? window.L(ar, en, tr) : ar;
-const BACKOFF = [1000, 2000, 4000, 8000], JOIN_TIMEOUT = 9000, SILENCE = 12000, BEAT = 5000, GRACE = 20000, QUEUE_MAX = 30, QUEUE_AGE = 10000;
+const BACKOFF = [1000, 2000, 4000, 8000], JOIN_TIMEOUT = 9000, SILENCE = 12000, BEAT = 5000, GRACE = 25000, QUEUE_MAX = 30, QUEUE_AGE = 10000;
 const clients = {}, conns = new Set(), log = [];
 const note = (...a) => { log.push(Math.round(performance.now()) + ' ' + a.join(' ')); if(log.length > 80) log.shift(); };
 
@@ -124,6 +124,7 @@ class Conn{
   }
   attempt(){
     if(this.closed) return;
+    note('attempt', navigator.onLine === false ? 'offline' : '');
     if(navigator.onLine === false){ this.retry(); return; }
     this.join();
   }
@@ -258,7 +259,7 @@ document.addEventListener('visibilitychange', () => {
   if(document.visibilityState === 'hidden'){ if(!hiddenAt) hiddenAt = Date.now(); }
   else wakeAll();
 });
-window.addEventListener('online', () => conns.forEach(c => c.wake(0)));
+window.addEventListener('online', () => { note('online'); conns.forEach(c => c.wake(0)); });
 window.addEventListener('offline', () => conns.forEach(c => { if(c.everUp && !c.down) c.lost(1000, false, 'offline'); }));
 window.addEventListener('pageshow', e => { if(e.persisted) conns.forEach(c => c.wake(60000)); });
 
