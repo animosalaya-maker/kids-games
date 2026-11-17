@@ -1682,7 +1682,7 @@ async function mpCreate(want){
       if(r === 'ok'){ mpLobby(); mpSendInvite(); return; }
     }
     throw new Error('busy');
-  }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpCreate(want)); }
+  }catch(e){ MP.err = String(e && (e.stack || e.message)).slice(0, 400); if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpCreate(want)); }
 }
 async function mpJoin(code, until){
   mpConnecting();
@@ -1696,7 +1696,7 @@ async function mpJoin(code, until){
     if(r === 'ok'){ mpLobby(); mpSend('lob', { ask:1 }); }
     else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
     else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
-  }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpJoin(code)); }
+  }catch(e){ MP.err = String(e && (e.stack || e.message)).slice(0, 400); if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpJoin(code)); }
 }
 /* «تعا العب» from the friends page: ?host=1&invite=<friendCode>. The server may not accept 'granny': guarded. */
 function mpSendInvite(){
@@ -1769,7 +1769,7 @@ window.__granny = {
   get mp(){ return { code:MP.code, active:mpActive(), isHost:MP.isHost, hostId:MP.hostId, screen:MP.screen, id:MP.id, players:MP.players.map(p => ({ id:p.id, hero:p.hero, c:p.c })) }; },
   get peers(){ return [...PEERS.values()].map(a => ({ id:a.id, hero:a.hero, x:a.x, y:a.y, z:a.z, hid:a.hid, inRun:a.inRun, seen:a.seen, visible:!!(a.h && a.h.grp.visible), label:a.lbl.hidden ? null : a.lbl.textContent, held:heldBy(a.id) })); },
   get itemsBy(){ return GS ? Object.fromEntries(['key', 'pliers', 'note'].map(id => [id, GS.items[id].state === 'held' ? GS.items[id].by : GS.items[id].state])) : null; },
-  get kid(){ return G.kid; }, get over(){ return GS && GS.over; },
+  get kid(){ return G.kid; }, get mpErr(){ return MP.err || ''; }, get over(){ return GS && GS.over; },
   mpMenu:() => mpMenu(), mpCreate:(c) => mpCreate(c), mpJoin:(c) => mpJoin(c), mpStart:() => coStartRun(), mpLeave:() => { coStop(); showTitle(); },
   pos:() => coPosNow()
 };
