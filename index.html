@@ -436,7 +436,7 @@ function renderItems(){
     const on = tab === 'color' ? o.color === key : (o[tab] || 'none') === key;
     const b = document.createElement('button'); b.className = 'item' + (on ? ' on' : '');
     b.innerHTML = (tab === 'color' ? '<span class="sw" style="background:' + it.color + '"></span>' : '<span class="ie">' + it.e + '</span>') +
-      '<b>' + it.name + '</b>' + (on ? '<small class="own">' + L('لابسه ✔','Wearing ✔','Giyili ✔') + '</small>' : owned ? '<small class="own">' + L('البس','Wear','Giy') + '</small>' : '<small>🪙 ' + AR(it.price) + '</small>');
+      '<b>' + it.name + '</b>' + (on ? '<small class="own">' + L('لابسه ✔','Wearing ✔','Giyiyor ✔') + '</small>' : owned ? '<small class="own">' + L('البس','Wear','Giy') + '</small>' : '<small>🪙 ' + AR(it.price) + '</small>');
     b.onclick = () => {
       const msg = document.getElementById('closetMsg');
       if(!owned){
