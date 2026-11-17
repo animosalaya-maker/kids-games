@@ -1,4 +1,7 @@
 /* «تعا العب» invite popup + «انضم» join-request popup on every screen (needs friends.js loaded first).
+   Doorbell: Friends.onPing rings when a friend sent something → the poll below runs at once (at most once a second);
+   the 8 s poll stays as the fallback. An online game page reports «playing» the moment it can take a friend in,
+   and clears it when the page is hidden or left (keepalive request).
    Every 8 s while the page is visible: heartbeat (on an online game page: bobo_fr_set_playing(<game>) every ~25 s instead,
    so friends see «انضم»). If a friend asks to join, show «👋 X بدّو يلعب معك …» with ✓ قبول / ✕ رفض; else show the newest invite.
    Accepting a join request answers with this page's room (window.__boboRoom()), or a room made in-page (window.__boboHost()),
@@ -125,13 +128,29 @@
     await Promise.race([Friends.dismiss(inv.id).catch(() => {}), new Promise(r => setTimeout(r, 1500))]);
     location.href = Friends.gameUrl(ROOT + Friends.GAMES[Friends.gameOf(inv.game)].path, { join:inv.room });
   }
-  let lastPlay = 0, playingSet = false, lastCoin = 0;
+  let lastPlay = 0, playingSet = false, lastCoin = 0, lastRing = 0, ringT = 0, again = false, hint = null;
+  /* the doorbell rang: poll now, but never more than once a second */
+  function ring(k){
+    if(k === 'join' || k === 'invite') hint = k;   // only says which list to look at first; the lists themselves come from the server
+    if(ringT) return;
+    ringT = setTimeout(() => { ringT = 0; lastRing = Date.now(); if(busy){ again = true; return; } tick(); }, Math.max(0, lastRing + 1000 - Date.now()));
+  }
+  /* «I'm playing <game>» right away (friends see «انضم» without waiting for the next poll) */
+  function announce(){
+    if(!canHost() || document.visibilityState === 'hidden') return false;
+    lastPlay = Date.now(); playingSet = true;
+    Friends.setPlaying(GAME).catch(() => { lastPlay = 0; });
+    return true;
+  }
+  function leave(){ if(playingSet){ playingSet = false; lastPlay = 0; Friends.setPlaying(null, true); } }
   async function tick(){
     if(busy || cur || document.visibilityState === 'hidden') return; busy = true;
     try{
       let c;
       if(canHost() && Date.now() - lastPlay > 24000){ lastPlay = Date.now(); c = await Friends.setPlaying(GAME); playingSet = true; }
+      else if(hint){ c = { joins:hint === 'join' ? 1 : 0, invites:hint === 'invite' ? 1 : 0 }; }   // rang: go straight to that list (one request less)
       else c = await Friends.heartbeat();
+      hint = null;
       // coins sent from Bobo Land (admin gift): add them to this phone's wallet
       if(window.World && World.addCoins && Friends.claimCoins && Date.now() - lastCoin > 45000){
         lastCoin = Date.now();
@@ -147,11 +166,16 @@
         const inv = (list || []).find(i => !s.includes(i.id) && i.left > 20);
         if(inv && !cur) show(inv);
       }
-    }catch(e){} finally { busy = false; }
+    }catch(e){} finally { busy = false; if(again){ again = false; ring(); } }
   }
   setTimeout(tick, 1500); setInterval(tick, 8000);
-  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') tick(); });
-  addEventListener('pagehide', () => { if(playingSet){ playingSet = false; lastPlay = 0; Friends.setPlaying(null, true); } });
-  addEventListener('pageshow', e => { if(e.persisted){ lastPlay = 0; tick(); } });
-  window.__invitePop = { show, showJoin, hide, tick, get game(){ return GAME; } };
+  if(GAME){ // the game defines window.__boboRoom a moment after this script runs: watch for it, then announce at once
+    const t0 = Date.now(), iv = setInterval(() => { if(playingSet || Date.now() - t0 > 60000 || announce()) clearInterval(iv); }, 200);
+  }
+  if(Friends.onPing) Friends.onPing(ring);
+  // hidden (app switched, tab closed on a phone: pagehide often never comes) = not playing; visible again = playing again, now
+  document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible'){ if(!playingSet) announce(); tick(); } else leave(); });
+  addEventListener('pagehide', leave);
+  addEventListener('pageshow', e => { if(e.persisted){ lastPlay = 0; if(!playingSet) announce(); tick(); } });
+  window.__invitePop = { show, showJoin, hide, tick, ring, get game(){ return GAME; } };
 })();
