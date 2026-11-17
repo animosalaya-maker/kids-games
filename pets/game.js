@@ -927,7 +927,7 @@ function hudFrame(){
   const bar = $('#mpBar');
   bar.hidden = !mp;
   if(mp){
-    bar.innerHTML = `<span class="chip roomchip">🏠 ${[...MP.code].map(N).join('')}</span>` + MP.players.map(p => `<span class="chip ps${p.id === MP.id ? ' me' : ''}" style="--c:${MCOL[p.c] || '#fff'}"><img src="${charImg(p.hero)}" alt="">${p.pet && SPECIES[p.pet.sp] ? SPECIES[p.pet.sp].e : ''}</span>`).join('');
+    bar.innerHTML = `<span class="chip roomchip">🏠 ${[...MP.code].map(N).join('')}</span>` + MP.players.map(p => `<span class="chip ps${p.id === MP.id ? ' me' : ''}" style="--c:${MCOL[p.c] || '#fff'}"><img src="${charImg(p.hero)}" alt="">${BoboRT.chipH(p.id)}${p.pet && SPECIES[p.pet.sp] ? SPECIES[p.pet.sp].e : ''}</span>`).join('');
   }
 }
 let bubKey = '';
@@ -1369,39 +1369,18 @@ function loadSupabase(){
     document.head.appendChild(s);
   }));
 }
+/* the room connection itself (re-join after a drop, no HTTP fallback, watchdog) lives in the shared ../rt.js */
 class SupabaseTransport{
   async open(code, id, h){
     if(navigator.onLine === false) throw new Error('offline');
     await loadSupabase();
-    if(!SupabaseTransport.client) SupabaseTransport.client = window.supabase.createClient(MP_URL, MP_KEY, {
-      auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:30 } } });
-    const sb = SupabaseTransport.client;
-    const ch = this.ch = sb.channel('bobo-pets-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id, enabled:true } } });
-    ch.on('presence', { event:'sync' }, () => {
-      const st = ch.presenceState(), list = [];
-      for(const k in st){ const m = st[k]; if(m && m.length) list.push(Object.assign({}, m[m.length - 1], { id:k })); }
-      h.presence(list);
-    });
-    MP_EVENTS.forEach(ev => ch.on('broadcast', { event:ev }, m => h.msg(ev, m && m.payload)));
-    await new Promise((res, rej) => {
-      let first = true;
-      const to = setTimeout(() => { if(first){ first = false; rej(new Error('timeout')); } }, 9000);
-      ch.subscribe(status => {
-        if(status === 'SUBSCRIBED'){ if(first){ first = false; clearTimeout(to); res(); } else h.status('up'); }
-        else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
-          if(first){ first = false; clearTimeout(to); rej(new Error(status)); } else if(!this.closed) h.status('down');
-        }
-      });
-    });
+    if(this.closed) throw new Error('cancelled');
+    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:'bobo-pets-' + code, id, events:MP_EVENTS, eps:30, h });
+    await this.rt.ready;
   }
-  track(meta){ try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  send(ev, payload){ try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  close(){
-    this.closed = true; const ch = this.ch, sb = SupabaseTransport.client; this.ch = null;
-    if(!ch || !sb) return;
-    try{ const p = ch.untrack(); if(p && p.catch) p.catch(() => {}); }catch(e){}
-    try{ const p = sb.removeChannel(ch); if(p && p.catch) p.catch(() => {}); }catch(e){}
-  }
+  track(meta){ if(this.rt) this.rt.track(meta); }
+  send(ev, payload){ if(this.rt) this.rt.send(ev, payload); }
+  close(){ this.closed = true; if(this.rt){ this.rt.close(); this.rt = null; } }
 }
 class LocalTransport{
   open(code, id, h){
@@ -1505,7 +1484,7 @@ async function mpOpen(code, how){
   if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play', pet:petMeta() };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play', pet:petMeta() };
   t.track(MP.meta);
   MP.hostId = how === 'create' ? MP.id : others.slice().sort(mpSort)[0].id;
   mpPresence(MP.list);
@@ -1514,8 +1493,11 @@ async function mpOpen(code, how){
 }
 function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.meta.pet = petMeta(); MP.t.track(MP.meta); hudKey = ''; } }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){ hudKey = ''; }
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
@@ -1592,22 +1574,26 @@ function mpEnter(){
   if(MP.isHost) say(L('رقم غرفتك ', 'Your room number is ', 'Oda numaran ') + [...MP.code].map(N).join('') + L(' — قولو لأصحابك 👫', ' — tell your friends 👫', ' — arkadaşlarına söyle 👫'), 6000);
   else { mpSend('hreq', {}); say(L('أهلا! هاد بيت صاحبك 🏡', "Welcome! This is your friend's house 🏡", 'Hoş geldin! Burası arkadaşının evi 🏡'), 3500); }
 }
-async function mpCreate(){
+async function mpCreate(want){
   mpConnecting();
   try{
     for(let i = 0; i < 4; i++){
-      const code = String(1000 + Math.floor(Math.random() * 9000));
+      const code = i === 0 && /^\d{4}$/.test(want || '') ? String(want) : String(1000 + Math.floor(Math.random() * 9000));
       const r = await mpOpen(code, 'create');
       if(r === 'ok'){ mpEnter(); mpSendInvite(); return; }
     }
     throw new Error('busy');
   }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(mpCreate); }
 }
-async function mpJoin(code){
+async function mpJoin(code, until){
   mpConnecting();
   try{
-    const r = await mpOpen(code, 'join');
+    let r = await mpOpen(code, 'join');
     if(MP.screen !== 'connecting') return;
+    while(r === 'nobody' && until && performance.now() < until){
+      await new Promise(res => setTimeout(res, 700)); if(MP.screen !== 'connecting') return;
+      r = await mpOpen(code, 'join'); if(MP.screen !== 'connecting') return;
+    }
     if(r === 'ok') mpEnter();
     else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
     else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
@@ -1769,10 +1755,10 @@ resize();
 showMenu();
 requestAnimationFrame(frame);
 (function(){
-  const join = QS.get('join'), host = QS.get('host') === '1', inv = QS.get('invite');
+  const join = QS.get('join'), host = QS.get('host') === '1', inv = QS.get('invite'), room = QS.get('room');
   if(!/^\d{4}$/.test(join || '') && !host) return;
-  const q = new URLSearchParams(location.search); ['join', 'host', 'invite'].forEach(k => q.delete(k));
+  const q = new URLSearchParams(location.search); ['join', 'host', 'invite', 'room'].forEach(k => q.delete(k));
   try{ history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
-  if(/^\d{4}$/.test(join || '')) mpJoin(join);
-  else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(); }
+  if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 20000);
+  else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(room); }
 })();
