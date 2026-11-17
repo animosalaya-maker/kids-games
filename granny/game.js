@@ -1060,6 +1060,7 @@ function frame(now){
   if(GS) for(const t of GS.toys) if(!(t.squash > 0)) t.m.scale.set(1, 1, 1);
   if(T < topUntil || (GS && GS.hint)){}
   H.sky.position.copy(camera.position);
+  if(state === 'mp' && MP.screen === 'connecting' && (fpsN & 7)) return;     // keep the phone free while it connects
   renderer.render(scene, camera);
 }
 function degrade(){
@@ -1674,24 +1675,33 @@ function mpLobbyDraw(){
 }
 async function mpCreate(want){
   mpConnecting();
+  const limit = performance.now() + 20000;
   try{
     for(let i = 0; i < 4; i++){
       const code = i === 0 && /^\d{4}$/.test(want || '') ? String(want) : String(1000 + Math.floor(Math.random() * 9000));
-      const r = await mpOpen(code, 'create');
+      const r = await mpOpenRetry(code, 'create', limit);
       if(MP.screen !== 'connecting'){ if(r === 'ok') mpLeave(); return; }
       if(r === 'ok'){ mpLobby(); mpSendInvite(); return; }
     }
     throw new Error('busy');
   }catch(e){ MP.err = String(e && (e.stack || e.message)).slice(0, 400); if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpCreate(want)); }
 }
+/* one more try when the connection was slow (a busy phone can miss the first join); gives up at `until` */
+async function mpOpenRetry(code, how, until){
+  for(;;){
+    try{ return await mpOpen(code, how); }
+    catch(e){ if(String(e && e.message) === 'cancelled' || MP.screen !== 'connecting' || performance.now() > until - 3000) throw e; await new Promise(r => setTimeout(r, 800)); if(MP.screen !== 'connecting') throw new Error('cancelled'); }
+  }
+}
 async function mpJoin(code, until){
   mpConnecting();
+  const limit = until || performance.now() + 20000;
   try{
-    let r = await mpOpen(code, 'join');
+    let r = await mpOpenRetry(code, 'join', limit);
     if(MP.screen !== 'connecting'){ if(r === 'ok') mpLeave(); return; }
     while(r === 'nobody' && until && performance.now() < until){
       await new Promise(res => setTimeout(res, 700)); if(MP.screen !== 'connecting') return;
-      r = await mpOpen(code, 'join'); if(MP.screen !== 'connecting'){ if(r === 'ok') mpLeave(); return; }
+      r = await mpOpenRetry(code, 'join', limit); if(MP.screen !== 'connecting'){ if(r === 'ok') mpLeave(); return; }
     }
     if(r === 'ok'){ mpLobby(); mpSend('lob', { ask:1 }); }
     else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
