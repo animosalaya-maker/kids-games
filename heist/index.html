@@ -1406,7 +1406,7 @@ async function mpOpen(code, how){
   if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0 };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0 };
   t.track(MP.meta);
   mpPresence(MP.list);
   frRoom(code);
@@ -1414,8 +1414,14 @@ async function mpOpen(code, how){
 }
 function mpTrack(){ if(MP.t && MP.meta) MP.t.track(MP.meta); }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){
+  if(MP.screen === 'lobby' && typeof mpRenderLobby === 'function') mpRenderLobby();
+  if(MP.match) actors.forEach((a, i) => { if(a.on && a.kind === 'remote' && a.id) setActor(i, 'remote', a.hero, a.id, BoboRT.who(a.id, mpLabel(i))); });
+}
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
@@ -1497,7 +1503,7 @@ function mpBegin(p){
   for(let i = 0; i < 4; i++){
     const h = pl.find(x => x.c === i);
     if(h && h.id === MP.id) setActor(i, 'me', h.hero, h.id, '');
-    else if(h) setActor(i, 'remote', h.hero, h.id, mpLabel(i));
+    else if(h) setActor(i, 'remote', h.hero, h.id, BoboRT.who(h.id, mpLabel(i)));
     else { const bh = hs[hk++ % hs.length]; setActor(i, 'bot', bh, null, HERO_NAME[bh]); actors[i].bot = newBrain(); }
     placeAtHome(i);
   }
@@ -1544,7 +1550,7 @@ function mpShowEnd(p, msg){
   if(MP.meta){ MP.meta.ph = 'end'; mpTrack(); }
   if(me && !M.rewarded){ M.rewarded = true; if(window.World) World.addCoins(coins, L('من اسرق البيضة', 'for Egg Heist', 'Yumurta Soygunu için')); }
   const heroes = Array.isArray(p.heroes) ? p.heroes.map(okHero) : actors.map(a => a.hero);
-  const labels = actors.map((a, i) => i === ME ? L('إنت', 'You', 'Sen') : (p.kinds ? p.kinds[i] === 'b' : a.kind === 'bot') ? HERO_NAME[heroes[i]] : mpLabel(i));
+  const labels = actors.map((a, i) => i === ME ? L('إنت', 'You', 'Sen') : (p.kinds ? p.kinds[i] === 'b' : a.kind === 'bot') ? HERO_NAME[heroes[i]] : BoboRT.whoH(a.id, mpLabel(i)));
   MP.lastEnd = { rows, coins, vals };
   MP.screen = 'end';
   showEnd({ rows, coins, labels, heroes, msg });
@@ -1644,7 +1650,7 @@ function mpRenderLobby(){
     const p = pl.find(x => x.c === c);
     if(!p) return `<div class="slot empty" style="--c:${BCOL[c]}">🐣</div>`;
     return `<div class="slot" style="--c:${BCOL[c]}">${p === host ? '<span class="crown">👑</span>' : ''}${heroImg(okHero(p.hero))}
-      <span><b>${mpLabel(c)}</b><small>${p.id === MP.id ? L('إنت', 'You', 'Sen') : HERO_NAME[okHero(p.hero)]}</small></span></div>`;
+      <span><b>${BoboRT.whoH(p.id, mpLabel(c))}</b><small>${p.id === MP.id ? L('إنت', 'You', 'Sen') : HERO_NAME[okHero(p.hero)]}</small></span></div>`;
   }).join('');
   let status;
   if(busy) status = L('في لعبة شغّالة هلّق، استنّى تخلص ⏳', 'A game is on right now — wait for it to finish ⏳', 'Şu an bir oyun var, bitmesini bekle ⏳');

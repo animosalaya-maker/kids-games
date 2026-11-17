@@ -10,7 +10,8 @@
    - a player who drops out of the member list is kept for 20 s before the game is told (a '_bye' message on a real exit skips the wait);
    - a small «عم نرجع نتصل… 📡» chip shows while reconnecting.
    Names: BoboRT.fc() is this player's friend code for the presence meta, BoboRT.want(list, cb) looks the codes up on the server
-   (Friends.names), BoboRT.name(fc) / BoboRT.label(p, fallback) read the saved name. Names never travel between players. */
+   (Friends.names), BoboRT.name(fc) / BoboRT.label(p, fallback) read the saved name. Names never travel between players:
+   only the code does, and every phone asks the server for the name behind it. */
 (function(){
 'use strict';
 const T = (ar, en, tr) => window.L ? window.L(ar, en, tr) : ar;
@@ -300,7 +301,22 @@ function want(list, cb){
   if(!nameTimer) nameTimer = setTimeout(flush, 150);
 }
 
+/* games: see(presenceList, cb) remembers each player's code and asks for unknown names; who(id, fallback) is the label to show
+   (plain text — set it with textContent, or use whoH() inside HTML) */
+const fcOf = new Map();
+function see(list, cb){
+  (list || []).forEach(p => { if(p && p.id && okCode(p.fc)) fcOf.set(p.id, p.fc); });
+  want(list, cb);
+}
+const esc = s => String(s == null ? '' : s).replace(/[&<>"'`]/g, c => '&#' + c.charCodeAt(0) + ';');
+const who = (id, fallback) => name(fcOf.get(id)) || fallback || '';
+const whoH = (id, fallback) => esc(who(id, fallback));
+
+/* a short name for the small player chips in the HUD ('' when the player has no saved name) */
+const chipH = id => { const n = who(id, ''); return n ? '<span dir="auto" style="max-width:5.5em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;line-height:1.3">' + esc(n) + '</span>' : ''; };
+
 window.BoboRT = {
+  see, who, whoH, esc, chipH,
   open: o => new Conn(o),
   fc, name, label, want,
   _conns: conns, _log: log

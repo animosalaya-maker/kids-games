@@ -683,7 +683,7 @@ function hudFrame(){
   $('#hudStars').textContent = FSTAR + ' ' + N(SAVE.stars);
   const showBar = ph !== 'podium' && ph !== 'theme' && !(ph === 'dress' && solo);
   const bar = $('#mpBar'); bar.hidden = !showBar;
-  if(showBar) bar.innerHTML = (MP.code && !solo ? `<span class="chip roomchip">🏠 ${[...MP.code].map(N).join('')}</span>` : '') + R.slots.map((s, i) => `<span class="chip ps${i === walker ? ' walk' : ''}" style="--c:${MCOL[s.c] || '#fff'}"><img src="${charImg(s.hero)}" alt="">${s.bot ? '🤖' : ''}${ph === 'dress' ? (s.ready ? '✅' : '👗') : ''}${i === mySlot() ? '⭐' : ''}</span>`).join('');
+  if(showBar) bar.innerHTML = (MP.code && !solo ? `<span class="chip roomchip">🏠 ${[...MP.code].map(N).join('')}</span>` : '') + R.slots.map((s, i) => `<span class="chip ps${i === walker ? ' walk' : ''}" style="--c:${MCOL[s.c] || '#fff'}"><img src="${charImg(s.hero)}" alt="">${s.bot ? '🤖' : BoboRT.chipH(s.id)}${ph === 'dress' ? (s.ready ? '✅' : '👗') : ''}${i === mySlot() ? '⭐' : ''}</span>`).join('');
 }
 /* the dressing panel */
 let dressTab = 'top', colTouched = {};
@@ -794,7 +794,7 @@ function lobbyCard(){
   card.innerHTML = `<h2>👗 ${L('غرفة عرض الأزياء', 'Fashion show room', 'Moda şovu odası')}</h2>
     <div class="mp-code">${[...code].map(d => `<b>${N(d)}</b>`).join('')}</div>
     <p>${L('قول الرقم لأصحابك 👫 والروبوتات بتكمّل الأماكن الفاضية 🤖', 'Tell your friends the number 👫 robots fill the empty places 🤖', 'Numarayı arkadaşlarına söyle 👫 boş yerleri robotlar doldurur 🤖')}</p>
-    <div class="plist">${R.slots.map(s => `<div class="pl${!s.bot && s.id === myPid() ? ' me' : ''}" style="--c:${MCOL[s.c]}"><img src="${charImg(s.hero)}" alt=""><b>${HERO_NAME[s.hero]}</b>${s.bot ? '<span class="bot">🤖</span>' : ''}<small>${!s.bot && s.id === MP.hostId ? '👑' : !s.bot && s.id === myPid() ? L('إنت', 'You', 'Sen') : s.bot ? L('روبوت', 'Robot', 'Robot') : '👫'}</small></div>`).join('')}</div>
+    <div class="plist">${R.slots.map(s => `<div class="pl${!s.bot && s.id === myPid() ? ' me' : ''}" style="--c:${MCOL[s.c]}"><img src="${charImg(s.hero)}" alt=""><b>${s.bot ? HERO_NAME[s.hero] : BoboRT.whoH(s.id, HERO_NAME[s.hero])}</b>${s.bot ? '<span class="bot">🤖</span>' : ''}<small>${!s.bot && s.id === MP.hostId ? '👑' : !s.bot && s.id === myPid() ? L('إنت', 'You', 'Sen') : s.bot ? L('روبوت', 'Robot', 'Robot') : '👫'}</small></div>`).join('')}</div>
     <div class="row">${host ? `<button class="big-btn mint" id="bGo">▶️ ${L('يلّا نبلّش!', "Let's start!", 'Başlayalım!')}</button>` : `<p>⏳ ${L('استنّى صاحب الغرفة يبلّش', 'Wait for the room owner to start', 'Oda sahibinin başlatmasını bekle')}</p>`}
     <button class="ghost-btn" id="bLeave">🚪 ${L('اطلع من الغرفة', 'Leave the room', 'Odadan çık')}</button></div>`;
   if(host) $('#bGo').onclick = () => { SFX.tap(); newRound(); };
@@ -803,7 +803,7 @@ function lobbyCard(){
 function podiumCard(){
   openOverlay('clear', 'podcard');
   const me = mySlot(), rw = R.mine.reward, medal = ['🥇', '🥈', '🥉', '🎀'];
-  const rows = (R.res || []).map((r, k) => { const s = R.slots[r.i]; return `<div class="rk${r.i === me ? ' me' : ''}" style="--c:${MCOL[s.c]}"><span class="md">${medal[k]}</span><img src="${charImg(s.hero)}" alt=""><span class="nm">${HERO_NAME[s.hero]}${s.bot ? ' 🤖' : ''}${r.i === me ? ' (' + L('إنت', 'You', 'Sen') + ')' : ''}</span><span class="sc">⭐ ${N(r.avg.toFixed(1))}</span></div>`; }).join('');
+  const rows = (R.res || []).map((r, k) => { const s = R.slots[r.i]; return `<div class="rk${r.i === me ? ' me' : ''}" style="--c:${MCOL[s.c]}"><span class="md">${medal[k]}</span><img src="${charImg(s.hero)}" alt=""><span class="nm">${s.bot ? HERO_NAME[s.hero] : BoboRT.whoH(s.id, HERO_NAME[s.hero])}${s.bot ? ' 🤖' : ''}${r.i === me ? ' (' + L('إنت', 'You', 'Sen') + ')' : ''}</span><span class="sc">⭐ ${N(r.avg.toFixed(1))}</span></div>`; }).join('');
   const host = isHost();
   card.innerHTML = `<h2>🏆 ${L('النتيجة', 'Results', 'Sonuçlar')} · ${THEMES[R.th].e}</h2><div class="ranks">${rows}</div>
     ${rw ? `<div class="reward"><span>+${N(rw.stars)} ${FSTAR}</span><span>+${N(rw.coins)} 🪙</span></div>` : ''}
@@ -1187,7 +1187,7 @@ async function mpOpen(code, how){
   if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play' };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play' };
   t.track(MP.meta);
   MP.hostId = how === 'create' ? MP.id : others.slice().sort(mpSort)[0].id;
   mpPresence(MP.list);
@@ -1196,8 +1196,11 @@ async function mpOpen(code, how){
 }
 function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.t.track(MP.meta); hudKey = ''; } }
 function mpSend(ev, p){ if(MP.t && !solo) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){ hudKey = ''; }
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);

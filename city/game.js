@@ -1470,7 +1470,7 @@ function hudFrame(){
   const bar = $('#mpBar');
   bar.hidden = !mp;
   if(mp){
-    bar.innerHTML = `<span class="chip roomchip">🏙️ ${[...MP.code].map(N).join('')}</span>` + MP.players.map(p => `<span class="chip ps" style="--c:${MCOL[p.c] || '#fff'}"><img src="${charImg(p.hero)}" alt="">${p.role && ROLES[p.role] ? ROLES[p.role].e : ''}</span>`).join('');
+    bar.innerHTML = `<span class="chip roomchip">🏙️ ${[...MP.code].map(N).join('')}</span>` + MP.players.map(p => `<span class="chip ps" style="--c:${MCOL[p.c] || '#fff'}"><img src="${charImg(p.hero)}" alt="">${BoboRT.chipH(p.id)}${p.role && ROLES[p.role] ? ROLES[p.role].e : ''}</span>`).join('');
   }
 }
 
@@ -1974,7 +1974,7 @@ async function mpOpen(code, how){
   if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play', role:SAVE.role, pet:SAVE.pet, item:P.item, ic:P.itemCol | 0 };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play', role:SAVE.role, pet:SAVE.pet, item:P.item, ic:P.itemCol | 0 };
   t.track(MP.meta);
   MP.hostId = how === 'create' ? MP.id : others.slice().sort(mpSort)[0].id;
   mpPresence(MP.list);
@@ -1983,8 +1983,11 @@ async function mpOpen(code, how){
 }
 function mpTrack(){ if(MP.t && MP.meta){ Object.assign(MP.meta, { hero:heroId, role:SAVE.role, pet:SAVE.pet, item:P.item, ic:P.itemCol | 0 }); MP.t.track(MP.meta); hudKey = ''; } }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){ hudKey = ''; }
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);

@@ -1064,7 +1064,7 @@ function hudFrame(){
   if(wk !== 'clear'){ wx.style.setProperty('--wc', WX[wk].wc); wx.textContent = WX[wk].e + ' ' + WX[wk].name + (wleft ? ' · ' + N(wleft) : ''); }
   $('#btnGift').hidden = !(mp && RM.size);
   const bar = $('#mpBar'); bar.hidden = !mp;
-  if(mp) bar.innerHTML = `<span class="chip roomchip">🏡 ${[...MP.code].map(N).join('')}</span>` + MP.players.map(p => `<span class="chip ps" style="--c:${MCOL[p.c] || '#fff'}"><img src="${charImg(p.hero)}" alt="">${p.id === MP.hostId ? '🌻' : ''}</span>`).join('');
+  if(mp) bar.innerHTML = `<span class="chip roomchip">🏡 ${[...MP.code].map(N).join('')}</span>` + MP.players.map(p => `<span class="chip ps" style="--c:${MCOL[p.c] || '#fff'}"><img src="${charImg(p.hero)}" alt="">${BoboRT.chipH(p.id)}${p.id === MP.hostId ? '🌻' : ''}</span>`).join('');
 }
 basketEl.onclick = () => { if(state !== 'play') return; SFX.tap(); openBasket(); };
 $('#btnBook').onclick = () => { if(state !== 'play') return; SFX.tap(); openBook(0); };
@@ -1474,7 +1474,7 @@ async function mpOpen(code, how){
   if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play' };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play' };
   t.track(MP.meta);
   MP.hostId = how === 'create' ? MP.id : others.slice().sort(mpSort)[0].id;
   MP.helps = 0;
@@ -1484,8 +1484,11 @@ async function mpOpen(code, how){
 }
 function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.t.track(MP.meta); hudKey = ''; } }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){ hudKey = ''; }
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
@@ -1672,7 +1675,7 @@ let GF = null;
 function giftWho(){
   openCard(false);
   card.innerHTML = `${xBtn}<h2>🎁 ${L('لمين الهدية؟', 'Who is the gift for?', 'Hediye kime?')}</h2>
-    <div class="row">${[...RM.values()].map(a => `<button class="hero-btn" data-w="${a.id}" style="--c:${MCOL[a.c] || '#fff'}"><img src="${charImg(a.hero)}" alt=""><span>${HERO_NAME[a.hero]}</span></button>`).join('')}</div>`;
+    <div class="row">${[...RM.values()].map(a => `<button class="hero-btn" data-w="${a.id}" style="--c:${MCOL[a.c] || '#fff'}"><img src="${charImg(a.hero)}" alt=""><span>${BoboRT.whoH(a.id, HERO_NAME[a.hero])}</span></button>`).join('')}</div>`;
   wireX();
   card.querySelectorAll('[data-w]').forEach(b => b.onclick = () => { SFX.tap(); closeCard(); giftStart(b.dataset.w); });
 }

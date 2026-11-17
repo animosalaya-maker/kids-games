@@ -1073,7 +1073,7 @@ function hudFrame(){
   const bar = $('#mpBar');
   if(mpActive()){
     bar.hidden = false;
-    bar.innerHTML = `<span class="chip roomchip">🔢 ${[...MP.code].map(N).join('')}</span>` + MP.players.map(p => `<span class="chip ps" style="--c:${MCOL[p.c] || '#fff'}"><img src="${charImg(p.hero)}" alt="">${p.id === MP.id ? '⭐' : ''}</span>`).join('');
+    bar.innerHTML = `<span class="chip roomchip">🔢 ${[...MP.code].map(N).join('')}</span>` + MP.players.map(p => `<span class="chip ps" style="--c:${MCOL[p.c] || '#fff'}"><img src="${charImg(p.hero)}" alt="">${BoboRT.chipH(p.id)}${p.id === MP.id ? '⭐' : ''}</span>`).join('');
   } else bar.hidden = true;
 }
 
@@ -1143,7 +1143,7 @@ function showResults(){
     <h2>${g ? (g.ok ? L('نجيت من المفاجأة!', 'You survived the surprise!', 'Sürprizden kurtuldun!') : L('مسكتك المفاجأة! المرة الجاية 💪', 'The surprise got you! Next time 💪', 'Sürpriz seni yakaladı! Bir dahakine 💪')) : L('خلصت الجولة', 'Round over', 'Tur bitti')}</h2>
     <div class="evlist">${evRan.map(k => `<span style="--ec:${EVENTS[k].c}">${EVENTS[k].e}</span>`).join('')}</div>
     <div class="res">${RS.res.map(([id, ok, st]) => { const a = ACT.get(id); if(!a) return ''; const col = a.kind === 'bot' ? '' : MCOL[(MP.players.find(p => p.id === id) || {}).c] || '#ffc23d';
-      return `<div class="p${ok ? '' : ' out'}" style="${col ? '--c:' + col : ''}">${a === me ? `<span class="you">${L('إنت', 'You', 'Sen')}</span>` : ''}<img src="${charImg(a.hero)}" alt=""><b>${HERO_NAME[a.hero]}</b><span class="r">${ok ? '✅' : '🫧'} ${ok ? '⭐'.repeat(Math.min(3, st)) : ''}</span></div>`; }).join('')}</div>
+      return `<div class="p${ok ? '' : ' out'}" style="${col ? '--c:' + col : ''}">${a === me ? `<span class="you">${L('إنت', 'You', 'Sen')}</span>` : ''}<img src="${charImg(a.hero)}" alt=""><b>${a.kind === 'bot' || a === me ? HERO_NAME[a.hero] : BoboRT.whoH(id, HERO_NAME[a.hero])}</b><span class="r">${ok ? '✅' : '🫧'} ${ok ? '⭐'.repeat(Math.min(3, st)) : ''}</span></div>`; }).join('')}</div>
     ${g ? `<div class="gain"><span>⭐ +${N(g.stars)}</span>${g.coins ? `<span>🪙 +${N(g.coins)}</span>` : ''}<span>🔥 ${N(SAVE.streak)}</span>${g.cand ? `<span>🍬 ${N(g.cand)}</span>` : ''}</div>` : ''}
     <div class="row">${auth ? `<button class="big-btn mint" id="bNext">▶️ ${L('جولة جديدة', 'New round', 'Yeni tur')}</button>` : `<p>⏳ ${L('استنّى صاحب الغرفة…', 'Waiting for the room owner…', 'Oda sahibi bekleniyor…')}</p>`}
     <button class="ghost-btn" id="bMenu">🏠 ${L('القائمة', 'Menu', 'Menü')}</button></div>`;
@@ -1376,7 +1376,7 @@ async function mpOpen(code, how){
   if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play' };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play' };
   t.track(MP.meta);
   MP.hostId = how === 'create' ? MP.id : others.slice().sort(mpSort)[0].id;
   mpPresence(MP.list);
@@ -1385,8 +1385,11 @@ async function mpOpen(code, how){
 }
 function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.t.track(MP.meta); hudKey = ''; } }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){ hudKey = ''; }
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);

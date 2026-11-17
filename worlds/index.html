@@ -1420,7 +1420,7 @@ async function mpOpen(code, mode){
   if(mode === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0, w:hubPick };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0, w:hubPick };
   t.track(MP.meta);
   mpPresence(MP.list);
   frRoom(code);
@@ -1428,8 +1428,11 @@ async function mpOpen(code, mode){
 }
 function mpTrack(){ if(MP.t && MP.meta) MP.t.track(MP.meta); }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){ if(MP.screen === 'lobby') mpRenderLobby(); else if(MP.screen === 'end' && state === 'mp' && MP.lastEnd) mpRenderEnd(); }
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
@@ -1569,7 +1572,7 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 function mpRenderEnd(){
   const E = MP.lastEnd; if(!E || MP.screen !== 'end') return;
   const rows = E.rows, me = rows.find(r => r.id === MP.id);
-  const pod = r => r ? `<div class="pod" style="--c:${MP_COLORS[r.c]}">${heroImg(r.hero)}<b>${mpLabel(r.c)}</b><span>${r.ms ? '⏱️ ' + fmtTime(r.ms) : '🏃'}</span>
+  const pod = r => r ? `<div class="pod" style="--c:${MP_COLORS[r.c]}">${heroImg(r.hero)}<b>${BoboRT.whoH(r.id, mpLabel(r.c))}</b><span>${r.ms ? '⏱️ ' + fmtTime(r.ms) : '🏃'}</span>
     <div class="blk" style="height:${[0, 88, 62, 42][Math.min(r.place, 3)]}px">${MEDAL[r.place - 1] || N(r.place)}</div></div>` : '';
   const top = [rows[1], rows[0], rows[2]].filter(Boolean);
   const rest = rows.slice(3).map(r => `<span class="chip ps" style="--c:${MP_COLORS[r.c]}">${heroImg(r.hero)}<span>${N(r.place)}</span></span>`).join('');
@@ -1678,7 +1681,7 @@ function mpRenderLobby(){
     const p = pl.find(x => x.c === c);
     if(!p) return `<div class="slot empty" style="--c:${MP_COLORS[c]}">❔</div>`;
     return `<div class="slot" style="--c:${MP_COLORS[c]}">${p === host ? '<span class="crown">👑</span>' : ''}${heroImg(okHero(p.hero))}
-      <span><b>${mpLabel(c)}</b><small>${p.id === MP.id ? L('إنت', 'You', 'Sen') : HERO_NAME[okHero(p.hero)]}</small></span></div>`;
+      <span><b>${BoboRT.whoH(p.id, mpLabel(c))}</b><small>${p.id === MP.id ? L('إنت', 'You', 'Sen') : HERO_NAME[okHero(p.hero)]}</small></span></div>`;
   }).join('');
   let status;
   if(busy) status = L('في سباق شغّال هلّق، استنّى يخلص ⏳', 'A race is on right now — wait for it to finish ⏳', 'Şu an bir yarış var, bitmesini bekle ⏳');
