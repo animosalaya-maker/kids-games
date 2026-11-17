@@ -551,6 +551,8 @@ window.Friends = {
   },
   /* inbox doorbell: onPing(cb) listens on my own channel; ping(code, kind) rings a friend's (see above) */
   onPing, ping,
+  /* for tests: the bell's state, and cut() = drop the socket the way a lost network does */
+  _bell:{ get state(){ return ibState; }, cut(){ if(sbp) sbp.then(sb => { try{ sb.realtime.conn.close(); }catch(e){} }).catch(() => {}); } },
   claimCoins: () => call('bobo_fr_claim_coins'),
   dismiss: id => call('bobo_fr_dismiss', { p_id:id }),
   async deleteMe(){
