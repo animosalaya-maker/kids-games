@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="../i18n.js"></script>
+<script src="../rt.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Grandma Nona's House" data-tr="Nona Ninenin Evi">بيت الجدّة نونا</title>
 <meta name="description" content="لعبة ثلاثية الأبعاد مضحكة للأطفال: اهرب من بيت الجدّة نونا بشويش وهي نايمة!" data-en="A funny 3D game for kids: sneak out of Grandma Nona's house while she naps!" data-tr="Çocuklar için komik bir 3D oyun: Nona Nine uyurken evden sessizce kaç!">
@@ -194,6 +195,37 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .hero.on{background:#5a4fa8;box-shadow:0 0 0 4px var(--gold),0 5px 0 rgba(0,0,0,.3);transform:translateY(-5px)}
 .hero.on b{color:var(--gold)}
 #stage.short .hero b{font-size:14px}
+/* online co-op: friends' name tags, player cards, room keypad, toast */
+.ntag{position:absolute;z-index:3;transform:translate(-50%,-100%);max-width:9em;overflow:hidden;text-overflow:ellipsis;background:rgba(43,36,82,.88);color:var(--ink);
+  font-family:var(--display);font-weight:800;font-size:15px;line-height:1.3;padding:2px 11px;border-radius:999px;box-shadow:0 0 0 2px var(--c,var(--gold)),0 3px 0 rgba(0,0,0,.25);pointer-events:none;white-space:nowrap;unicode-bidi:plaintext}
+.ntag.far{opacity:.55}
+.big-btn.pink{background:var(--pink);color:#4a0f2a;box-shadow:0 6px 0 #c4527e}
+.big-btn.pink:active{box-shadow:0 2px 0 #c4527e}
+.big-btn.mint{background:var(--mint);color:#063d2a;box-shadow:0 6px 0 #2a9c74}
+.big-btn.mint:active{box-shadow:0 2px 0 #2a9c74}
+.pslots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
+.pslot{background:var(--night);border-radius:18px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 0 0 3px var(--c,var(--night-3)),0 4px 0 rgba(0,0,0,.25);font-family:var(--display);font-weight:800;font-size:15px;min-width:0}
+.pslot img{width:100%;max-width:88px;aspect-ratio:1;object-fit:cover;object-position:top;border-radius:14px;background:var(--night-3)}
+.pslot .wait{width:100%;max-width:88px;aspect-ratio:1;border-radius:14px;background:var(--night-3);display:grid;place-items:center;font-size:36px;opacity:.6}
+.pslot span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pslot small{font-size:15px;color:var(--muted);white-space:nowrap;direction:ltr}
+.pslot.empty{box-shadow:0 0 0 3px var(--night-3)}
+.mp-cols{display:flex;gap:18px;width:100%;align-items:center;justify-content:center;flex-wrap:wrap}
+.mp-col{display:flex;flex-direction:column;align-items:center;gap:10px;flex:1 1 230px;min-width:0}
+.mp-code{display:flex;gap:8px;direction:ltr;justify-content:center;align-items:center}
+.mp-code b{width:54px;height:66px;border-radius:16px;background:#fff7e8;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:44px;line-height:1;color:#2b2452;box-shadow:inset 0 0 0 3px #d8cff7,0 4px 0 rgba(0,0,0,.25)}
+.mp-code b.cur{box-shadow:inset 0 0 0 3px var(--gold),0 4px 0 rgba(0,0,0,.25)}
+.mp-msg{min-height:1.4em;font-weight:800;color:#ffb3c6!important}
+.keypad{display:grid;grid-template-columns:repeat(3,68px);gap:8px;direction:ltr;flex:none}
+.keypad button{height:56px;border:0;border-radius:16px;background:#fff7e8;color:#2b2452;font-family:var(--display);font-weight:800;font-size:30px;line-height:1;box-shadow:0 4px 0 #b7a9e6}
+.keypad button:active{transform:translateY(3px);box-shadow:0 1px 0 #b7a9e6}
+.keypad .ok{background:var(--mint);color:#063d2a;box-shadow:0 4px 0 #2a9c74}
+.spin{display:inline-block;animation:spinL 1.2s linear infinite}
+@keyframes spinL{to{transform:rotate(360deg)}}
+.toast{position:absolute;z-index:25;left:50%;top:calc(14px + var(--sa-t));transform:translateX(-50%);max-width:min(560px,calc(var(--sw) - 32px));background:#fff7e8;color:#3a1f3a;
+  font-family:var(--display);font-weight:800;font-size:18px;line-height:1.3;padding:8px 18px;border-radius:18px;box-shadow:0 0 0 3px var(--gold),0 5px 0 rgba(0,0,0,.25);text-align:center;pointer-events:none;animation:bIn .3s ease-out}
+#stage.short .pslot img,#stage.short .pslot .wait{max-width:62px} #stage.short .mp-code b{width:44px;height:52px;font-size:34px;border-radius:13px}
+#stage.short .keypad{grid-template-columns:repeat(3,62px);gap:6px} #stage.short .keypad button{height:44px;font-size:26px}
 #nogl{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:24px;text-align:center;background:var(--night);font-family:var(--display);font-size:22px}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 </style>
@@ -224,6 +256,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <div class="code" id="code" hidden></div>
 <div class="flash" id="flash"></div>
 <div class="overlay" id="overlay"><div class="card" id="card"></div></div>
+<div class="toast" id="toast" role="status" hidden></div>
 <div id="nogl" hidden><span data-en="Sorry, this phone can't show 3D games 😢" data-tr="Üzgünüz, bu telefon 3D oyunları gösteremiyor 😢">عذراً، هالتلفون ما بيقدر يشغّل ألعاب ثلاثية الأبعاد 😢</span></div>
 </div>
 
@@ -231,8 +264,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <script type="module" src="game.js"></script>
 <script src="../back.js"></script>
 <script>BoboBack.init({
-  visible: () => { const o = document.getElementById('overlay'), g = window.__granny; return !o.hidden && (!g || g.state === 'title' || g.state === 'select'); },
-  onBack: () => { const g = window.__granny; if(g && g.state === 'select') g.back(); else location.href = '../'; },
+  visible: () => { const o = document.getElementById('overlay'), g = window.__granny; return !o.hidden && (!g || g.state === 'title' || g.state === 'select' || g.state === 'mp'); },
+  onBack: () => { const g = window.__granny; if(g && (g.state === 'select' || g.state === 'mp')) g.back(); else location.href = '../'; },
   mount: document.getElementById('stage')
 });</script>
 <script src="../friends.js"></script>

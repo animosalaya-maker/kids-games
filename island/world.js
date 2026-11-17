@@ -16,7 +16,7 @@ export function zoneDefs(L){
     { id:'pets', path:'pets/', mp:true, emoji:'🐾', col:0xff8fb8, css:'#ff8fb8', name:L('حيوانات بوبو', 'Bobo Pets', 'Bobo Hayvanları') },
     { id:'restaurant', soon:true, emoji:'🍕', col:0xff7a45, css:'#ff7a45', name:L('المطعم', 'Restaurant', 'Restoran') },
     { id:'city', soon:true, emoji:'🏙️', col:0x5b8cff, css:'#5b8cff', name:L('المدينة', 'The City', 'Şehir') },
-    { id:'granny', path:'granny/', mp:false, emoji:'👵🏻', col:0xf07aa8, css:'#f07aa8', name:L('بيت الجدّة', "Grandma's House", 'Büyükannenin Evi') },
+    { id:'granny', path:'granny/', mp:true, emoji:'👵🏻', col:0xf07aa8, css:'#f07aa8', name:L('بيت الجدّة', "Grandma's House", 'Büyükannenin Evi') },
     { id:'hide', path:'hide/', mp:true, emoji:'🙈', col:0xff9f43, css:'#ff9f43', name:L('البيت العملاق', 'The Giant House', 'Dev Ev') },
     { id:'heist', path:'heist/', mp:true, emoji:'🥚', col:0x3fc47a, css:'#3fc47a', name:L('سوق البيض', 'Egg Market', 'Yumurta Pazarı') }
   ];
