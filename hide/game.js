@@ -757,7 +757,7 @@ function showEnd(res){
   const title = res.win === 'hiders' ? L('المخبّايين ربحوا! 🙈🎉', 'The hiders win! 🙈🎉', 'Saklananlar kazandı! 🙈🎉') : L('المدوّر لقى الكل! 👀🎉', 'The seeker found everyone! 👀🎉', 'Ebe herkesi buldu! 👀🎉');
   const slot = e => { const lab = e.role === 'seeker' ? '👀 ' + N(e.finds) : e.st !== 'found' ? '🏆 ' + L('ما انلقى', 'Not found', 'Bulunamadı') : '⏱ ' + fmt(e.tf);
     const img = `<img src="${charImg(e.hero)}" alt="">`;
-    return `<div class="slot${(e.role === 'hider' && e.st !== 'found') || (e.role === 'seeker' && res.win === 'seeker') ? ' win' : ''}" style="--c:${MCOL[(actor(e.id) || { c:0 }).c % 4]}">${img}<span>${e.kind === 'bot' ? '🤖' : (me && e.id === me.id ? L('إنت', 'You', 'Sen') : '👫')} ${HERO_NAME[e.hero] || ''}</span><small>${lab}</small></div>`; };
+    return `<div class="slot${(e.role === 'hider' && e.st !== 'found') || (e.role === 'seeker' && res.win === 'seeker') ? ' win' : ''}" style="--c:${MCOL[(actor(e.id) || { c:0 }).c % 4]}">${img}<span>${e.kind === 'bot' ? '🤖' : (me && e.id === me.id ? L('إنت', 'You', 'Sen') : '👫')} ${e.kind === 'bot' || (me && e.id === me.id) ? HERO_NAME[e.hero] || '' : BoboRT.whoH(e.id, HERO_NAME[e.hero] || '')}</span><small>${lab}</small></div>`; };
   const host = isHost();
   rcard.innerHTML = `<h2>${title}</h2>
     ${mine ? `<div class="stars">${[0, 1, 2].map(i => `<span class="${i < stars ? '' : 'off'}">⭐</span>`).join('')}</div>` : ''}
@@ -953,39 +953,18 @@ function loadSupabase(){
     document.head.appendChild(s);
   }));
 }
+/* the room connection itself (re-join after a drop, no HTTP fallback, watchdog) lives in the shared ../rt.js */
 class SupabaseTransport{
   async open(code, id, h){
     if(navigator.onLine === false) throw new Error('offline');
     await loadSupabase();
-    if(!SupabaseTransport.client) SupabaseTransport.client = window.supabase.createClient(MP_URL, MP_KEY, {
-      auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:30 } } });
-    const sb = SupabaseTransport.client;
-    const ch = this.ch = sb.channel('bobo-hide-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id, enabled:true } } });
-    ch.on('presence', { event:'sync' }, () => {
-      const st = ch.presenceState(), list = [];
-      for(const k in st){ const m = st[k]; if(m && m.length) list.push(Object.assign({}, m[m.length - 1], { id:k })); }
-      h.presence(list);
-    });
-    MP_EVENTS.forEach(ev => ch.on('broadcast', { event:ev }, m => h.msg(ev, m && m.payload)));
-    await new Promise((res, rej) => {
-      let first = true;
-      const to = setTimeout(() => { if(first){ first = false; rej(new Error('timeout')); } }, 9000);
-      ch.subscribe(status => {
-        if(status === 'SUBSCRIBED'){ if(first){ first = false; clearTimeout(to); res(); } else h.status('up'); }
-        else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
-          if(first){ first = false; clearTimeout(to); rej(new Error(status)); } else if(!this.closed) h.status('down');
-        }
-      });
-    });
+    if(this.closed) throw new Error('cancelled');
+    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:'bobo-hide-' + code, id, events:MP_EVENTS, eps:30, h });
+    await this.rt.ready;
   }
-  track(meta){ try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  send(ev, payload){ try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  close(){
-    this.closed = true; const ch = this.ch, sb = SupabaseTransport.client; this.ch = null;
-    if(!ch || !sb) return;
-    try{ const p = ch.untrack(); if(p && p.catch) p.catch(() => {}); }catch(e){}
-    try{ const p = sb.removeChannel(ch); if(p && p.catch) p.catch(() => {}); }catch(e){}
-  }
+  track(meta){ if(this.rt) this.rt.track(meta); }
+  send(ev, payload){ if(this.rt) this.rt.send(ev, payload); }
+  close(){ this.closed = true; if(this.rt){ this.rt.close(); this.rt = null; } }
 }
 class LocalTransport{
   open(code, id, h){
@@ -1067,7 +1046,7 @@ async function mpOpen(code, how){
   if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play' };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play' };
   t.track(MP.meta);
   MP.hostId = how === 'create' ? MP.id : others.slice().sort(mpSort)[0].id;
   mpPresence(MP.list);
@@ -1076,8 +1055,11 @@ async function mpOpen(code, how){
 }
 function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.t.track(MP.meta); } }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){ mpLobbyDraw(); }
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
@@ -1222,7 +1204,7 @@ function mpLobbyDraw(){
   if(MP.screen !== 'lobby' || state !== 'mp') return;
   const pl = MP.players, code = [...(MP.code || '')].map(N).join('');
   const slots = [0, 1, 2, 3].map(i => { const p = pl[i]; if(!p) return `<div class="slot"><div class="bot">🤖</div><small>${L('بوت', 'Bot', 'Bot')}</small></div>`;
-    return `<div class="slot" style="--c:${MCOL[i]}"><img src="${charImg(okHero(p.hero))}" alt=""><span>${p.id === MP.id ? L('إنت', 'You', 'Sen') : '👫'}${p.id === MP.hostId ? ' 👑' : ''}</span></div>`; }).join('');
+    return `<div class="slot" style="--c:${MCOL[i]}"><img src="${charImg(okHero(p.hero))}" alt=""><span>${p.id === MP.id ? L('إنت', 'You', 'Sen') : ('👫 ' + BoboRT.whoH(p.id, '')).trim()}${p.id === MP.hostId ? ' 👑' : ''}</span></div>`; }).join('');
   const wasMap = MP.map;
   card.innerHTML = `<h2>🏠 ${L('غرفة رقم', 'Room number', 'Oda numarası')} <bdi dir="ltr">${code}</bdi></h2>
     <div class="slots">${slots}</div>

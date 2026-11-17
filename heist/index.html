@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="../i18n.js"></script>
+<script src="../rt.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Egg Heist" data-tr="Yumurta Soygunu">اسرق البيضة</title>
 <meta name="description" content="لعبة ثلاثية الأبعاد للأطفال: اشتري بيض، اجمع قروش، واسرق بيض من بيوت أصحابك." data-en="A 3D game for kids: buy eggs, collect coins and sneak eggs from your friends' nests." data-tr="Çocuklar için 3D oyun: yumurta al, para topla, arkadaşlarının yuvalarından yumurta kap.">
@@ -1308,39 +1309,18 @@ function loadSupabase(){
     document.head.appendChild(s);
   }));
 }
+/* the room connection itself (re-join after a drop, no HTTP fallback, watchdog) lives in the shared ../rt.js */
 class SupabaseTransport{
   async open(code, id, h){
     if(navigator.onLine === false) throw new Error('offline');
     await loadSupabase();
-    if(!SupabaseTransport.client) SupabaseTransport.client = window.supabase.createClient(MP_URL, MP_KEY, {
-      auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:40 } } });
-    const sb = SupabaseTransport.client;
-    const ch = this.ch = sb.channel('bobo-heist-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id, enabled:true } } });
-    ch.on('presence', { event:'sync' }, () => {
-      const st = ch.presenceState(), list = [];
-      for(const k in st){ const m = st[k]; if(m && m.length) list.push(Object.assign({}, m[m.length - 1], { id:k })); }
-      h.presence(list);
-    });
-    MP_EVENTS.forEach(ev => ch.on('broadcast', { event:ev }, m => h.msg(ev, m && m.payload)));
-    await new Promise((res, rej) => {
-      let first = true;
-      const to = setTimeout(() => { if(first){ first = false; rej(new Error('timeout')); } }, 9000);
-      ch.subscribe(status => {
-        if(status === 'SUBSCRIBED'){ if(first){ first = false; clearTimeout(to); res(); } else h.status('up'); }
-        else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
-          if(first){ first = false; clearTimeout(to); rej(new Error(status)); } else if(!this.closed) h.status('down');
-        }
-      });
-    });
+    if(this.closed) throw new Error('cancelled');
+    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:'bobo-heist-' + code, id, events:MP_EVENTS, eps:40, h });
+    await this.rt.ready;
   }
-  track(meta){ try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  send(ev, payload){ try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  close(){
-    this.closed = true; const ch = this.ch, sb = SupabaseTransport.client; this.ch = null;
-    if(!ch || !sb) return;
-    try{ const p = ch.untrack(); if(p && p.catch) p.catch(() => {}); }catch(e){}
-    try{ const p = sb.removeChannel(ch); if(p && p.catch) p.catch(() => {}); }catch(e){}
-  }
+  track(meta){ if(this.rt) this.rt.track(meta); }
+  send(ev, payload){ if(this.rt) this.rt.send(ev, payload); }
+  close(){ this.closed = true; if(this.rt){ this.rt.close(); this.rt = null; } }
 }
 class LocalTransport{
   open(code, id, h){
@@ -1426,7 +1406,7 @@ async function mpOpen(code, how){
   if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0 };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0 };
   t.track(MP.meta);
   mpPresence(MP.list);
   frRoom(code);
@@ -1434,8 +1414,14 @@ async function mpOpen(code, how){
 }
 function mpTrack(){ if(MP.t && MP.meta) MP.t.track(MP.meta); }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){
+  if(MP.screen === 'lobby' && typeof mpRenderLobby === 'function') mpRenderLobby();
+  if(MP.match) actors.forEach((a, i) => { if(a.on && a.kind === 'remote' && a.id) setActor(i, 'remote', a.hero, a.id, BoboRT.who(a.id, mpLabel(i))); });
+}
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
@@ -1517,7 +1503,7 @@ function mpBegin(p){
   for(let i = 0; i < 4; i++){
     const h = pl.find(x => x.c === i);
     if(h && h.id === MP.id) setActor(i, 'me', h.hero, h.id, '');
-    else if(h) setActor(i, 'remote', h.hero, h.id, mpLabel(i));
+    else if(h) setActor(i, 'remote', h.hero, h.id, BoboRT.who(h.id, mpLabel(i)));
     else { const bh = hs[hk++ % hs.length]; setActor(i, 'bot', bh, null, HERO_NAME[bh]); actors[i].bot = newBrain(); }
     placeAtHome(i);
   }
@@ -1564,7 +1550,7 @@ function mpShowEnd(p, msg){
   if(MP.meta){ MP.meta.ph = 'end'; mpTrack(); }
   if(me && !M.rewarded){ M.rewarded = true; if(window.World) World.addCoins(coins, L('من اسرق البيضة', 'for Egg Heist', 'Yumurta Soygunu için')); }
   const heroes = Array.isArray(p.heroes) ? p.heroes.map(okHero) : actors.map(a => a.hero);
-  const labels = actors.map((a, i) => i === ME ? L('إنت', 'You', 'Sen') : (p.kinds ? p.kinds[i] === 'b' : a.kind === 'bot') ? HERO_NAME[heroes[i]] : mpLabel(i));
+  const labels = actors.map((a, i) => i === ME ? L('إنت', 'You', 'Sen') : (p.kinds ? p.kinds[i] === 'b' : a.kind === 'bot') ? HERO_NAME[heroes[i]] : BoboRT.whoH(a.id, mpLabel(i)));
   MP.lastEnd = { rows, coins, vals };
   MP.screen = 'end';
   showEnd({ rows, coins, labels, heroes, msg });
@@ -1664,7 +1650,7 @@ function mpRenderLobby(){
     const p = pl.find(x => x.c === c);
     if(!p) return `<div class="slot empty" style="--c:${BCOL[c]}">🐣</div>`;
     return `<div class="slot" style="--c:${BCOL[c]}">${p === host ? '<span class="crown">👑</span>' : ''}${heroImg(okHero(p.hero))}
-      <span><b>${mpLabel(c)}</b><small>${p.id === MP.id ? L('إنت', 'You', 'Sen') : HERO_NAME[okHero(p.hero)]}</small></span></div>`;
+      <span><b>${BoboRT.whoH(p.id, mpLabel(c))}</b><small>${p.id === MP.id ? L('إنت', 'You', 'Sen') : HERO_NAME[okHero(p.hero)]}</small></span></div>`;
   }).join('');
   let status;
   if(busy) status = L('في لعبة شغّالة هلّق، استنّى تخلص ⏳', 'A game is on right now — wait for it to finish ⏳', 'Şu an bir oyun var, bitmesini bekle ⏳');

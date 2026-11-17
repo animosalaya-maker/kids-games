@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="../i18n.js"></script>
+<script src="../rt.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Bobo's Adventure 3D" data-tr="Bobo'nun Macerası 3D">مغامرة بوبو ثلاثي الأبعاد</title>
 <meta name="description" content="لعبة أطفال ثلاثية الأبعاد: لفّ الجزيرة مع بوبو، اجمع العسل ولاقي العشر نجوم." data-en="A 3D kids' game: explore the island with Bobo, collect honey and find all 10 stars." data-tr="3D çocuk oyunu: Bobo ile adayı gez, bal topla ve 10 yıldızı bul.">
@@ -1561,7 +1562,8 @@ function showEnd(){
 
 /* ---------- Online play with friends: «سباق النجوم» / Star Rush ----------
    Realtime only (Supabase Broadcast + Presence on a public channel `bobo-room-<code>`), nothing is stored.
-   Child safety: no names, no chat, no free text — a player is a hero + a colour badge («لاعب 1»).
+   Child safety: no chat, no free text — a player is a hero + a colour badge, with the name saved in «أصحابي» if there is one
+   (looked up on the server by friend code; «لاعب 1» otherwise).
    Presence meta per player: { hero, c (colour slot 0-3), o (join order), ph (lobby|match|end), mid }.
    The host = lowest join order; when the host leaves, the next player takes over automatically.
    Broadcast events: pos (10/s while moving), claim (request from a player, or {r:1} result from the host),
@@ -1583,39 +1585,18 @@ function loadSupabase(){
     document.head.appendChild(s);
   }));
 }
+/* the room connection itself (re-join after a drop, no HTTP fallback, watchdog) lives in the shared ../rt.js */
 class SupabaseTransport{
   async open(code, id, h){
     if(navigator.onLine === false) throw new Error('offline');
     await loadSupabase();
-    if(!SupabaseTransport.client) SupabaseTransport.client = window.supabase.createClient(MP_URL, MP_KEY, {
-      auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:40 } } });
-    const sb = SupabaseTransport.client;
-    const ch = this.ch = sb.channel('bobo-room-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id, enabled:true } } });
-    ch.on('presence', { event:'sync' }, () => {
-      const st = ch.presenceState(), list = [];
-      for(const k in st){ const m = st[k]; if(m && m.length) list.push(Object.assign({}, m[m.length - 1], { id:k })); }
-      h.presence(list);
-    });
-    MP_EVENTS.forEach(ev => ch.on('broadcast', { event:ev }, m => h.msg(ev, m && m.payload)));
-    await new Promise((res, rej) => {
-      let first = true;
-      const to = setTimeout(() => { if(first){ first = false; rej(new Error('timeout')); } }, 9000);
-      ch.subscribe(status => {
-        if(status === 'SUBSCRIBED'){ if(first){ first = false; clearTimeout(to); res(); } else h.status('up'); }
-        else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
-          if(first){ first = false; clearTimeout(to); rej(new Error(status)); } else if(!this.closed) h.status('down');
-        }
-      });
-    });
+    if(this.closed) throw new Error('cancelled');
+    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:'bobo-room-' + code, id, events:MP_EVENTS, eps:40, h });
+    await this.rt.ready;
   }
-  track(meta){ try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  send(ev, payload){ try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  close(){
-    this.closed = true; const ch = this.ch, sb = SupabaseTransport.client; this.ch = null;
-    if(!ch || !sb) return;
-    try{ const p = ch.untrack(); if(p && p.catch) p.catch(() => {}); }catch(e){}
-    try{ const p = sb.removeChannel(ch); if(p && p.catch) p.catch(() => {}); }catch(e){}
-  }
+  track(meta){ if(this.rt) this.rt.track(meta); }
+  send(ev, payload){ if(this.rt) this.rt.send(ev, payload); }
+  close(){ this.closed = true; if(this.rt){ this.rt.close(); this.rt = null; } }
 }
 class LocalTransport{
   open(code, id, h){
@@ -1809,7 +1790,7 @@ async function mpOpen(code, mode){
   if(mode === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0 };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'lobby', mid:0 };
   t.track(MP.meta);
   mpPresence(MP.list);
   frRoom(code);
@@ -1817,8 +1798,11 @@ async function mpOpen(code, mode){
 }
 function mpTrack(){ if(MP.t && MP.meta) MP.t.track(MP.meta); }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){ if(MP.screen === 'lobby') mpRenderLobby(); else if(MP.screen === 'end' && state === 'mp' && MP.lastEnd) mpRenderEnd(); }
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
@@ -2037,7 +2021,7 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 function mpRenderEnd(){
   const E = MP.lastEnd; if(!E || MP.screen !== 'end') return;
   const rows = E.rows, me = rows.find(r => r.id === MP.id);
-  const pod = r => r ? `<div class="pod${r.id === MP.id ? ' me' : ''}" style="--c:${MP_COLORS[r.c]}" data-id="${r.id}">${heroImg(r.hero)}<b>${mpLabel(r.c)}</b><span>⭐ ${N(r.s)}</span>
+  const pod = r => r ? `<div class="pod${r.id === MP.id ? ' me' : ''}" style="--c:${MP_COLORS[r.c]}" data-id="${r.id}">${heroImg(r.hero)}<b>${BoboRT.whoH(r.id, mpLabel(r.c))}</b><span>⭐ ${N(r.s)}</span>
     <div class="blk" style="height:${[0, 88, 62, 42][Math.min(r.place, 3)]}px">${MEDAL[r.place - 1] || N(r.place)}</div></div>` : '';
   const top = [rows[1], rows[0], rows[2]].filter(Boolean);
   const rest = rows.slice(3).map(r => `<span class="chip ps${r.id === MP.id ? ' me' : ''}" style="--c:${MP_COLORS[r.c]}">${heroImg(r.hero)}<span>${N(r.place)} · ⭐ ${N(r.s)}</span></span>`).join('');
@@ -2162,7 +2146,7 @@ function mpRenderLobby(){
     const p = pl.find(x => x.c === c);
     if(!p) return `<div class="slot empty" style="--c:${MP_COLORS[c]}">❔</div>`;
     return `<div class="slot" style="--c:${MP_COLORS[c]}" data-id="${p.id}">${p === host ? '<span class="crown">👑</span>' : ''}${heroImg(heroes[p.hero] ? p.hero : 'bobo')}
-      <span><b>${mpLabel(c)}</b><small>${p.id === MP.id ? L('إنت', 'You', 'Sen') : HERO_NAME[p.hero] || ''}</small></span></div>`;
+      <span><b>${BoboRT.whoH(p.id, mpLabel(c))}</b><small>${p.id === MP.id ? L('إنت', 'You', 'Sen') : HERO_NAME[p.hero] || ''}</small></span></div>`;
   }).join('');
   let status;
   if(busy) status = L('في سباق شغّال هلّق، استنّى يخلص ⏳', 'A race is on right now — wait for it to finish ⏳', 'Şu an bir yarış var, bitmesini bekle ⏳');

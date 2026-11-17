@@ -1392,7 +1392,7 @@ function hudFrame(){
   $('#jobI').textContent = ME.job ? JOBS[ME.job].e : '❔';
   tixEl.innerHTML = list.map(o => `<div class="tk${isMine(o) ? ' mine' : ''}${o.vip ? ' vip' : ''}"><span class="it">${o.vip ? '👑' : ''}${itemsHtml(o, true)}</span><span class="sg">${o.st === 'ask' && o.type === 'go' ? '📞' : STAGE_E[o.st]} ${o.type === 'go' ? hsBadge(o.h) : '🍽️'}</span></div>`).join('');
   const bar = $('#mpBar'); bar.hidden = !mp;
-  if(mp) bar.innerHTML = `<span class="chip roomchip">🍕 ${[...MP.code].map(N).join('')}</span>` + MP.players.map(p => `<span class="chip ps" style="--c:${MCOL[p.c] || '#fff'}"><img src="${charImg(p.hero)}" alt="">${JOBS[p.job] ? JOBS[p.job].e : ''}</span>`).join('');
+  if(mp) bar.innerHTML = `<span class="chip roomchip">🍕 ${[...MP.code].map(N).join('')}</span>` + MP.players.map(p => `<span class="chip ps" style="--c:${MCOL[p.c] || '#fff'}"><img src="${charImg(p.hero)}" alt="">${BoboRT.chipH(p.id)}${JOBS[p.job] ? JOBS[p.job].e : ''}</span>`).join('');
 }
 const tagsEl = $('#tags'), tagEls = new Map(), fxTags = [];
 let fxSeq = 0;
@@ -1741,39 +1741,18 @@ function loadSupabase(){
     document.head.appendChild(s);
   }));
 }
+/* the room connection itself (re-join after a drop, no HTTP fallback, watchdog) lives in the shared ../rt.js */
 class SupabaseTransport{
   async open(code, id, h){
     if(navigator.onLine === false) throw new Error('offline');
     await loadSupabase();
-    if(!SupabaseTransport.client) SupabaseTransport.client = window.supabase.createClient(MP_URL, MP_KEY, {
-      auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:30 } } });
-    const sb = SupabaseTransport.client;
-    const ch = this.ch = sb.channel('bobo-rest-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id, enabled:true } } });
-    ch.on('presence', { event:'sync' }, () => {
-      const st = ch.presenceState(), list = [];
-      for(const k in st){ const m = st[k]; if(m && m.length) list.push(Object.assign({}, m[m.length - 1], { id:k })); }
-      h.presence(list);
-    });
-    MP_EVENTS.forEach(ev => ch.on('broadcast', { event:ev }, m => h.msg(ev, m && m.payload)));
-    await new Promise((res, rej) => {
-      let first = true;
-      const to = setTimeout(() => { if(first){ first = false; rej(new Error('timeout')); } }, 9000);
-      ch.subscribe(status => {
-        if(status === 'SUBSCRIBED'){ if(first){ first = false; clearTimeout(to); res(); } else h.status('up'); }
-        else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
-          if(first){ first = false; clearTimeout(to); rej(new Error(status)); } else if(!this.closed) h.status('down');
-        }
-      });
-    });
+    if(this.closed) throw new Error('cancelled');
+    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:'bobo-rest-' + code, id, events:MP_EVENTS, eps:30, h });
+    await this.rt.ready;
   }
-  track(meta){ try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  send(ev, payload){ try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  close(){
-    this.closed = true; const ch = this.ch, sb = SupabaseTransport.client; this.ch = null;
-    if(!ch || !sb) return;
-    try{ const p = ch.untrack(); if(p && p.catch) p.catch(() => {}); }catch(e){}
-    try{ const p = sb.removeChannel(ch); if(p && p.catch) p.catch(() => {}); }catch(e){}
-  }
+  track(meta){ if(this.rt) this.rt.track(meta); }
+  send(ev, payload){ if(this.rt) this.rt.send(ev, payload); }
+  close(){ this.closed = true; if(this.rt){ this.rt.close(); this.rt = null; } }
 }
 class LocalTransport{
   open(code, id, h){
@@ -1869,7 +1848,7 @@ async function mpOpen(code, how){
   if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play', job:ME.job || '' };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play', job:ME.job || '' };
   t.track(MP.meta);
   MP.hostId = how === 'create' ? MP.id : others.slice().sort(mpSort)[0].id;
   if(how === 'join'){ ORD = []; CUST = []; BOTS = []; }
@@ -1879,8 +1858,11 @@ async function mpOpen(code, how){
 }
 function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.meta.job = ME.job || ''; MP.t.track(MP.meta); hudKey = ''; } }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){ hudKey = ''; }
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
