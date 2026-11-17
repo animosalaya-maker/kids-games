@@ -1620,7 +1620,7 @@ if(owned()) showMenu(); else showLocked();
   if(!/^\d{4}$/.test(join || '') && !host) return;
   ['join', 'host', 'invite', 'room'].forEach(k => q.delete(k));
   try{ history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
-  const go = () => { if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 10000); else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(room); } };
+  const go = () => { if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 20000); else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(room); } };
   if(owned()) go();
   else Trial.fetch(MAP).then(r => { trialInfo = r; if(r.left > 0){ preview = true; go(); } else showPreviewEnd(); });
 })();

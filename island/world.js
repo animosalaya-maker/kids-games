@@ -316,7 +316,7 @@ export function buildIsland(THREE, K, scene, deps){
     // gardens around: hedges, flowers, lamps
     for(const s of [-1, 1]){ for(let k = 0; k < 3; k++) bush(Z, s * (5 + k * 2.2), 17.5, 1.1, 0x4fae55); lamp(Z, s * 2.6, 17); }
     flowersAt(Z, -12, 14, 3, 20, [0xb28dff, 0xffffff]); flowersAt(Z, 12, 14, 3, 20, [0xff8fb8, 0xffffff]);
-    Z.portal = { lx:-4.6, lz:C.z + 3.6 };
+    Z.portal = { lx:0, lz:C.z + 3.4 };
     finishZone(Z);
   }
 

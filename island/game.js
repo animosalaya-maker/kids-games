@@ -38,7 +38,7 @@ function loadSave(){
 }
 const SAVE = loadSave();
 const persist = () => rawSet(SAVE_KEY, JSON.stringify(SAVE));
-let heroId = HERO_IDS.includes(SAVE.hero) ? SAVE.hero : HERO_IDS.includes(rawGet('worlds_hero')) ? rawGet('worlds_hero') : 'sara';
+let heroId = HERO_IDS.includes(SAVE.hero) ? SAVE.hero : HERO_IDS.includes(rawGet('worlds_hero')) ? rawGet('worlds_hero') : HERO_IDS[0];
 
 /* ---------- always-landscape stage ---------- */
 const stage = $('#stage'), saProbe = $('#saProbe');
@@ -168,7 +168,7 @@ const P = { x:W.spawn.x, z:W.spawn.z, y:0, vx:0, vz:0, vy:0, face:W.spawn.f, mov
 let heroM = null, T = 0;
 const eggGeo = (() => { const g = new THREE.SphereGeometry(.5, 14, 10), p = g.attributes.position; for(let i = 0; i < p.count; i++){ const y = p.getY(i), k = y > 0 ? 1 - y * .36 : 1 + y * .06; p.setX(i, p.getX(i) * k); p.setZ(i, p.getZ(i) * k); p.setY(i, y * 1.28 + .64); } g.computeVertexNormals(); return g; })();
 const eggMat = new THREE.MeshLambertMaterial({ color:0xfff3d6 });
-function makeHero(id){ const h = HEROES[id](); K.shadowHero(h); const egg = new THREE.Mesh(eggGeo, eggMat); egg.scale.setScalar(.5); egg.position.set(0, 1.62, 0); egg.visible = false; egg.castShadow = true; h.grp.add(egg); h.egg = egg; return h; }
+function makeHero(id, av){ const h = id === 'me' ? HEROES.me(av || undefined) : HEROES[id](); K.shadowHero(h); const egg = new THREE.Mesh(eggGeo, eggMat); egg.scale.setScalar(.5); egg.position.set(0, 1.62, 0); egg.visible = false; egg.castShadow = true; h.grp.add(egg); h.egg = egg; return h; }
 function setHero(id){ heroId = HERO_IDS.includes(id) ? id : 'sara'; if(heroM) scene.remove(heroM.grp); heroM = makeHero(heroId); scene.add(heroM.grp); }
 const canMesh = new THREE.Mesh(GM.canGeo(), GM.MAT); canMesh.visible = false; canMesh.scale.setScalar(1.3); scene.add(canMesh);
 
@@ -450,8 +450,10 @@ class SupabaseTransport{
       });
     });
   }
-  track(meta){ try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  send(ev, payload){ try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
+  track(meta){ if(!this.joined()) return; try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
+  /* never send on a channel that is not joined: supabase-js would silently fall back to HTTP and we would stop receiving */
+  joined(){ return !!this.ch && this.ch.state === 'joined'; }
+  send(ev, payload){ if(!this.joined()) return; try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
   close(){
     this.closed = true; const ch = this.ch, sb = SupabaseTransport.client; this.ch = null;
     if(!ch || !sb) return;
@@ -485,15 +487,28 @@ class LocalTransport{
     if(this.meta) list.push(Object.assign({}, this.meta, { id:this.id }));
     this.h.presence(list);
   }
+  joined(){ return !!this.bc; }
   beat(){ if(this.bc) this.bc.postMessage({ k:'hb', from:this.id, meta:this.meta }); }
   track(meta){ this.meta = Object.assign({}, meta); this.beat(); setTimeout(() => this.sync(), 0); }
   send(ev, p){ if(this.bc) this.bc.postMessage({ k:'b', ev, p }); }
   close(){ clearInterval(this.iv); if(this.bc){ if(this.meta) this.bc.postMessage({ k:'bye', from:this.id }); this.bc.close(); this.bc = null; } }
 }
 const MP = { t:null, id:Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4), shard:0, list:[], meta:null, synced:false, tok:0, sendT:0, wasMoving:false, last:'', status:'off', joining:false };
-const mpActive = () => !!(MP.t && MP.meta);
+const mpActive = () => !!(MP.t && MP.meta && MP.t.joined());
 const mpSort = (a, b) => ((a.o || 0) - (b.o || 0)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 const okHero = id => HEROES[id] ? id : 'sara';
+/* the kid's own avatar ('me' hero): sent in presence, always repaired by Avatar.normalize before it is built */
+const myAv = () => { try{ return heroId === 'me' && window.Avatar ? Avatar.load() : null; }catch(e){ return null; } };
+const okAv = av => {
+  try{
+    if(!window.Avatar || !av || typeof av !== 'object') return null;
+    const o = {};                     // keep only small plain values (ids, numbers, flags) before Avatar.normalize looks them up
+    for(const k of Object.keys(av).slice(0, 30)){ const v = av[k]; if(v === null || typeof v === 'boolean' || (typeof v === 'number' && isFinite(v)) || (typeof v === 'string' && /^[A-Za-z][A-Za-z0-9]{0,15}$/.test(v) && !(v in Object.prototype))) o[k] = v; }
+    return Avatar.normalize(o);
+  }catch(e){ return null; }
+};
+const avPic = new Map();
+function heroPic(hero, av){ if(hero !== 'me' || !av || !window.Avatar) return charImg(hero); const k = JSON.stringify(av); if(!avPic.has(k)){ try{ avPic.set(k, Avatar.portrait(av)); }catch(e){ avPic.set(k, charImg('sara')); } } return avPic.get(k); }
 let ME = null;                                  // Friends.me(): { code, name, ... }
 function mpClose(){
   if(MP.t){ try{ MP.t.close(); }catch(e){} }
@@ -513,7 +528,7 @@ async function mpJoin(from = 1){
       await t.open('bobo-island-' + n, MP.id, {
         presence:list => { if(live()) mpPresence(list); },
         msg:(ev, p) => { if(live() && p && typeof p === 'object' && typeof p.id === 'string') mpMsg(ev, p); },
-        status:s => { if(!live()) return; if(s === 'up'){ mpTrack(); MP.status = 'on'; } else MP.status = 'down'; hudKey = ''; }
+        status:s => { if(!live()) return; if(s === 'up'){ mpTrack(); MP.status = 'on'; } else { MP.status = 'down'; mpRejoin(); } hudKey = ''; }
       });
       if(!live()) return;
       // the server only sends the member list after we track something: a short 'probe' first, then wait for the list
@@ -525,17 +540,28 @@ async function mpJoin(from = 1){
       if(others.length >= CAP) continue;
       const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
       MP.shard = n;
-      MP.meta = { ph:'play', code:ME.code, hero:heroId, c, o:others.reduce((m, p) => Math.max(m, +p.o || 0), 0) + 1 };
-      t.track(MP.meta); MP.status = 'on'; hudKey = '';
+      MP.meta = { ph:'play', code:ME.code, hero:heroId, av:myAv(), c, o:others.reduce((m, p) => Math.max(m, +p.o || 0), 0) + 1 };
+      t.track(MP.meta); MP.status = 'on'; MP.back = 0; hudKey = '';
       mpPresence(MP.list);
       mpPos(true); mpSend('hi', {});
       return;
     }
     mpClose(); MP.status = 'full';
-  }catch(e){ if(MP.tok === tok){ mpClose(); MP.status = 'down'; setTimeout(() => { if(MP.status === 'down' && !MP.t) mpJoin(); }, 15000); } }
+  }catch(e){ if(MP.tok === tok){ mpClose(); MP.status = 'down'; MP.joining = false; mpRejoin(); } }
   finally{ if(MP.tok === tok){ MP.joining = false; if(MP.meta) mpPresence(MP.list); } hudKey = ''; }
 }
-function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.t.track(MP.meta); } }
+/* the channel dropped (CHANNEL_ERROR / TIMED_OUT / CLOSED, or found not joined): open it again with backoff and re-track */
+function mpRejoin(now){
+  if(!ME || !ME.code || state === 'leaving' || MP.joining || MP.reT) return;
+  MP.back = Math.min(30000, MP.back ? MP.back * 2 : 1500);
+  const from = MP.shard || 1;
+  MP.reT = setTimeout(() => { MP.reT = 0; if(navigator.onLine === false){ mpRejoin(); return; } if(!MP.joining && !(MP.t && MP.meta && MP.t.joined())) mpJoin(from); }, now ? 50 : MP.back);
+}
+function mpHealth(now){ if(MP.joining || state === 'leaving' || !ME || !ME.code) return; if(!(MP.t && MP.meta && MP.t.joined())){ if(now && MP.reT){ clearTimeout(MP.reT); MP.reT = 0; } MP.status = MP.status === 'on' ? 'down' : MP.status; hudKey = ''; mpRejoin(now); } }
+setInterval(() => mpHealth(false), 4000);
+document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') mpHealth(true); });
+addEventListener('online', () => mpHealth(true));
+function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.meta.av = myAv(); MP.t.track(MP.meta); } }
 function mpSend(ev, p){ if(mpActive()) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
 function mpPresence(list){
   list = (list || []).filter(p => p && p.ph === 'play');
@@ -566,7 +592,8 @@ function remoteSync(list){
     a.code = (typeof p.code === 'string' && /^[A-Z2-9]{6}$/.test(p.code)) ? p.code : null;
     a.o = +p.o || 0; a.c = p.c | 0;
     const hero = okHero(p.hero);
-    if(a.hero !== hero){ if(a.h) scene.remove(a.h.grp); a.hero = hero; a.h = makeHero(hero); a.h.grp.traverse(o => { if(o.isMesh) o.castShadow = false; }); a.h.grp.visible = false; scene.add(a.h.grp); }
+    const av = hero === 'me' ? okAv(p.av) : null, avK = av ? JSON.stringify(av) : '';
+    if(a.hero !== hero || a.avK !== avK){ if(a.h) scene.remove(a.h.grp); a.hero = hero; a.av = av; a.avK = avK; a.h = makeHero(hero, av); a.h.grp.traverse(o => { if(o.isMesh) o.castShadow = false; }); a.h.grp.visible = false; scene.add(a.h.grp); }
   }
   for(const [id, a] of RM) if(!here.has(id)){ if(a.h) scene.remove(a.h.grp); a.lbl.remove(); a.bub.remove(); RM.delete(id); }
   needNames();
@@ -686,7 +713,7 @@ function myRing(){
 function ringMembers(z){
   const out = [];
   if(myRing() === z) out.push({ id:MP.id, o:MP.meta ? MP.meta.o : 0, me:true, hero:heroId, name:(ME && ME.name) || '' });
-  if(mpActive()) for(const a of RM.values()) if(a.r === z && a.seen && performance.now() - a.lastPos < 20000) out.push({ id:a.id, o:a.o, hero:a.hero, name:nameOf(a), code:a.code });
+  if(mpActive()) for(const a of RM.values()) if(a.r === z && a.seen && performance.now() - a.lastPos < 20000) out.push({ id:a.id, o:a.o, hero:a.hero, av:a.av, name:nameOf(a), code:a.code });
   return out.sort(mpSort);
 }
 function stepPortal(dt){
@@ -721,7 +748,7 @@ function drawCountdown(Z, members, sec){
   if(cdEl._k === key && !cdEl.hidden) return; cdEl._k = key;
   cdEl.hidden = false; cdEl.style.setProperty('--c', Z.css);
   cdEl.innerHTML = `<h2>${Z.emoji} ${L('يلّا نفوت!', "Let's go in!", 'Hadi girelim!')}</h2><div class="num">${N(sec)}</div>
-    <div class="who">${members.map(m => `<span><img src="${charImg(m.hero)}" alt="">${m.me ? '🙋' : esc(m.name || '')}</span>`).join('')}</div>
+    <div class="who">${members.map(m => `<span><img src="${m.me ? charImg(m.hero) : heroPic(m.hero, m.av)}" alt="">${m.me ? '🙋' : esc(m.name || '')}</span>`).join('')}</div>
     <small>${Z.mp ? L('اللي واقفين بالدائرة بيفوتوا سوا 👫', 'Everyone in the ring goes in together 👫', 'Halkadaki herkes birlikte girer 👫') : L('بيت الجدّة للاعب واحد 👤', "Grandma's house is single player 👤", 'Büyükannenin evi tek oyunculu 👤')}</small>`;
 }
 function onCountdown(p){ const z = p.z | 0; if(!ZONES[z]) return; remoteCd.set(z, { left:+p.left || 0, ids:Array.isArray(p.ids) ? p.ids.slice(0, 16) : [], at:performance.now(), host:p.id }); }
@@ -955,7 +982,7 @@ addEventListener('pagehide', () => { persist(); try{ if(MP.t) MP.t.close(); }cat
 window.__island = {
   get state(){ return state; }, menu:() => showMenu(), play:() => startPlay(), P, get me(){ return ME; }, get shard(){ return MP.shard; }, get mpId(){ return MP.id; },
   get mpStatus(){ return MP.status; }, CAP, zones:ZONES.map(z => ({ id:z.id, x:z.cx, z:z.cz, soon:!!z.soon })), portals:PORTALS.map(p => ({ id:p.id, x:p.x, z:p.z, zone:p.zone })),
-  players:() => [...RM.values()].map(a => ({ id:a.id, code:a.code, hero:a.hero, x:a.x, z:a.z, seen:a.seen, name:nameOf(a), r:a.r, emo:a.emo && a.emo.k, label:a.lbl.hidden ? null : a.lbl.textContent, hid:a.hid, e:a.e })),
+  players:() => [...RM.values()].map(a => ({ id:a.id, code:a.code, hero:a.hero, av:a.av, built:a.h && a.h.type, x:a.x, z:a.z, seen:a.seen, name:nameOf(a), r:a.r, emo:a.emo && a.emo.k, label:a.lbl.hidden ? null : a.lbl.textContent, hid:a.hid, e:a.e })),
   labels:() => [...labelsEl.querySelectorAll('.nm')].filter(e => !e.hidden).map(e => e.textContent),
   names:() => Object.fromEntries(NAMES), tp(x, z, f){ P.x = x; P.z = z; P.y = Math.max(0, W.heightAt(x, z)); P.vy = 0; P.grounded = true; P.cup = null; if(f != null) P.face = f; snapCam = true; },
   look(yaw, pitch){ cam.yaw = yaw; if(pitch != null) cam.pAdj = pitch; snapCam = true; },
@@ -963,6 +990,7 @@ window.__island = {
   get cd(){ return CD ? { zone:CD.zone, left:CD.left } : null; }, get nav(){ return NAV; }, ring:() => myRing(), act:() => { updateActBtn(); const k = ctx && ctx.k; doAction(); return k; },
   ctx:() => (updateActBtn(), ctx && ctx.k), frMode:on => { frMode = on ? 15 : 0; if(on) refreshFriends().then(drawFrPanel); else frPanel.hidden = true; },
   W, get fps(){ return fps; }, get dpr(){ return dpr; }, renderer, COLL:W.COLL, plants:W.plants, cups:W.cups, nests:W.nests, eggStalls:W.eggStalls, pets:W.roamPets, climbTops:W.climbTops,
+  dropChannel(){ const t = MP.t; if(!t) return; if(t.bc){ clearInterval(t.iv); t.bc.close(); t.bc = null; } else if(t.ch){ try{ t.ch.unsubscribe(); }catch(e){} } },
   setCam:c => { camOverride = c; }, setFog:(n, f) => { scene.fog.near = n; scene.fog.far = f; }, get carry(){ return P.carry; }, get inCup(){ return !!P.cup; }
 };
 

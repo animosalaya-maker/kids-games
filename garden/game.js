@@ -1809,6 +1809,6 @@ requestAnimationFrame(frame);
   if(!/^\d{4}$/.test(join || '') && !host) return;
   const q = new URLSearchParams(location.search); ['join', 'host', 'invite', 'room'].forEach(k => q.delete(k));
   try{ history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
-  if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 10000);
+  if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 20000);
   else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(room); }
 })();
