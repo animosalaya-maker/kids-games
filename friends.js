@@ -375,7 +375,7 @@ function setRoom(room, game, unload){
   return call('bobo_fr_set_room', { p_room:args.p_room, p_game:args.p_game });
 }
 
-/* "I'm playing <game> now" (any id in GAMES; null = stopped). invitepop.js calls it every ~25 s while a game page is open
+/* "I'm playing <game> now" (any id in GAMES; null = stopped). invitepop.js calls it as soon as a game page can take a friend in, then every ~25 s while it is open
    (it also counts as the heartbeat and returns the badge counts) and with null on pagehide (unload=true: keepalive, no waiting). */
 function setPlaying(game, unload){
   const s = secret(false); if(!s) return Promise.resolve(null);
@@ -389,6 +389,104 @@ function setPlaying(game, unload){
     return Promise.resolve(null);
   }
   return call('bobo_fr_set_playing', { p_game:g });
+}
+
+/* ---------- inbox doorbell ----------
+   Every kid listens on the Realtime broadcast channel `bobo-inbox-<own code>`. After an invite / join request / answer /
+   friend request reaches the server, the sender rings the friend's channel with {t:'ping', k:<kind>}. A ping carries nothing
+   anyone trusts: the receiver only runs its normal server poll at once (so a stranger who rings can do no harm).
+   The polls stay as the fallback. Sending = one HTTP POST to the Realtime broadcast endpoint (no socket needed, works while
+   the page is leaving); if the endpoint refuses, a short-lived channel is joined and the ping goes over the socket.
+   `?fr=mock`: a BroadcastChannel with the same name (tabs of one browser). */
+const INBOX = 'bobo-inbox-';
+const pingSubs = new Set();
+let ibCh = null, ibBc = null, ibState = 'off', ibTry = 0, ibT = 0, ibWired = false;
+const ibFire = k => pingSubs.forEach(f => { try{ f(k); }catch(e){} });
+function ibDrop(){
+  const ch = ibCh; ibCh = null; ibState = 'off';
+  if(ibBc){ try{ ibBc.close(); }catch(e){} ibBc = null; }
+  if(ch && sbp) sbp.then(sb => sb.removeChannel(ch)).catch(() => {});
+}
+function ibLater(){ clearTimeout(ibT); if(pingSubs.size) ibT = setTimeout(ibOpen, Math.min(15000, 1000 * Math.pow(2, ibTry++))); }
+function ibOpen(){
+  clearTimeout(ibT);
+  if(!pingSubs.size || ibState !== 'off' || !secret(false)) return;
+  const code = (meCache && meCache.code) || get(IDS, K_CODE);
+  ibState = 'joining';
+  if(!isCode(code)){ ready().then(() => { ibState = 'off'; ibOpen(); }, () => { ibState = 'off'; ibLater(); }); return; }
+  if(mock){
+    try{ ibBc = new BroadcastChannel(INBOX + code); ibBc.onmessage = e => { if(e.data && e.data.t === 'ping') ibFire(e.data.k); }; ibState = 'joined'; }
+    catch(e){ ibState = 'off'; }
+    return;
+  }
+  client().then(sb => {
+    if(ibState !== 'joining' || ibCh) return;
+    const ch = ibCh = sb.channel(INBOX + code, { config:{ broadcast:{ self:false, ack:false } } });
+    ch.on('broadcast', { event:'ping' }, m => ibFire(m && m.payload && m.payload.k));
+    ch.subscribe(st => {
+      if(ch !== ibCh) return;
+      if(st === 'SUBSCRIBED'){ const again = ibTry > 0; ibState = 'joined'; ibTry = 0; if(again) ibFire('open'); }   // back after a drop: poll once for what was missed
+      else if(st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED'){ ibDrop(); ibTry = Math.max(1, ibTry); ibLater(); }
+    });
+  }, () => { ibState = 'off'; ibTry = Math.max(1, ibTry); ibLater(); });
+}
+/* the page came back (visible again / network back): make sure the bell is really connected, now */
+function ibCheck(){
+  if(!pingSubs.size || document.visibilityState === 'hidden') return;
+  if(ibState === 'joined' && !mock && sbp){
+    sbp.then(sb => { if(ibCh && ibState === 'joined' && !(sb.realtime.isConnected() && ibCh.state === 'joined')){ ibDrop(); ibTry = 1; ibOpen(); } }).catch(() => {});
+  } else if(ibState === 'off'){ ibTry = Math.max(1, ibTry); ibOpen(); }
+}
+/* Friends.onPing(cb): cb(kind) on every ring of my inbox; returns a function that stops it */
+function onPing(cb){
+  if(typeof cb !== 'function') return () => {};
+  pingSubs.add(cb);
+  if(!ibWired){ ibWired = true; document.addEventListener('visibilitychange', ibCheck); addEventListener('online', ibCheck); addEventListener('pageshow', e => { if(e.persisted) ibCheck(); }); }
+  ibOpen();
+  return () => { pingSubs.delete(cb); if(!pingSubs.size){ clearTimeout(ibT); ibDrop(); } };
+}
+let httpBad = 0; const wsBusy = new Set();
+function pingWs(code, payload){
+  if(wsBusy.has(code) || wsBusy.size > 3) return;
+  wsBusy.add(code);
+  client().then(sb => {
+    let done = false;
+    const ch = sb.channel(INBOX + code, { config:{ broadcast:{ self:false, ack:false } } });
+    const end = () => { if(done) return; done = true; clearTimeout(t); wsBusy.delete(code); sb.removeChannel(ch).catch(() => {}); };
+    const t = setTimeout(end, 6000);
+    // send only once the channel is joined, so supabase-js never falls back to its own HTTP send
+    ch.subscribe(st => {
+      if(done) return;
+      if(st === 'SUBSCRIBED'){ ch.send({ type:'broadcast', event:'ping', payload }).catch(() => {}).then(() => setTimeout(end, 400)); }
+      else if(st === 'CHANNEL_ERROR' || st === 'TIMED_OUT' || st === 'CLOSED') end();
+    });
+  }).catch(() => { wsBusy.delete(code); });
+}
+/* ring a friend's inbox (after the server call succeeded). Never throws, never waits. */
+function ping(code, kind){
+  try{
+    code = String(code || '').toUpperCase(); if(!isCode(code)) return;
+    const payload = { t:'ping', k:String(kind || '') };
+    if(mock){ const b = new BroadcastChannel(INBOX + code); b.postMessage(payload); setTimeout(() => { try{ b.close(); }catch(e){} }, 300); return; }
+    if(httpBad >= 2) return pingWs(code, payload);
+    fetch(URL_ + '/realtime/v1/api/broadcast', { method:'POST', keepalive:true,
+      headers:{ 'Content-Type':'application/json', apikey:KEY, Authorization:'Bearer ' + KEY },
+      body:JSON.stringify({ messages:[{ topic:INBOX + code, event:'ping', payload }] }) })
+      .then(r => { if(r.ok){ httpBad = 0; return; } if(r.status >= 400 && r.status < 500) httpBad++; pingWs(code, payload); }, () => {});
+  }catch(e){}
+}
+const NO_PING = /^(not_|self$|slow_down$|none$|already_)|_limit$/;
+const rings = (p, code, kind) => p.then(r => { if(!(r && NO_PING.test(r.status || ''))) ping(code, kind); return r; });
+/* who asked to join (request id → their code), so answerJoin can ring them; kept for the tab (the accept may happen on the next page) */
+const K_JRFROM = 'bobo_jr_from';
+function jrFrom(){ try{ return JSON.parse(sessionStorage.getItem(K_JRFROM)) || {}; }catch(e){ return {}; } }
+function jrNote(list){
+  try{
+    const m = jrFrom(); let ch = false;
+    (list || []).forEach(r => { if(r && r.id != null && r.from && isCode(r.from.code) && m[r.id] !== r.from.code){ m[r.id] = r.from.code; ch = true; } });
+    if(ch){ const ks = Object.keys(m); ks.slice(0, Math.max(0, ks.length - 20)).forEach(k => delete m[k]); sessionStorage.setItem(K_JRFROM, JSON.stringify(m)); }
+  }catch(e){}
+  return list;
 }
 
 /* heartbeat: tells the server "I'm here" every 25 s while the page is visible; cb gets the badge counts */
@@ -426,18 +524,18 @@ window.Friends = {
   setLook: o => call('bobo_fr_set_look', { p_avatar:o.avatar || 'bobo', p_color:o.color || 'purple', p_hat:o.hat || null, p_glasses:o.glasses || null, p_nick_a:o.na || null, p_nick_n:o.nn || null })
     .then(c => { meCache = Object.assign({}, meCache, c); return c; }),
   setName: n => call('bobo_fr_set_name', { p_name:n || null }).then(c => { meCache = Object.assign({}, meCache, c); return c; }),
-  request: code => call('bobo_fr_request', { p_code:normCode(code) }),
+  request: code => rings(call('bobo_fr_request', { p_code:normCode(code) }), normCode(code), 'request'),
   requests: () => call('bobo_fr_requests'),
-  answer: (code, yes) => call('bobo_fr_answer', { p_code:code, p_accept:!!yes }),
-  remove: code => call('bobo_fr_remove', { p_code:code }),
+  answer: (code, yes) => rings(call('bobo_fr_answer', { p_code:code, p_accept:!!yes }), code, 'friend'),
+  remove: code => rings(call('bobo_fr_remove', { p_code:code }), code, 'friend'),
   list: () => call('bobo_fr_friends'),
   heartbeat: () => call('bobo_fr_heartbeat'),
-  invite: (code, room, game) => call('bobo_fr_invite2', { p_code:code, p_room:String(room), p_game:gameOf(game) }),
+  invite: (code, room, game) => rings(call('bobo_fr_invite2', { p_code:code, p_room:String(room), p_game:gameOf(game) }), code, 'invite'),
   setRoom, setPlaying,
   /* «انضم» = ask a friend who is playing to let me in: {status:'sent', id, game} | not_friends | not_playing | slow_down */
-  askJoin: code => call('bobo_fr_ask_join', { p_code:code }),
-  joinReqs: () => call('bobo_fr_join_reqs'),
-  answerJoin: (id, yes, room) => call('bobo_fr_answer_join', { p_id:+id, p_accept:!!yes, p_room:yes ? String(room) : null }),
+  askJoin: code => rings(call('bobo_fr_ask_join', { p_code:code }), code, 'join'),
+  joinReqs: () => call('bobo_fr_join_reqs').then(jrNote),
+  answerJoin: (id, yes, room) => rings(call('bobo_fr_answer_join', { p_id:+id, p_accept:!!yes, p_room:yes ? String(room) : null }), jrFrom()[+id], 'answer'),
   joinStatus: id => call('bobo_fr_join_status', { p_id:+id }),
   /* free-preview time of a premium map (300 s in total per kid): addSec 0 just reads it; at most 60 s per call */
   trial: (map, addSec) => call('bobo_trial', { p_map:map, p_add_sec:Math.max(0, Math.min(60, Math.round(+addSec || 0))) }),
@@ -451,12 +549,16 @@ window.Friends = {
       return (r && typeof r === 'object') ? r : {};
     });
   },
+  /* inbox doorbell: onPing(cb) listens on my own channel; ping(code, kind) rings a friend's (see above) */
+  onPing, ping,
+  /* for tests: the bell's state, and cut() = drop the socket the way a lost network does */
+  _bell:{ get state(){ return ibState; }, cut(){ if(sbp) sbp.then(sb => { try{ sb.realtime.conn.close(); }catch(e){} }).catch(() => {}); } },
   claimCoins: () => call('bobo_fr_claim_coins'),
   dismiss: id => call('bobo_fr_dismiss', { p_id:id }),
   async deleteMe(){
     const s = secret(false);
     if(s) await rpc('bobo_fr_delete_me', { p_secret:s });
-    put(IDS, K_SECRET, null); put(IDS, K_CODE, null); meCache = null; readyP = null;
+    put(IDS, K_SECRET, null); put(IDS, K_CODE, null); meCache = null; readyP = null; clearTimeout(ibT); ibDrop();
     return { status:'deleted' };
   },
   GAMES, gameOf, gameName, ROOT:BASE,

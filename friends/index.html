@@ -413,8 +413,8 @@ function pickGame(k){
 }
 
 /* «انضم»: ask the friend (they see ✓ قبول / ✕ رفض inside their game), then wait; accepted → straight into their room */
-let waitT = 0, waitId = null;
-function stopWait(){ clearTimeout(waitT); waitT = 0; waitId = null; }
+let waitT = 0, waitId = null, waitPoll = null;
+function stopWait(){ clearTimeout(waitT); waitT = 0; waitId = null; waitPoll = null; }
 function waitShow(k, game, state){
   const av = $('waitAv'); av.innerHTML = ''; av.appendChild(F.avatarEl(k, 84)); av.classList.toggle('done', state !== 'wait');
   $('waitG').textContent = F.gameName(game); $('waitG').hidden = state !== 'wait';
@@ -442,10 +442,14 @@ async function askToJoin(k, b){
   }
   stopWait(); const id = waitId = r.id, game = r.game; let fails = 0;
   waitShow(k, game, 'wait');
+  let asking = false, more = false;
   const poll = async () => {
     if(waitId !== id) return;
+    if(asking){ more = true; return; }   // the doorbell rang while a check is on its way: check once more right after
+    asking = true; clearTimeout(waitT);
     let s = null;
     try{ s = await F.joinStatus(id); fails = 0; }catch(e){ if(++fails > 15){ stopWait(); closeSheets(); toast(F.errText(e)); return; } }
+    asking = false;
     if(waitId !== id) return;
     const st = s && s.status;
     if(st === 'accepted' && /^\d{4}$/.test(s.room || '')){
@@ -456,19 +460,26 @@ async function askToJoin(k, b){
     }
     if(st === 'declined'){ stopWait(); nope(); waitShow(k, game, 'no'); return; }
     if(st === 'expired' || st === 'cancelled' || st === 'none'){ stopWait(); waitShow(k, game, 'late'); return; }
+    if(more){ more = false; poll(); return; }
     waitT = setTimeout(poll, 2000);
   };
-  waitT = setTimeout(poll, 2000);
+  waitPoll = poll; waitT = setTimeout(poll, 2000);
 }
 
+let reload = false, drawn = '';
 async function load(){
-  if(loading || !F.has()) return; loading = true;
+  if(!F.has()) return;
+  if(loading){ reload = true; return; }   // asked again while loading (doorbell): load once more right after
+  loading = true;
   try{
     const [fr, rq, iv] = await Promise.all([F.list(), F.requests(), F.invites()]);
     data = { friends:fr || [], incoming:(rq && rq.incoming) || [], outgoing:(rq && rq.outgoing) || [], invites:iv || [] };
-    online(); render();
+    online();
+    // draw again only when something changed (the list is checked every 4 s; a redraw under a finger would eat the tap)
+    const sig = JSON.stringify(data, (k, v) => k === 'left' ? undefined : v);
+    if(sig !== drawn || $('frList').querySelector('.skel')){ drawn = sig; render(); }
   }catch(e){ offline(e); if($('frList').querySelector('.skel')) $('frList').innerHTML = ''; }
-  finally{ loading = false; }
+  finally{ loading = false; if(reload){ reload = false; load(); } }
 }
 async function boot(){
   const started = F.has();
@@ -597,10 +608,17 @@ $('delBtn').onclick = async () => {
   catch(e){ offline(e); }
 };
 
-/* keep fresh: heartbeat (25 s) + reload lists every 10 s while visible (so «انضم» shows up quickly) */
+/* keep fresh: heartbeat (25 s) + reload lists every 4 s while visible (so «انضم» shows up / goes away quickly)
+   + the doorbell (F.onPing): a friend sent something → reload now and check the waiting sheet now, at most once a second */
 let stopHb = () => {};
-function live(){ stopHb(); stopHb = F.startHeartbeat(c => { if(c && (c.requests !== data.incoming.length || c.invites !== data.invites.length)) load(); }); }
-setInterval(() => { if(document.visibilityState === 'visible' && me) load(); }, 10000);
+function live(){ listen(); stopHb(); stopHb = F.startHeartbeat(c => { if(c && (c.requests !== data.incoming.length || c.invites !== data.invites.length)) load(); }); }
+setInterval(() => { if(document.visibilityState === 'visible' && me) load(); }, 4000);
+let ringT = 0, lastRing = 0, bell = null;
+function ring(){
+  if(ringT) return;
+  ringT = setTimeout(() => { ringT = 0; lastRing = Date.now(); if(waitId && waitPoll) waitPoll(); if(me) load(); }, Math.max(0, lastRing + 1000 - Date.now()));
+}
+function listen(){ if(!bell && F.has() && F.onPing) bell = F.onPing(ring); }
 document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible' && me) load(); });
 boot().then(live);
 if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').catch(() => {});
