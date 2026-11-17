@@ -2,7 +2,10 @@
    (Sara, Sidra, Qamar, Samir, Mushakis, Zaqzouq, Aunt Laila), built as chibi low-poly models with
    canvas-drawn faces. All characters share one size for collisions (radius .42, about 1.2 tall), face +z.
    makeKit(THREE, opts) — opts (all optional): rim (soft rim light strength, default .3; 0 = off), toon (true = soft 3-step toon shading).
-   Characters use smoother geometry (more segments, capsule limbs); level geometry G is unchanged. */
+   Characters use smoother geometry (more segments, capsule limbs); level geometry G is unchanged.
+   8th hero 'me' («شخصيتي»): a 3D chibi of the kid's own avatar from the home wardrobe (../avatar.js, saved in bobo_world.avatar).
+   It is listed first in HERO_IDS; its picker picture (chars/me.png) is swapped for a live drawing of the saved avatar. */
+import '../avatar.js';
 export function makeKit(THREE, opts = {}){
   const _m = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _s = new THREE.Vector3(), _v = new THREE.Vector3(), _c = new THREE.Color();
   const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -92,6 +95,7 @@ export function makeKit(THREE, opts = {}){
         x.stroke(); }
     }
     if(o.glasses){
+      if(o.lens){ x.fillStyle = o.lens; for(const s of [-1, 1]){ x.beginPath(); x.arc(cx + s * ex, ey + 2, 33, 0, 6.3); x.fill(); } }
       x.strokeStyle = o.glasses; x.lineWidth = 7;
       for(const s of [-1, 1]){ x.beginPath(); x.arc(cx + s * ex, ey + 2, 33, 0, 6.3); x.stroke(); }
       x.beginPath(); x.moveTo(cx - 13, ey - 4); x.quadraticCurveTo(cx, ey - 12, cx + 13, ey - 4); x.stroke();
@@ -175,12 +179,12 @@ export function makeKit(THREE, opts = {}){
     pts.forEach(([px, py, pz, r], i) => M.add(CG.sm, px, py, pz, r, r, r, 0, 0, 0, i === pts.length - 1 && endCol != null ? endCol : col));
     p.add(meshOf(M)); return p;
   }
-  const SKIN = 0xf7cfae;
+  const SKIN = 0xf7cfae, SKIN0 = SKIN;
 
   /* generic chibi kid: o = { hair, top, topLight, bottom, skirt, legs, shoes, sole, headR, headY, scale } */
   function kid(o){
     const grp = new THREE.Group(), body = new THREE.Group(); grp.add(body);
-    const S = o.scale || 1, hr = o.headR || .33, hy = o.headY || 1.0;
+    const S = o.scale || 1, hr = o.headR || .33, hy = o.headY || 1.0, SKIN = o.skin != null ? o.skin : SKIN0;
     const M = new Merge();
     // torso (hoodie / jacket)
     M.add(CG.sph, 0, .64, 0, .23, .21, .19, 0, 0, 0, o.top);
@@ -363,13 +367,92 @@ export function makeKit(THREE, opts = {}){
     return { type:'zaqzouq', grp, body, head, face, legs, arms, sway:[tail], hr, blink:2.2 };
   };
 
-  const HERO_IDS = ['sara', 'sidra', 'qamar', 'samir', 'mushakis', 'zaqzouq', 'laila'];
+  // شخصيتي — the kid's own avatar (girl or boy) dressed in the home wardrobe; av = an avatar object (default: the saved one)
+  const hexN = c => parseInt(String(c).slice(1), 16);
+  HEROES.me = av => {
+    const A = window.Avatar;
+    if(!A) return Object.assign(HEROES.sara(), { type:'me' });
+    const a = av ? A.normalize(av) : A.load();
+    const skin = hexN(A.SKINS[a.skin]), hc = hexN(A.HAIRC[a.hairCol].c), tc = hexN(A.CLOTH[a.topCol].c), pc = hexN(A.PANTS[a.botCol].c);
+    const sc = hexN(A.CLOTH[a.shoeCol].c), ac = hexN(A.CLOTH[a.accCol].c), top = a.top, robe = top === 'robe';
+    const longSl = { hoodie:1, jacket:1, shirt:1, sweater:1, robe:1 }[top], bareLegs = !robe && (a.bottom === 'shorts' || a.bottom === 'skirt');
+    const G3 = { round:['#3a2a5a'], sun:['#1a1a22', 'rgba(25,22,35,.88)'], goggles:['#2b7fd6', 'rgba(150,220,255,.45)'] }[a.glasses];
+    const face = { blush:a.cheeks, freckles:a.freckles, lashes:a.body === 'girl' || a.eyes === 'sparkle', mouth:'smile',
+      eye:a.eyes === 'happy' ? 'happy' : a.eyes === 'dot' ? 'dot' : undefined, iris:a.eyes === 'sparkle' ? '#5a3a8a' : undefined, glasses:G3 && G3[0], lens:G3 && G3[1] };
+    const h = kid({ skin, top:tc, inner:top === 'jacket' ? 0xffffff : null, skirt:top === 'dress' ? tc : (!robe && a.bottom === 'skirt') ? pc : null, bottom:robe ? tc : pc,
+      legs:bareLegs ? skin : pc, shoes:a.shoes === 'sandals' ? skin : sc, sole:a.shoes === 'boots' ? 0x3a2a22 : a.shoes === 'sandals' ? sc : 0xffffff, sleeve:longSl ? tc : skin,
+      legR:a.bottom === 'leggings' ? .06 : .066, face });
+    const hr = h.hr, B = new Merge();
+    if(!longSl) for(const s of [-1, 1]) B.add(CG.sm, s * .245, .7, 0, .085, .085, .085, 0, 0, 0, tc);          // short sleeves
+    if(robe) B.add(new THREE.CylinderGeometry(.2, .32, 1, 18), 0, .41, 0, 1, .68, 1, 0, 0, 0, tc);              // long modest robe
+    if(top === 'dress') B.add(new THREE.CylinderGeometry(.21, .3, 1, 18), 0, .43, 0, 1, .22, 1, 0, 0, 0, tc);
+    if(top === 'hoodie') B.add(CG.sph, 0, .72, -.17, .17, .12, .08, 0, 0, 0, tc).add(CG.cyl8, -.04, .6, .19, .008, .12, .008, 0, 0, 0, 0xffffff).add(CG.cyl8, .04, .6, .19, .008, .12, .008, 0, 0, 0, 0xffffff);
+    if(top === 'sweater') B.add(CG.cyl, 0, .47, 0, .215, .04, .19, 0, 0, 0, new THREE.Color(tc).multiplyScalar(.82).getHex());
+    if(top === 'shirt') for(const s of [-1, 1]) B.add(CG.box, s * .05, .76, .14, .09, .04, .06, 0, 0, s * .4, 0xffffff);
+    if(a.shoes === 'boots') for(const s of [-1, 1]) B.add(CG.cyl8, s * .1, .14, 0, .075, .12, .075, 0, 0, 0, sc);
+    if(a.bottom === 'jeans' && !robe) B.add(CG.cyl, 0, .47, 0, .205, .025, .185, 0, 0, 0, 0x6b4a2a);           // belt
+    if(a.extra === 'scarf') B.add(CG.torus, 0, .78, 0, .13, .13, .3, Math.PI / 2, 0, 0, ac).add(CG.box, .07, .66, .16, .07, .16, .03, 0, 0, 0, ac);
+    if(a.back === 'backpack') B.add(CG.box, 0, .6, -.24, .34, .36, .16, 0, 0, 0, ac).add(CG.box, 0, .5, -.33, .24, .14, .05, 0, 0, 0, new THREE.Color(ac).multiplyScalar(.8).getHex())
+      .add(CG.box, -.13, .66, .02, .04, .3, .4, 0, 0, 0, ac).add(CG.box, .13, .66, .02, .04, .3, .4, 0, 0, 0, ac);
+    if(a.back === 'wings') for(const s of [-1, 1]){ const lc = new THREE.Color(ac).lerp(new THREE.Color(0xffffff), .45).getHex();
+      B.add(CG.sph, s * .24, .72, -.24, .22, .13, .025, 0, s * .35, s * .5, lc).add(CG.sph, s * .2, .52, -.23, .14, .08, .025, 0, s * .35, -s * .5, lc); }
+    if(!B.empty) h.body.add(meshOf(B));
+    if(top === 'jersey'){
+      const num = canvasTex(64, 64, (x, w) => { x.fillStyle = A.CLOTH[a.topCol].c === '#f4f1ea' || A.CLOTH[a.topCol].c === '#ffd23f' ? '#2b3a7a' : '#ffffff'; x.font = '800 52px system-ui,sans-serif'; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(String(a.num), 32, 36); });
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(.17, .17), new THREE.MeshLambertMaterial({ map:num, transparent:true, depthWrite:false })); m.position.set(0, .6, .215); h.body.add(m);
+    }
+    if(a.back === 'cape'){ const p = pivot(h.body, 0, .76, -.17), C = new Merge(); C.add(CG.box, 0, -.27, -.03, .4, .56, .025, 0, 0, 0, ac); C.add(CG.sm, -.1, .0, .12, .03, .03, .03, 0, 0, 0, 0xffd23f).add(CG.sm, .1, 0, .12, .03, .03, .03, 0, 0, 0, 0xffd23f); p.add(meshOf(C)); h.sway.push(p); }
+    // hair
+    const st = a.hair, H = new Merge();
+    if(st === 'hijab'){
+      const hj = hexN(A.CLOTH[a.hijabCol].c);
+      H.add(new THREE.SphereGeometry(1, 22, 14, Math.PI / 2 + .62, Math.PI * 2 - 1.24, 0, Math.PI * .82), 0, 0, 0, hr * 1.13, hr * 1.13, hr * 1.13, 0, 0, 0, hj);
+      H.add(new THREE.SphereGeometry(1, 10, 6, Math.PI / 2 - .64, 1.28, 0, .78), 0, 0, 0, hr * 1.13, hr * 1.13, hr * 1.13, 0, 0, 0, hj);
+      H.add(new THREE.SphereGeometry(1, 10, 6, Math.PI / 2 - .64, 1.28, 2.25, .6), 0, 0, 0, hr * 1.13, hr * 1.13, hr * 1.13, 0, 0, 0, hj);
+      h.body.add(meshOf(new Merge().add(CG.sph, 0, .76, 0, .24, .12, .22, 0, 0, 0, hj)));
+    } else {
+      hairCap(h.head, hr, hc, !['side', 'buzz', 'spiky', 'curlyb', 'caphair', 'afro'].includes(st));
+      if(st === 'long') H.add(CG.sph, 0, -hr * .6, -hr * .45, hr * 1.02, hr * 1.15, hr * .55, 0, 0, 0, hc);
+      if(st === 'longb') H.add(CG.sph, 0, -hr * .35, -hr * .4, hr * 1.0, hr * .85, hr * .55, 0, 0, 0, hc);
+      if(st === 'bob') H.add(CG.sph, 0, -hr * .25, -.1, hr * 1.12, hr * .8, hr * 1.06, 0, 0, 0, hc);
+      if(st === 'bun') H.add(CG.sph, 0, hr * 1.0, -hr * .25, hr * .36, hr * .36, hr * .36, 0, 0, 0, hc);
+      if(st === 'afro') H.add(CG.sph, 0, hr * .15, -.1, hr * 1.3, hr * 1.22, hr * 1.1, 0, 0, 0, hc);
+      if(st === 'side') H.add(CG.sm, -hr * .18, hr * .8, hr * .5, hr * .5, hr * .17, hr * .3, .5, 0, .3, hc);
+      if(st === 'buzz') H.add(CG.sph, 0, .01, -.01, hr * 1.02, hr * 1.0, hr * 1.0, 0, 0, 0, hc);
+      if(st === 'spiky') for(let i = 0; i < 7; i++){ const t = -1 + i / 3; H.add(CG.cone, Math.sin(t) * hr * .7, hr * (.95 - Math.abs(t) * .15), -hr * .1 + Math.cos(i) * .03, .07, .17, .07, -.3, 0, -t * .9, hc); }
+      if(st === 'curlyb' || st === 'curly') for(let i = 0; i < 14; i++){ const t = i / 14 * Math.PI * 2, r = st === 'curly' ? hr * 1.02 : hr * .9;
+        if(st === 'curly' && Math.sin(t) > .2) continue;   // keep the face clear
+        H.add(CG.sm, Math.cos(t) * r, (st === 'curly' ? -hr * .1 : hr * .62) + Math.sin(t * 2) * .03, Math.sin(t) * r * .9 - .04, .09, .09, .09, 0, 0, 0, hc); }
+      if(st === 'curly') for(let i = 0; i < 6; i++) H.add(CG.sm, (i - 2.5) * hr * .32, -hr * .7, -hr * .55, .1, .1, .1, 0, 0, 0, hc);
+      if(st === 'caphair'){
+        H.add(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI * .56), 0, .04, -.02, hr * 1.16, hr * 1.0, hr * 1.16, -.3, 0, 0, ac);
+        H.add(CG.cyl, 0, hr * .26, hr * .9, .2, .03, .16, .12, 0, 0, ac);
+      }
+      if(st === 'ponytail') h.sway.push(chain(h.head, 0, hr * .78, -hr * .6, [[0, .02, -.08, .1], [0, -.08, -.16, .095], [0, -.2, -.2, .085], [0, -.32, -.2, .07], [0, -.42, -.17, .05]], hc));
+      if(st === 'braid'){ const pts = []; for(let i = 0; i < 7; i++) pts.push([.04 * Math.sin(i * .6), -.06 - i * .085, -.02 * i, .075 - i * .004]); pts.push([.03, -.66, -.14, .065]); h.sway.push(chain(h.head, .18, -.06, -.24, pts, hc, ac)); }
+      if(st === 'pigtails') for(const s of [-1, 1]) h.sway.push(chain(h.head, s * hr * .88, hr * .35, -.04, [[s * .04, 0, 0, .1], [s * .08, -.1, 0, .09], [s * .09, -.21, 0, .075]], hc));
+    }
+    // hats from the wardrobe
+    const hy = hr * .86;
+    if(a.hat === 'cap'){ H.add(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI * .56), 0, .04, -.02, hr * 1.17, hr * 1.0, hr * 1.17, -.3, 0, 0, 0x3a74d8).add(CG.cyl, 0, hr * .26, hr * .9, .2, .03, .16, .12, 0, 0, 0x2a5bb8); }
+    else if(a.hat === 'top'){ H.add(CG.cyl, 0, hy + .14, 0, .17, .26, .17, 0, 0, 0, 0x26242c).add(CG.cyl, 0, hy + .02, 0, .27, .025, .27, 0, 0, 0, 0x26242c).add(CG.cyl, 0, hy + .05, 0, .175, .04, .175, 0, 0, 0, 0xd8343f); }
+    else if(a.hat === 'grad'){ H.add(CG.cyl, 0, hy + .03, 0, .2, .08, .2, 0, 0, 0, 0x26242c).add(CG.box, 0, hy + .08, 0, .42, .025, .42, 0, Math.PI / 4, 0, 0x26242c).add(CG.cyl8, .14, hy - .02, .14, .012, .16, .012, 0, 0, 0, 0xffd23f); }
+    else if(a.hat === 'crown'){ H.add(CG.cyl, 0, hy + .04, 0, .2, .1, .2, 0, 0, 0, 0xf5b700); for(let i = 0; i < 6; i++){ const t = i / 6 * Math.PI * 2; H.add(CG.cone, Math.cos(t) * .18, hy + .13, Math.sin(t) * .18, .045, .09, .045, 0, 0, 0, 0xf5b700); } H.add(CG.sm, 0, hy + .05, .2, .03, .03, .02, 0, 0, 0, 0xe8454f); }
+    else if(a.hat === 'bow'){ for(const s of [-1, 1]) H.add(CG.sph, s * .08, hy, hr * .3, .08, .055, .04, 0, 0, s * .4, 0xff6fae); H.add(CG.sm, 0, hy, hr * .32, .03, .03, .03, 0, 0, 0, 0xe8458f); }
+    else if(a.hat === 'flower'){ for(let i = 0; i < 5; i++){ const t = i / 5 * Math.PI * 2; H.add(CG.sm, hr * .55 + Math.cos(t) * .05, hy - .02 + Math.sin(t) * .05, hr * .35, .04, .04, .02, 0, 0, 0, 0xff8fbf); } H.add(CG.sm, hr * .55, hy - .02, hr * .37, .025, .025, .02, 0, 0, 0, 0xffd23f); }
+    if(a.extra === 'phones'){ H.add(new THREE.TorusGeometry(hr * 1.12, .025, 6, 24, Math.PI), 0, 0, 0, 1, 1, 1, 0, 0, 0, ac); for(const s of [-1, 1]) H.add(CG.cyl, s * hr * 1.1, 0, 0, .07, .05, .07, 0, 0, Math.PI / 2, ac); }
+    if(!H.empty) h.head.add(meshOf(H));
+    return Object.assign(h, { type:'me' });
+  };
+
+  const HERO_IDS = ['me', 'sara', 'sidra', 'qamar', 'samir', 'mushakis', 'zaqzouq', 'laila'];
   const L = window.L || (a => a);
   const HERO_NAME = {
-    sara:L('سارة', 'Sara', 'Sara'), sidra:L('سيدرة', 'Sidra', 'Sidra'), qamar:L('قمر', 'Qamar', 'Kamer'), samir:L('سمير', 'Samir', 'Semir'),
+    me:L('شخصيتي', 'My character', 'Karakterim'), sara:L('سارة', 'Sara', 'Sara'), sidra:L('سيدرة', 'Sidra', 'Sidra'), qamar:L('قمر', 'Qamar', 'Kamer'), samir:L('سمير', 'Samir', 'Semir'),
     mushakis:L('مشاكس', 'Mushakis', 'Muşakis'), zaqzouq:L('زقزوق', 'Zaqzouq', 'Zakzuk'), laila:L('العمة ليلى', 'Aunt Laila', 'Leyla Teyze')
   };
-  const HERO_COLOR = { sara:'#9c7be3', sidra:'#1fa6a9', qamar:'#f5c518', samir:'#3a74d8', mushakis:'#f2983a', zaqzouq:'#8e93a3', laila:'#2b3a7a' };
+  let meCol = '#9b6bff'; try{ const A = window.Avatar; if(A) meCol = A.CLOTH[A.load().topCol].c; }catch(e){}
+  const HERO_COLOR = { me:meCol, sara:'#9c7be3', sidra:'#1fa6a9', qamar:'#f5c518', samir:'#3a74d8', mushakis:'#f2983a', zaqzouq:'#8e93a3', laila:'#2b3a7a' };
 
   /* s = { t, dt, run, grounded, vy, sq, flip }  (+ optional sneak 0..1: tiptoe crouch, and pace: step-speed factor) */
   function poseHero(h, s){
@@ -404,6 +487,27 @@ export function makeKit(THREE, opts = {}){
   /* all meshes of a hero cast (and optionally receive) shadows */
   function shadowHero(h, receive = false){ h.grp.traverse(o => { if(o.isMesh && o !== h.face){ o.castShadow = true; o.receiveShadow = receive; } }); return h; }
 
+  mePictures();
   return { Merge, G, CG, canvasTex, glowTex, blobTex, starGeo, starShape, HEROES, HERO_IDS, HERO_NAME, HERO_COLOR, poseHero, clamp,
     capsule, charMat, rimify, meshOf, pivot, faceTex, facePatch, drawFace, shadowHero, SKIN };
+}
+
+/* hero pickers show chars/me.png for 'me': swap it for a live drawing of the saved avatar, and give the 8-hero picker 8 columns.
+   Runs once per page, whatever game imported the kit. */
+let mePicSet = false;
+function mePictures(){
+  if(mePicSet || typeof document === 'undefined' || !window.Avatar || !window.MutationObserver) return;
+  mePicSet = true;
+  let url = null;
+  const pic = () => url || (url = window.Avatar.portrait());
+  const SEL = 'img[src$="chars/me.png"]';
+  const fix = el => { if(el.nodeType !== 1) return; if(el.matches(SEL)) el.src = pic(); else if(el.querySelectorAll) el.querySelectorAll(SEL).forEach(i => { i.src = pic(); }); };
+  try{
+    const css = document.createElement('style');
+    css.textContent = '.heroes:has(> :nth-child(8)){grid-template-columns:repeat(8,minmax(0,1fr))}';
+    document.head.appendChild(css);
+  }catch(e){}
+  new MutationObserver(list => { for(const m of list){ if(m.type === 'attributes') fix(m.target); else m.addedNodes.forEach(fix); } })
+    .observe(document.documentElement, { childList:true, subtree:true, attributes:true, attributeFilter:['src'] });
+  fix(document.documentElement);
 }
