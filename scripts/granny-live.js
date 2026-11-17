@@ -59,6 +59,8 @@ const until = async (p, fn, ms = 15000) => { const t0 = Date.now(); while(Date.n
   res('B opens a lock for everyone', (await A.p.evaluate(() => __granny.locks)).chain && (await B.p.evaluate(() => __granny.locks)).chain);
   // grandma: same on both phones
   await A.p.evaluate(() => __granny.setGrandma(2, -2, 1, 'wander')); await A.p.waitForTimeout(3000);
+  await until(B.p, () => Math.hypot(__granny.grandma.x - 2, __granny.grandma.z + 2) < 1.2, 12000);
+  log('B rt log:', await B.p.evaluate(() => (BoboRT._log || []).join(' / ')));
   const gA = await A.p.evaluate(() => __granny.grandma), gB = await B.p.evaluate(() => __granny.grandma);
   res('grandma the same on both', Math.hypot(gA.x - gB.x, gA.z - gB.z) < 1.2, JSON.stringify([gA.x, gA.z, gA.mode]), JSON.stringify([gB.x, gB.z, gB.mode]));
   res('http broadcast posts', posts.length === 0, posts.length);
