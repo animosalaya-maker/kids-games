@@ -1,7 +1,10 @@
 /* «بيت الجدّة نونا» — Escape Grandma Nona's House.
    A gentle sneak-and-escape game: find the key (in the cookie jar), the pliers and the colour note,
    open the three locks on the front door, and don't wake the sleepy grandma. If she catches you: a soft
-   pillow "boop", and you wake up in bed for the next day. 5 days to escape. */
+   pillow "boop", and you wake up in bed for the next day. 5 days to escape.
+   Online co-op («👫 العب مع أصحابك», up to 4 kids in the same house): the room owner (host) runs Grandma, noise, items,
+   locks and the shared day counter; the friends send what they do (move, noise, pick up, drop, open a lock…) and follow the
+   host's state. See the «Online co-op» part at the end. */
 import * as THREE from '../adventure3d/three.module.min.js';
 import { makeKit } from '../worlds/kit.js';
 import { buildHouse, LY, makeKeyMesh, roundBox } from './house.js';
@@ -23,6 +26,14 @@ const K = makeKit(THREE, { rim:.38 });
 const { HEROES, HERO_IDS, HERO_NAME, HERO_COLOR, poseHero, glowTex, canvasTex } = K;
 const A = makeAudio(), SFX = A.SFX;
 const charImg = id => '../worlds/chars/' + (HEROES[id] ? id : 'sara') + '.png';
+const QS = new URLSearchParams(location.search);
+const MP_LOCAL = QS.get('mp') === 'local';
+/* co-op run in progress (set by the online part below) */
+const R = { co:false, n:0 };
+const CO = () => R.co;
+let isHostCo = () => false;            // replaced by the online part
+const aiHere = () => !R.co || isHostCo();
+const R_co = () => R.co;          // (inside makeNoise the name R is the noise radius)
 
 /* ---------- difficulty ---------- */
 const DIFF = {
@@ -207,44 +218,67 @@ const G = { x:0, y:0, z:0, face:0, mode:'sleep', t:0, path:[], tgt:null, lastSee
 let GS = null;   // run state
 let held = null, runOn = false, fp = false;
 
-function newRun(){
+/* a run's random layout as plain indices (the host sends it to the friends so every phone builds the same house) */
+function makePlan(){
   const used = [];
   const far = (s) => used.every(u => Math.hypot(u.x - s.x, u.z - s.z) > 1 || u.lv !== s.lv);
-  const choose = (list) => { const l = shuffle(list.slice()); const s = l.find(s => far(s) && !used.some(u => u.room === s.room)) || l.find(far) || l[0]; used.push(s); return s; };
-  const jarS = choose(SPOTS.jar), plS = choose(SPOTS.pliers), noS = choose(SPOTS.note);
+  const choose = (list) => { const l = shuffle(list.slice()); const s = l.find(s => far(s) && !used.some(u => u.room === s.room)) || l.find(far) || l[0]; used.push(s); return list.indexOf(s); };
+  const jar = choose(SPOTS.jar), pliers = choose(SPOTS.pliers), note = choose(SPOTS.note);
   const code = shuffle([0, 1, 2, 3, 4, 5]).slice(0, 3);
-  IT.note.mesh.clear(); IT.note.mesh.add(makeNote(code));
-  GS = { day:1, t:0, code, jarOpen:false, locks:{ key:false, chain:false, pad:false }, progressT:0, hint:false, over:false, stats:{ noise:0 },
-    toys:[], creaks:[], items:{
-      jar:{ x:jarS.x, y:jarS.y, z:jarS.z, lv:jarS.lv, state:'world', home:jarS },
-      key:{ x:jarS.x, y:jarS.y, z:jarS.z, lv:jarS.lv, state:'injar', home:null },
-      pliers:{ x:plS.x, y:plS.y, z:plS.z, lv:plS.lv, state:'world', home:plS },
-      note:{ x:noS.x, y:noS.y, z:noS.z, lv:noS.lv, state:'world', home:noS }
-    } };
-  IT.jar.mesh.userData.lid.position.set(0, .3, 0); IT.jar.mesh.userData.lid.rotation.set(0, 0, 0);
   // squeaky toys (away from items, hide spots and doors)
   const bad = (s) => used.some(u => u.lv === s.lv && Math.hypot(u.x - s.x, u.z - s.z) < 1.4) || HIDES.some(h => h.lv === s.lv && Math.hypot(h.out.x - s.x, h.out.z - s.z) < 1.1);
-  const toys = shuffle(SPOTS.toy.filter(s => !bad(s))).slice(0, 5);
-  toyPool.forEach((t, i) => { const s = toys[i]; t.m.visible = !!s; if(s){ t.m.position.set(s.x, s.y, s.z); t.m.rotation.y = Math.random() * 6; GS.toys.push({ x:s.x, y:s.y, z:s.z, lv:s.lv, m:t.m, cd:0 }); } });
+  const toys = shuffle(SPOTS.toy.filter(s => !bad(s))).slice(0, 5).map(s => SPOTS.toy.indexOf(s));
   const woody = SPOTS.creak.filter(s => { const r = H.roomAt(s.lv, s.x, s.z); return r && (r.floor === 'wood' || r.floor === 'attic'); });
-  shuffle(woody).slice(0, 6).forEach((s, i) => { const m = creakPool[i]; m.visible = true; m.position.set(s.x, s.y + .013, s.z); m.rotation.y = (i % 2) * Math.PI / 2; GS.creaks.push({ x:s.x, y:s.y, z:s.z, lv:s.lv, cd:0 }); });
+  const creaks = shuffle(woody).slice(0, 6).map(s => SPOTS.creak.indexOf(s));
+  return { jar, pliers, note, code, toys, creaks };
+}
+/* a plan from the network: indices must point at real spots */
+function okPlan(p){
+  try{
+    const ix = (v, list) => Number.isInteger(v) && v >= 0 && v < list.length;
+    if(!p || !ix(p.jar, SPOTS.jar) || !ix(p.pliers, SPOTS.pliers) || !ix(p.note, SPOTS.note)) return null;
+    if(!Array.isArray(p.code) || p.code.length !== 3 || !p.code.every(c => Number.isInteger(c) && c >= 0 && c < 6)) return null;
+    const toys = (Array.isArray(p.toys) ? p.toys : []).filter(v => ix(v, SPOTS.toy)).slice(0, 6);
+    const creaks = (Array.isArray(p.creaks) ? p.creaks : []).filter(v => ix(v, SPOTS.creak)).slice(0, 7);
+    return { jar:p.jar, pliers:p.pliers, note:p.note, code:p.code.slice(), toys, creaks };
+  }catch(e){ return null; }
+}
+function newRun(plan){
+  plan = plan || makePlan();
+  const jarS = SPOTS.jar[plan.jar], plS = SPOTS.pliers[plan.pliers], noS = SPOTS.note[plan.note];
+  const code = plan.code.slice();
+  IT.note.mesh.clear(); IT.note.mesh.add(makeNote(code));
+  GS = { day:1, t:0, code, plan, jarOpen:false, locks:{ key:false, chain:false, pad:false }, progressT:0, hint:false, over:false, stats:{ noise:0 },
+    toys:[], creaks:[], items:{
+      jar:{ x:jarS.x, y:jarS.y, z:jarS.z, lv:jarS.lv, state:'world', home:jarS, by:'' },
+      key:{ x:jarS.x, y:jarS.y, z:jarS.z, lv:jarS.lv, state:'injar', home:null, by:'' },
+      pliers:{ x:plS.x, y:plS.y, z:plS.z, lv:plS.lv, state:'world', home:plS, by:'' },
+      note:{ x:noS.x, y:noS.y, z:noS.z, lv:noS.lv, state:'world', home:noS, by:'' }
+    } };
+  IT.jar.mesh.userData.lid.position.set(0, .3, 0); IT.jar.mesh.userData.lid.rotation.set(0, 0, 0);
+  toyPool.forEach((t, i) => { const s = SPOTS.toy[plan.toys[i]]; t.m.visible = !!s; if(s){ t.m.position.set(s.x, s.y, s.z); t.m.rotation.y = Math.random() * 6; GS.toys.push({ x:s.x, y:s.y, z:s.z, lv:s.lv, m:t.m, cd:0 }); } });
+  plan.creaks.forEach((ci, i) => { const s = SPOTS.creak[ci], m = creakPool[i]; if(!m) return; m.visible = true; m.position.set(s.x, s.y + .013, s.z); m.rotation.y = (i % 2) * Math.PI / 2; GS.creaks.push({ x:s.x, y:s.y, z:s.z, lv:s.lv, cd:0 }); });
   creakPool.forEach((m, i) => { if(i >= GS.creaks.length) m.visible = false; });
   VASES.forEach((v, i) => { v.down = false; v.cb.off = false; const m = vaseMeshes[i]; m.position.set(v.x, v.y, v.z); m.rotation.set(0, 0, 0); });
   // door and locks
   LOCK.key.done = LOCK.chain.done = LOCK.pad.done = false;
-  LOCK.key.key.visible = false; LOCK.key.key.rotation.set(0, Math.PI / 2, 0);
+  LOCK.key.key.visible = false; LOCK.key.key.rotation.set(0, Math.PI / 2, 0); LOCK.key.anim = null; LOCK.chain.anim = null; LOCK.pad.anim = null;
   LOCK.chain.obj.visible = true; LOCK.chain.obj.position.set(0, 0, -6.86); LOCK.chain.obj.rotation.set(0, 0, 0);
   LOCK.pad.obj.visible = true; LOCK.pad.obj.position.set(.5, .62, -6.82); LOCK.pad.obj.rotation.set(0, 0, 0); LOCK.pad.dots.forEach(d => d.material.color.set(0xffffff));
   H.leaves.forEach(l => l.rotation.y = 0); H.doorCol.off = false;
   H.setSunny(false); scene.fog.color.set(0x4a3f7a); hemi.color.set(0xfff0dc); hemi.groundColor.set(0x9a7f86); hemi.intensity = 1.6;
-  held = null; holder.clear();
+  held = null; Object.values(IT).forEach(it => { if(it.mesh.parent !== scene) scene.add(it.mesh); });
   newDay(true);
 }
-function newDay(first){
-  // you wake up in your bed
-  P.x = -7.25; P.z = -4.55; P.y = LY[2]; P.vx = P.vz = 0; P.face = Math.PI / 2; P.hidden = null; P.move = 0;
+function wakeInBed(){
+  // you wake up in your bed (in co-op each kid gets a spot of their own next to it)
+  const o = bedOff(); P.x = -7.25 + o[0]; P.z = -4.55 + o[1]; P.y = LY[2]; P.vx = P.vz = 0; P.face = Math.PI / 2; P.hidden = null; P.move = 0;
   if(hero) hero.grp.visible = true;
   cam.yaw = P.face + Math.PI; cam.pitch = .38; snapCam = true; peek(null);
+}
+let bedOff = () => [0, 0];             // replaced by the online part
+function newDay(first){
+  wakeInBed();
   G.mode = 'sleep'; G.t = 0; G.sleepT = 0; G.wakeAt = first ? D().firstWake : lerp(D().selfWake[0], D().selfWake[1], Math.random()); G.path = []; G.tgt = null; G.spotT = 0; G.chaseT = 0; G.speed = 0;
   placeNonaInBed();
   if(GS){ GS.progressT = GS.t; GS.hint = false; }
@@ -367,10 +401,17 @@ function stepPlayer(dt){
   for(const t of GS.toys){ t.cd -= dt; if(t.cd <= 0 && Math.abs(t.y - P.y) < .8 && Math.hypot(t.x - P.x, t.z - P.z) < .45){ t.cd = 2.5; SFX.squeak(); t.squash = .4; makeNoise(t.x, t.y, t.z, 10, 'squeak'); bubbleTop(L('إييك! لعبة بتزمّر 🦆', 'Squeak! A squeaky toy 🦆', 'Vık! Ötücü oyuncak 🦆'), 1.6); } if(t.squash > 0){ t.squash -= dt; const s = 1 - Math.sin(t.squash / .4 * Math.PI) * .35; t.m.scale.set(1 + (1 - s) * .6, s, 1 + (1 - s) * .6); } }
   for(const c of GS.creaks){ c.cd -= dt; if(c.cd <= 0 && P.mode !== 'sneak' && P.mode !== 'still' && Math.abs(c.y - P.y) < .5 && Math.hypot(c.x - P.x, c.z - P.z) < .5){ c.cd = 2.2; SFX.creak(); makeNoise(c.x, c.y, c.z, 6.5, 'creak'); bubbleTop(L('إيييي… الأرض بتطقطق! امشِ بشويش 🤫', 'Creeeak… a squeaky board! Tiptoe 🤫', 'Gıcırrr… gıcırdayan tahta! Parmak ucunda yürü 🤫'), 1.8); } }
 }
-function knockVase(i){
-  const v = VASES[i]; if(v.down) return;
-  v.down = true; v.cb.off = true; v.fall = 0; v.fdir = Math.atan2(v.x - P.x, v.z - P.z);
-  SFX.vase(); makeNoise(v.x, v.y, v.z, 11, 'vase');
+function knockVase(i, fx, fz){
+  const v = VASES[i]; if(!v || v.down) return;
+  if(fx == null){ fx = P.x; fz = P.z; }
+  vaseFx(i, Math.atan2(v.x - fx, v.z - fz));
+  if(aiHere()){ makeNoise(v.x, v.y, v.z, 11, 'vase'); coShare('vase', { i, f:v.fdir }); }
+  else { ring(v.x, v.y, v.z, 11); coReq({ k:'vase', i, f:Math.round(v.fdir * 100) / 100 }); }
+}
+function vaseFx(i, fdir){
+  const v = VASES[i]; if(!v || v.down) return;
+  v.down = true; v.cb.off = true; v.fall = 0; v.fdir = +fdir || 0;
+  SFX.vase();
   bubbleTop(L('أوبس! وقعت المزهرية 🌷 (ما انكسرت!)', "Oops! The vase fell 🌷 (it didn't break!)", 'Hoppala! Vazo düştü 🌷 (kırılmadı!)'), 2.2);
 }
 function updateVases(dt){
@@ -383,18 +424,24 @@ function updateVases(dt){
 function makeNoise(x, y, z, R, kind, quiet){
   if(!quiet) ring(x, y, z, R, kind === 'run' ? 0xffd36a : 0xffffff);
   GS.stats.noise++;
-  if(state !== 'play' || G.mode === 'chase' || G.mode === 'boop' || G.mode === 'wave') return;
+  if(!aiHere()){ coNoise(x, y, z, R, kind); return; }      // a friend's phone: the host's grandma listens
+  hearNoise(x, y, z, R);
+}
+function hearNoise(x, y, z, R){
+  if((R_co() ? GS.over : state !== 'play') || G.mode === 'chase' || G.mode === 'boop' || G.mode === 'wave') return;
   const d = Math.hypot(G.x - x, G.z - z) + Math.abs(G.y - y) * 1.3;
   const eff = R * (G.mode === 'sleep' ? D().wake : 1);
   if(d > eff) return;
   if(G.mode === 'sleep'){ wakeNona({ x, y, z }, 'noise'); return; }
+  // co-op: several kids can make noise at once; she goes for the nearest one
+  if(R_co() && G.mode === 'curious' && G.tgt && Math.hypot(G.x - G.tgt.x, G.z - G.tgt.z) + Math.abs(G.y - G.tgt.y) * 1.3 < d) return;
   G.tgt = { x, y, z }; G.mode = 'curious'; G.path = H.path(G, G.tgt); G.t = 0; showMark(ques, 1.4);
   if(Math.random() < .6) say('hear');
 }
 function wakeNona(tgt, why){
   G.mode = 'wake'; G.t = 0; G.tgt = tgt; G.spotT = 0; G.chaseT = 0;
   placeNonaInBed(); G.face = Math.PI * .8;
-  SFX.wake(); showMark(why === 'noise' ? excl : ques, 1.4);
+  SFX.wake(); netFx({ k:'sfx', n:'wake' }); showMark(why === 'noise' ? excl : ques, 1.4);
   say(why === 'noise' ? 'wake' : 'self');
 }
 
@@ -411,24 +458,43 @@ const LINES = {
   boop:[L('بوووب! 🪶 عالتخت!', 'Boop! 🪶 Off to bed!', 'Bup! 🪶 Haydi yatağa!')]
 };
 let bubbleUntil = 0, bubbleWho = '';
-function say(cat){ const t = pick(LINES[cat]); A.mumble(4 + Math.floor(Math.random() * 3), cat === 'spot' ? 260 : 210); bubbleNona(t, 2.6); }
+function say(cat, i){ const l = LINES[cat]; if(!l) return; if(!(i >= 0 && i < l.length)) i = Math.floor(Math.random() * l.length); netFx({ k:'say', c:cat, i }); A.mumble(4 + Math.floor(Math.random() * 3), cat === 'spot' ? 260 : 210); bubbleNona(l[i], 2.6); }
 function bubbleNona(t, s){ $('#bubbleT').textContent = t; bubbleUntil = T + s; bubbleWho = 'nona'; }
 let topUntil = 0;
 function bubbleTop(t, s){ const h = $('#hint'); h.textContent = t; h.hidden = false; h.classList.remove('arrow'); topUntil = T + s; }
-function showMark(spr, s){ spr.visible = true; spr.userData.until = T + s; }
+function showMark(spr, s){ spr.visible = true; spr.userData.until = T + s; netFx({ k:'mk', m:spr === excl ? 1 : 0, s }); }
+let netFx = () => {};                  // co-op host: grandma's lines, marks and sounds go to the friends too (online part)
 
-function canSeeKid(){
-  if(P.hidden || state !== 'play') return false;
-  const dy = Math.abs(G.y - P.y); if(dy > 1.4) return false;
-  const dx = P.x - G.x, dz = P.z - G.z, d = Math.hypot(dx, dz);
-  let range = D().sight * (P.mode === 'sneak' || P.mode === 'still' ? .72 : 1);
+/* the kids grandma can catch: just you in solo; in co-op (host) you and the friends */
+function kids(){
+  const out = [];
+  if(!R.co){ out.push({ id:'me', me:true, x:P.x, y:P.y, z:P.z, mode:P.mode, hidden:P.hidden, off:state !== 'play' }); return out; }
+  out.push({ id:MP.id, me:true, x:P.x, y:P.y, z:P.z, mode:P.mode, hidden:P.hidden, off:!(state === 'play' || state === 'pause' || state === 'code') || T < meSafe });
+  for(const p of PEERS.values()) if(p.inRun && p.seen) out.push({ id:p.id, x:p.tx, y:p.ty, z:p.tz, mode:p.md, hidden:p.hid >= 0 ? HIDES[p.hid] : null, off:T < p.safe, peer:p });
+  return out;
+}
+const kidById = id => kids().find(k => k.id === id) || null;
+function canSeeKid(k){
+  k = k || kids()[0];
+  if(!k || k.hidden || k.off) return false;
+  const dy = Math.abs(G.y - k.y); if(dy > 1.4) return false;
+  const dx = k.x - G.x, dz = k.z - G.z, d = Math.hypot(dx, dz);
+  let range = D().sight * (k.mode === 'sneak' || k.mode === 'still' ? .72 : 1);
   if(G.mode === 'tired') range = D().tiredSee;
   if(G.mode === 'search' || G.mode === 'shrug') range *= .9;
   if(d > range) return false;
   const fx = Math.sin(G.face), fz = Math.cos(G.face), cos = (dx * fx + dz * fz) / (d || 1);
   if(d > 1.5 && cos < .42) return false;
-  return H.los({ x:G.x, y:G.y + 1.45, z:G.z }, { x:P.x, y:P.y + .7, z:P.z });
+  return H.los({ x:G.x, y:G.y + 1.45, z:G.z }, { x:k.x, y:k.y + .7, z:k.z });
 }
+/* the nearest kid grandma can see (or null) */
+function seenKid(){
+  let best = null, bd = 1e9;
+  for(const k of kids()){ if(!canSeeKid(k)) continue; const d = Math.hypot(k.x - G.x, k.z - G.z); if(d < bd){ bd = d; best = k; } }
+  return best;
+}
+/* co-op: grandma is a bit slower for each extra kid so it stays fun */
+const coSlow = () => R.co ? Math.max(.78, 1 - .07 * (kids().length - 1)) : 1;
 function goTo(tgt){ G.tgt = tgt; G.path = H.path(G, tgt); G.lastPathT = T; }
 function moveNona(dt, speed){
   if(!G.path.length){ G.speed = 0; return true; }
@@ -445,31 +511,33 @@ function moveNona(dt, speed){
 }
 const WANDER_ROOMS = ['kitchen', 'living', 'hall', 'landing', 'bath', 'kids', 'nona', 'landing', 'hall', 'kitchen'];
 function wanderNext(){
-  const kidRoom = H.roomOf(P.x, P.y, P.z);
+  const kk = pick(kids()), kidRoom = H.roomOf(kk.x, kk.y, kk.z);
   const pool = WANDER_ROOMS.slice(); if(diffId === 'normal' && kidRoom && H.ROOM[kidRoom]) pool.push(kidRoom, kidRoom);
   if(GS && GS.t > 120) pool.push('basement', 'attic');
   const p = H.freePoint(pick(pool)); goTo(p);
 }
 function updateNona(dt){
   const d = D(); G.t += dt;
-  const seeing = (G.mode !== 'sleep' && G.mode !== 'wake' && G.mode !== 'boop' && G.mode !== 'shrug') ? canSeeKid() : false;
+  const sk = (G.mode !== 'sleep' && G.mode !== 'wake' && G.mode !== 'boop' && G.mode !== 'shrug') ? seenKid() : null, seeing = !!sk;
+  if(sk && (G.mode !== 'chase' || !canSeeKid(kidById(G.kid)))) G.kid = sk.id;      // chase the nearest kid she can see
   if(seeing && G.mode !== 'chase' && (G.mode !== 'tired' || d.tiredSee > 0)){
     G.spotT += dt; if(!excl.visible) showMark(excl, .8);
-    if(G.spotT > d.spot){ G.mode = 'chase'; G.t = 0; G.chaseT = 0; G.lostT = 0; SFX.spot(); say('spot'); A.setMode('chase'); }
+    if(G.spotT > d.spot){ G.mode = 'chase'; G.t = 0; G.chaseT = 0; G.lostT = 0; SFX.spot(); netFx({ k:'sfx', n:'spot' }); say('spot'); if(!R.co || G.kid === MP.id) A.setMode('chase'); }
   } else if(!seeing) G.spotT = Math.max(0, G.spotT - dt * .5);
+  const slow = coSlow();
   G.act = 'walk'; G.actK = 0;
   switch(G.mode){
     case 'sleep':
       G.sleepT += dt;
       if(G.sleepT > G.wakeAt){ wakeNona(null, 'self'); }
-      G.snoreT -= dt; if(G.snoreT <= 0){ G.snoreT = 2.7; const dd = Math.hypot(P.x - H.nonaBed.x, P.z - H.nonaBed.z) + Math.abs(P.y - LY[2]) * 2; A.snore(clamp(1 - dd / 16, 0, 1)); }
+      snore(dt);
       break;
     case 'wake':
       G.act = 'yawn'; G.actK = G.t / 1.4; G.speed = 0;
       if(G.t > 1.4){ if(G.tgt){ G.mode = 'curious'; goTo(G.tgt); } else { G.mode = 'wander'; G.wanderLeft = d.wanderT; goTo(H.freePoint(pick(['kitchen', 'bath', 'kitchen']))); } G.t = 0; }
       break;
     case 'curious':
-      if(moveNona(dt, d.curious)){ G.mode = 'search'; G.t = 0; if(Math.random() < .7) say('search'); }
+      if(moveNona(dt, d.curious * slow)){ G.mode = 'search'; G.t = 0; if(Math.random() < .7) say('search'); }
       break;
     case 'search':
       G.act = 'look'; G.speed = 0; G.face += Math.sin(G.t * 1.7) * dt * .8;
@@ -477,14 +545,15 @@ function updateNona(dt){
       break;
     case 'wander':
       G.wanderLeft -= dt;
-      if(moveNona(dt, d.wander)){ if(G.wanderLeft <= 0){ toTired(); } else { G.mode = 'search'; G.t = 1.6; } }
+      if(moveNona(dt, d.wander * slow)){ if(G.wanderLeft <= 0){ toTired(); } else { G.mode = 'search'; G.t = 1.6; } }
       break;
     case 'chase': {
       G.chaseT += dt;
-      if(seeing){ G.lostT = 0; G.lastSeen = { x:P.x, y:P.y, z:P.z }; if(T - G.lastPathT > .4 || !G.path.length){ goTo(G.lastSeen); } }
+      if(seeing){ G.lostT = 0; G.lastSeen = { x:sk.x, y:sk.y, z:sk.z }; if(T - G.lastPathT > .4 || !G.path.length){ goTo(G.lastSeen); } }
       else { G.lostT += dt; if(!G.path.length && G.lastSeen) goTo(G.lastSeen); }
-      moveNona(dt, d.chase);
-      if(!P.hidden && Math.abs(G.y - P.y) < 1 && Math.hypot(G.x - P.x, G.z - P.z) < d.catchR){ startBoop(); break; }
+      moveNona(dt, d.chase * slow);
+      if(!R.co){ if(!P.hidden && Math.abs(G.y - P.y) < 1 && Math.hypot(G.x - P.x, G.z - P.z) < d.catchR){ startBoop(); break; } }
+      else { const kc = kids().find(k => !k.hidden && !k.off && Math.abs(G.y - k.y) < 1 && Math.hypot(G.x - k.x, G.z - k.z) < d.catchR); if(kc){ coBoop(kc); break; } }
       if(G.lostT > d.lose){ G.mode = 'search'; G.t = 0; G.wanderLeft = d.wanderT * .4; say('lost'); A.setMode('calm'); }
       else if(G.chaseT > d.chaseMax){ toTired(); A.setMode('calm'); }
       break;
@@ -493,7 +562,7 @@ function updateNona(dt){
       if(moveNona(dt, d.curious * 1.2)){ G.mode = 'shrug'; G.t = 0; say('shrug'); }
       break;
     case 'shrug':
-      G.act = 'shrug'; G.actK = G.t / 2.4; G.speed = 0; if(P.hidden) G.face += angDiff(Math.atan2(P.hidden.x - G.x, P.hidden.z - G.z), G.face) * Math.min(1, 4 * dt);
+      { const kh = R.co ? kidById(G.kid) : { hidden:P.hidden }, hh = kh && kh.hidden; G.act = 'shrug'; G.actK = G.t / 2.4; G.speed = 0; if(hh) G.face += angDiff(Math.atan2(hh.x - G.x, hh.z - G.z), G.face) * Math.min(1, 4 * dt); }
       if(G.t > 2.4) toTired();
       break;
     case 'tired':
@@ -501,15 +570,17 @@ function updateNona(dt){
       if(moveNona(dt, d.tired)){ G.mode = 'sleep'; G.sleepT = 0; G.wakeAt = lerp(d.selfWake[0], d.selfWake[1], Math.random()); G.t = 0; }
       break;
     case 'boop':
-      G.act = 'boop'; G.actK = Math.min(1, G.t / .8); G.speed = 0; G.face += angDiff(Math.atan2(P.x - G.x, P.z - G.z), G.face) * Math.min(1, 10 * dt);
+      { const kb = R.co ? (kidById(G.kid) || P) : P; G.act = 'boop'; G.actK = Math.min(1, G.t / .8); G.speed = 0; G.face += angDiff(Math.atan2(kb.x - G.x, kb.z - G.z), G.face) * Math.min(1, 10 * dt); }
+      if(R.co && G.t > 2.2) coAfterBoop();
       break;
   }
   if(G.mode !== 'chase' && A.musicMode === 'chase') A.setMode('calm');
 }
+function snore(dt){ G.snoreT -= dt; if(G.snoreT <= 0){ G.snoreT = 2.7; const dd = Math.hypot(P.x - H.nonaBed.x, P.z - H.nonaBed.z) + Math.abs(P.y - LY[2]) * 2; A.snore(clamp(1 - dd / 16, 0, 1)); } }
 function toTired(){ G.mode = 'tired'; G.t = 0; G.wanderLeft = 0; say('tired'); goTo({ x:H.nonaBed.out.x, y:LY[2], z:H.nonaBed.out.z }); }
 function renderNona(dt){
   const n = nona;
-  const sleeping = G.mode === 'sleep' || (state === 'title' || state === 'select' || state === 'overview');
+  const sleeping = G.mode === 'sleep' || (state === 'title' || state === 'select' || state === 'overview' || (state === 'mp' && !R.co));
   blanket.visible = blanketFold.visible = sleeping; n.pillow.visible = !sleeping;
   if(sleeping){
     const b = H.nonaBed, top = b.top;
@@ -531,11 +602,17 @@ function nearHide(){ let best = null, bd = 1e9; for(const h of HIDES){ if(Math.a
 function enterHide(h){
   P.hidden = h; P.vx = P.vz = 0; hero.grp.visible = false; cam.peekY = 0; cam.peekP = 0; clearInput();
   SFX.hide(); peek(h.kind);
-  const d = Math.hypot(G.x - P.x, G.z - P.z);
-  if(G.mode === 'chase' || ((G.mode === 'curious' || G.mode === 'wander' || G.mode === 'search') && d < 6 && G.spotT > 0)){
-    G.mode = 'toHide'; goTo({ x:h.out.x, y:h.y, z:h.out.z }); A.setMode('calm');
-  }
+  if(aiHere()){ if(hideReact(R.co ? MP.id : 'me', h, P.x, P.z)) A.setMode('calm'); }
+  else coPosNow();
   bubbleTop(L('تخبّيت! 🤫 استنّى الجدّة تروح', 'Hidden! 🤫 Wait for Grandma to leave', 'Saklandın! 🤫 Büyükannenin gitmesini bekle'), 2.5);
+}
+/* grandma saw a kid slip into a hiding spot: she walks over, shrugs, and goes back to bed */
+function hideReact(id, h, x, z){
+  const d = Math.hypot(G.x - x, G.z - z);
+  if((G.mode === 'chase' && (!R.co || G.kid === id)) || ((G.mode === 'curious' || G.mode === 'wander' || G.mode === 'search') && d < 6 && G.spotT > 0)){
+    G.mode = 'toHide'; G.kid = id; goTo({ x:h.out.x, y:h.y, z:h.out.z }); return true;
+  }
+  return false;
 }
 function exitHide(){
   const h = P.hidden; if(!h) return;
@@ -571,52 +648,99 @@ function doAction(){
   const c = context(); if(!c) return;
   if(c.k === 'out') exitHide();
   else if(c.k === 'hide') enterHide(c.h);
+  else if(c.k === 'door') doorHint();
+  else if(c.k === 'use' && held === 'note') openCode();
+  else if(!aiHere()) coAsk(c);              // a friend's phone asks the host, who answers for everyone
   else if(c.k === 'pick') pickUp(c.id);
   else if(c.k === 'drop') dropHeld(true);
   else if(c.k === 'jar') openJar();
   else if(c.k === 'use') useOnDoor();
-  else if(c.k === 'door') doorHint();
 }
-function attach(id){ holder.clear(); const m = IT[id].mesh; holder.add(m); m.position.set(0, 0, 0); m.rotation.set(0, 0, 0); if(id === 'note'){ m.rotation.x = -1.1; m.position.y = .05; } if(id === 'key'){ m.rotation.set(-1.0, 0, 0); } }
-function detach(id){ const m = IT[id].mesh; holder.remove(m); scene.add(m); }
-function pickUp(id){
-  if(held) dropHeld(false);
-  const it = GS.items[id]; it.state = 'held'; held = id; attach(id); SFX.pickup();
+/* items are shared in the house: each one is lying around ('world'), carried by someone ('held', by = player id),
+   still in the cookie jar ('injar', the key) or used on the door ('used'). Each kid carries one at a time. */
+const myId = () => R.co ? MP.id : 'me';
+function heldBy(who){ if(!GS) return null; for(const id of ['key', 'pliers', 'note']){ const it = GS.items[id]; if(it.state === 'held' && it.by === who) return id; } return null; }
+function poseHeldMesh(m, id){ m.position.set(0, 0, 0); m.rotation.set(0, 0, 0); if(id === 'note'){ m.rotation.x = -1.1; m.position.y = .05; } if(id === 'key'){ m.rotation.set(-1.0, 0, 0); } }
+function holderOf(who){ if(who === myId()) return holder; const p = R.co && PEERS.get(who); return (p && p.holder) || null; }
+function attach(id){ const m = IT[id].mesh; holder.add(m); poseHeldMesh(m, id); }
+/* put every carried item in the right kid's hands (and the rest back in the house) */
+function syncHeld(){
+  if(!GS) return;
+  const was = held; held = heldBy(myId());
+  for(const id of ['key', 'pliers', 'note']){
+    const it = GS.items[id], m = IT[id].mesh;
+    const hd = it.state === 'held' ? holderOf(it.by) : null;
+    if(hd){ if(m.parent !== hd){ hd.add(m); poseHeldMesh(m, id); } }
+    else if(m.parent !== scene) scene.add(m);
+  }
+  if(was !== held) updateNoteCard();
+}
+function pickUp(id, who = myId()){
+  const it = GS.items[id]; if(!it || it.state !== 'world') return false;
+  if(heldBy(who)) dropHeld(false, who);
+  it.state = 'held'; it.by = who; syncHeld();
   burst(it.x, it.y + .2, it.z, 14, ['#fff1a0', '#ffffff', '#ffcd4d'], { speed:1.5, up:2, g:3, life:.8, size:.7 });
-  if(!GS.locks[NEED[id]]){ progress(); bubbleTop(INFO[id].e + ' ' + INFO[id].n + ' — ' + L('روح عالباب الكبير تحت 🚪', 'take it to the big front door downstairs 🚪', 'aşağıdaki büyük kapıya götür 🚪'), 3); }
+  if(who === myId()){ SFX.pickup(); if(!GS.locks[NEED[id]]){ progress(); bubbleTop(INFO[id].e + ' ' + INFO[id].n + ' — ' + L('روح عالباب الكبير تحت 🚪', 'take it to the big front door downstairs 🚪', 'aşağıdaki büyük kapıya götür 🚪'), 3); } }
   updateNoteCard();
+  coShare('pick', { by:who, i:id });
+  return true;
 }
-function dropHeld(noisy){
-  if(!held) return;
-  const id = held, it = GS.items[id]; held = null; detach(id);
-  const fx = P.x + Math.sin(P.face) * .45, fz = P.z + Math.cos(P.face) * .45;
-  const o = { x:fx, z:fz }; H.collide(o, .15, P.y);
-  it.x = o.x; it.z = o.z; it.y = H.groundY(o.x, o.z, P.y); it.lv = H.lvOf(it.y); it.state = 'world';
-  if(noisy){ SFX.drop(); makeNoise(it.x, it.y, it.z, 5, 'drop'); }
+/* at = where a friend's phone put it (checked to be next to them) */
+function dropHeld(noisy, who = myId(), at){
+  const id = heldBy(who); if(!id) return;
+  const it = GS.items[id];
+  let fx, fz, py;
+  if(who === myId()){ fx = P.x + Math.sin(P.face) * .45; fz = P.z + Math.cos(P.face) * .45; py = P.y; }
+  else { const k = kidById(who) || { x:it.x, y:it.y, z:it.z }; py = k.y; fx = k.x; fz = k.z; if(at && Math.hypot(at.x - k.x, at.z - k.z) < 1.2){ fx = at.x; fz = at.z; } }
+  const o = { x:fx, z:fz }; H.collide(o, .15, py);
+  it.x = o.x; it.z = o.z; it.y = H.groundY(o.x, o.z, py); it.lv = H.lvOf(it.y); it.state = 'world'; it.by = '';
+  syncHeld();
+  if(noisy){ if(who === myId()) SFX.drop(); makeNoise(it.x, it.y, it.z, 5, 'drop'); }
   updateNoteCard();
+  coShare('drop', { by:who, i:id });
 }
-function openJar(){
+function openJar(who = myId()){
+  if(GS.jarOpen) return;
   GS.jarOpen = true; const j = GS.items.jar; SFX.jar(); makeNoise(j.x, j.y, j.z, 4.5, 'jar');
   const k = GS.items.key; k.state = 'world';
   // the key pops out next to the jar (towards the kid)
-  const dx = P.x - j.x, dz = P.z - j.z, d = Math.hypot(dx, dz) || 1; k.x = j.x + dx / d * .3; k.z = j.z + dz / d * .3; k.y = j.y; k.lv = j.lv;
+  const kid = who === myId() ? P : (kidById(who) || P);
+  const dx = kid.x - j.x, dz = kid.z - j.z, d = Math.hypot(dx, dz) || 1; k.x = j.x + dx / d * .3; k.z = j.z + dz / d * .3; k.y = j.y; k.lv = j.lv;
+  jarFx();
+  coShare('jar', { by:who });
+}
+function jarFx(){
+  const j = GS.items.jar;
   keyPop = 0; progress();
   burst(j.x, j.y + .35, j.z, 18, ['#c98a4a', '#ffcd4d', '#ffffff'], { speed:1.4, up:2.5, g:6, life:.9, size:.8 });
   bubbleTop(L('لقيت المفتاح بعلبة البسكوت! 🔑🍪', 'The key was in the cookie jar! 🔑🍪', 'Anahtar kurabiye kavanozundaymış! 🔑🍪'), 2.6);
 }
 let keyPop = 1;
-function useOnDoor(){
-  const id = held, lk = NEED[id];
-  if(id === 'note'){ openCode(); return; }
-  held = null; holder.clear(); GS.items[id].state = 'used';
-  if(id === 'key'){ LOCK.key.key.visible = true; LOCK.key.anim = 0; SFX.unlock(); }
-  if(id === 'pliers'){ LOCK.chain.anim = 0; SFX.chain(); burst(.5, 1.5, -6.75, 16, ['#fff3a0', '#ffffff', '#b9c0c8'], { speed:2, up:1.5, g:6, life:.6, size:.6 }); }
+function useOnDoor(who = myId()){
+  const id = heldBy(who), lk = NEED[id];
+  if(!id) return;
+  if(id === 'note'){ if(who === myId()) openCode(); return; }
+  if(GS.locks[lk]) return;
+  GS.items[id].state = 'used'; GS.items[id].by = ''; syncHeld();
+  lockFx(lk);
   GS.locks[lk] = true; makeNoise(.5, 0, -6.4, 8, 'lock'); progress(); afterLock();
+  coShare('lock', { by:who, lk });
+}
+function lockFx(lk){
+  if(lk === 'key'){ LOCK.key.key.visible = true; LOCK.key.anim = 0; SFX.unlock(); }
+  if(lk === 'chain'){ LOCK.chain.anim = 0; SFX.chain(); burst(.5, 1.5, -6.75, 16, ['#fff3a0', '#ffffff', '#b9c0c8'], { speed:2, up:1.5, g:6, life:.6, size:.6 }); }
+  if(lk === 'pad'){ LOCK.pad.anim = 0; LOCK.pad.dots.forEach((d, i) => d.material.color.set(SYM[GS.code[i]].c)); SFX.unlock(); }
+}
+function padOpen(who = myId()){
+  if(GS.locks.pad || heldBy(who) !== 'note') return;
+  GS.items.note.state = 'used'; GS.items.note.by = ''; syncHeld(); GS.locks.pad = true;
+  lockFx('pad'); makeNoise(.5, 0, -6.4, 8, 'lock'); progress(); afterLock();
+  coShare('lock', { by:who, lk:'pad' });
 }
 function afterLock(){
   updateNoteCard();
   const left = Object.values(GS.locks).filter(v => !v).length;
-  if(left === 0){ setTimeout(() => startWin(), 900); bubbleTop(L('انفتح الباب! 🎉', 'The door is open! 🎉', 'Kapı açıldı! 🎉'), 2); }
+  if(left === 0){ if(aiHere()) setTimeout(() => { if(R.co) coWin(); else startWin(); }, 900); bubbleTop(L('انفتح الباب! 🎉', 'The door is open! 🎉', 'Kapı açıldı! 🎉'), 2); }
   else bubbleTop(L('برافو! ضل ', 'Bravo! ', 'Aferin! ') + N(left) + L(' قفل 🔓', left === 1 ? ' lock left 🔓' : ' locks left 🔓', ' kilit kaldı 🔓'), 2.4);
 }
 function doorHint(){
@@ -649,7 +773,7 @@ function openCode(){
   $('#cX').onclick = () => closeCode();
 }
 function codeTap(i){
-  if(entry.length >= 3) return;
+  if(entry.length >= 3 || $('#code').hidden) return;
   entry.push(i); SFX.code(i);
   const sl = $('#cSlots').children; sl[entry.length - 1].innerHTML = symSVG(i, 36);
   if(entry.length === 3){
@@ -661,12 +785,8 @@ function codeTap(i){
   }
 }
 function closeCode(solved){
-  $('#code').hidden = true; state = 'play';
-  if(solved){
-    held = null; holder.clear(); GS.items.note.state = 'used'; GS.locks.pad = true;
-    LOCK.pad.anim = 0; LOCK.pad.dots.forEach((d, i) => d.material.color.set(SYM[GS.code[i]].c));
-    SFX.unlock(); makeNoise(.5, 0, -6.4, 8, 'lock'); progress(); afterLock();
-  }
+  $('#code').hidden = true; if(state === 'code') state = 'play';
+  if(solved){ if(aiHere()) padOpen(); else coReq({ k:'pad' }); }
 }
 
 /* ---------- caught: a soft boop, feathers, cosy fade, next day ---------- */
@@ -677,6 +797,7 @@ function startBoop(){
   setTimeout(() => { SFX.feathers(); burst(P.x, P.y + 1.0, P.z, 40, ['#ffffff', '#fff3f8', '#ffe3ef'], { speed:2.2, up:2.2, g:1.2, drag:2.4, life:2.6, size:1.4, sway:.8 }); }, 380);
 }
 function updateCaught(dt){
+  if(R.co){ updateCaughtCo(dt); return; }
   boopT += dt;
   const ov = $('#sleepov');
   if(boopT > .9 && ov.hidden){
@@ -689,7 +810,7 @@ function updateCaught(dt){
   if(boopT > 2.2 && !updateCaught.reset){
     updateCaught.reset = true;
     // carried item goes back to where it was found
-    if(held){ const id = held, it = GS.items[id]; detach(id); held = null; const h = id === 'key' ? GS.items.jar : it.home; it.x = h.x + (id === 'key' ? .3 : 0); it.y = h.y; it.z = h.z; it.lv = h.lv; it.state = 'world'; updateNoteCard(); }
+    if(held) itemHome(held);
     GS.day++;
     if(GS.day > DAYS){ ov.hidden = true; showLose(); updateCaught.reset = false; return; }
     newDay(false);
@@ -697,13 +818,19 @@ function updateCaught(dt){
   if(boopT > 3.4){ updateCaught.reset = false; ov.classList.add('out'); setTimeout(() => { ov.hidden = true; }, 500); state = 'play'; A.music(true, 'calm'); bubbleTop(L('يوم جديد! انتبه عالجدّة 👵🏻', 'A new day! Watch out for Grandma 👵🏻', 'Yeni bir gün! Büyükanneye dikkat 👵🏻'), 2.5); }
 }
 
+/* a carried item goes back to where it was found */
+function itemHome(id){ const it = GS.items[id], h = id === 'key' ? GS.items.jar : it.home; it.x = h.x + (id === 'key' ? .3 : 0); it.y = h.y; it.z = h.z; it.lv = h.lv; it.state = 'world'; it.by = ''; syncHeld(); updateNoteCard(); }
+
 /* ---------- win: the door opens to a sunny garden ---------- */
 let winT = 0;
 function startWin(){
-  if(state !== 'play' && state !== 'code') return;
+  if(!R.co && state !== 'play' && state !== 'code') return;
+  if(R.co){ if(state === 'win' || state === 'won') return; $('#code').hidden = true; $('#sleepov').hidden = true; overlay.hidden = true; updateCaught.reset = false; updateWin.shown = false; }
   state = 'win'; winT = 0; clearInput(); exitHide(); fp = false; $('#btnEye').classList.remove('lit');
   GS.over = true; H.doorCol.off = true; SFX.door(); setPlayUI(false);
-  if(held){ holder.clear(); held = null; }
+  for(const id of ['key', 'pliers', 'note']){ const it = GS.items[id]; if(it.state === 'held'){ it.state = 'used'; it.by = ''; } } syncHeld();
+  for(const id of ['key', 'pliers', 'note']) if(GS.items[id].state === 'used') IT[id].mesh.visible = false;
+  coWinPlace();
   // grandma waves from the hallway
   G.mode = 'wave'; G.x = .5; G.z = -3.8; G.y = 0; G.face = Math.PI; G.path = [];
   P.x = .5; P.z = -5.6; P.y = 0; P.face = Math.PI;
@@ -715,10 +842,11 @@ function updateWin(dt){
   winT += dt;
   const k = Math.min(1, winT / 1.2); H.leaves[0].rotation.y = k * 1.75; H.leaves[1].rotation.y = -k * 1.75;
   if(winT > 1.0){ const w = Math.min(1, (winT - 1.0) / 2.6); P.z = lerp(-5.6, -12.5, w); P.x = .5 + Math.sin(w * 6) * .2; P.face = Math.PI; P.move = w < 1 ? 1 : 0; P.y = H.groundY(P.x, P.z, P.y); }
+  coWinFrame(winT);
   G.act = 'wave'; G.speed = 0;
   camera.position.set(2.4, 1.7, -15.2); camera.lookAt(.4, 1.3, -8.5);
   if(winT > 2.4 && Math.random() < dt * 9) burst(P.x + (Math.random() - .5) * 4, 3.5, P.z + (Math.random() - .5) * 2, 10, ['#ff5d73', '#ffcd4d', '#5fb8ff', '#5fe3b1', '#b99bff'], { speed:2, up:1, g:2.2, drag:1.2, life:2.6, size:1.2, sway:.6 });
-  if(winT > 4.2 && !updateWin.shown){ updateWin.shown = true; showWin(); }
+  if(winT > 4.2 && !updateWin.shown && state === 'win'){ updateWin.shown = true; showWin(); }
 }
 
 /* ---------- HUD ---------- */
@@ -728,7 +856,7 @@ function setPlayUI(on){ ['#hud', '#joy', '#btnRun'].forEach(s => $(s).hidden = !
 function hudFrame(){
   setTxt('hDay', '☀️ ' + L('اليوم ', 'Day ', 'Gün ') + N(GS.day) + '/' + N(DAYS));
   for(const [id, lk] of [['hKey', 'key'], ['hChain', 'chain'], ['hPad', 'pad']]) $('#' + id).classList.toggle('done', GS.locks[lk]);
-  const m = G.mode, mood = m === 'sleep' ? ['😴', L('الجدّة نايمة', 'Grandma is asleep', 'Büyükanne uyuyor'), 'sleep'] : m === 'chase' || m === 'boop' ? ['😠', L('الجدّة شافتك!', 'Grandma sees you!', 'Büyükanne seni gördü!'), 'chase'] :
+  const m = G.mode, mood = m === 'sleep' ? ['😴', L('الجدّة نايمة', 'Grandma is asleep', 'Büyükanne uyuyor'), 'sleep'] : m === 'chase' || m === 'boop' ? (R.co && G.kid !== MP.id ? ['🏃‍♀️', L('الجدّة عم تلحق صاحبك!', 'Grandma is chasing your friend!', 'Büyükanne arkadaşını kovalıyor!'), 'chase'] : ['😠', L('الجدّة شافتك!', 'Grandma sees you!', 'Büyükanne seni gördü!'), 'chase']) :
     m === 'tired' || m === 'shrug' ? ['🥱', L('الجدّة تعبانة', 'Grandma is sleepy', 'Büyükanne yorgun'), 'tired'] : ['🤔', L('الجدّة صاحية!', 'Grandma is awake!', 'Büyükanne uyandı!'), 'awake'];
   setTxt('hMood', mood[0] + ' ' + mood[1]); $('#hMood').dataset.m = mood[2];
   // held item slot
@@ -779,6 +907,7 @@ function updateHint(dt){
 const overlay = $('#overlay'), card = $('#card');
 function showOverlay(cls){ overlay.hidden = false; overlay.className = 'overlay ' + (cls || ''); }
 function showTitle(){
+  if(R.co || MP.t) coStop();
   state = 'title'; setPlayUI(false); showOverlay('clear'); card.className = 'card bare'; clearInput(); peek(null); A.music(false);
   if(!GS) newRun(); placeTitleScene(); setTitleView(true); H.setTitle(true);
   const best = +rawGet('granny_best') || 0;
@@ -791,11 +920,13 @@ function showTitle(){
       <button class="hero-btn" id="bHero" style="--c:${HERO_COLOR[heroId]}"><img src="${charImg(heroId)}" alt=""><span>${HERO_NAME[heroId]} 🔄</span></button>
     </div>
     <button class="big-btn" id="bPlay">▶️ ${L('يلّا نهرب!', "Let's escape!", 'Hadi kaçalım!')}</button>
+    <button class="big-btn pink" id="bMp">👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</button>
     ${best ? `<div class="mine"><span>${'⭐'.repeat(best)}</span></div>` : ''}
   </div>`;
   card.querySelectorAll('.seg button').forEach(b => b.onclick = () => { diffId = b.dataset.d; rawSet('granny_diff', diffId); SFX.tap(); card.querySelectorAll('.seg button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-checked', x === b); }); });
   $('#bPlay').onclick = () => { A.ac(); SFX.tap(); startGame(); };
   $('#bHero').onclick = () => { A.ac(); SFX.tap(); showSelect('title'); };
+  $('#bMp').onclick = () => { A.ac(); SFX.tap(); mpMenu(); };
 }
 function placeTitleScene(){
   P.x = -6.6; P.z = -4.2; P.y = LY[2]; P.face = 0; P.hidden = null; P.move = 0; if(hero) hero.grp.visible = true;
@@ -809,10 +940,10 @@ function showSelect(from){
     <button class="big-btn" id="bOkHero">✅ ${L('تمام', 'OK', 'Tamam')}</button>`;
   const btns = [...card.querySelectorAll('.hero')];
   btns.forEach(b => b.onclick = () => { selPick = b.dataset.id; SFX.tap(); btns.forEach(x => { const on = x === b; x.classList.toggle('on', on); x.setAttribute('aria-pressed', on); }); });
-  $('#bOkHero').onclick = () => { SFX.tap(); if(selPick !== heroId){ heroId = selPick; rawSet('granny_hero', heroId); setHero(heroId); if(held) attach(held); } if(selFrom === 'pause') showPause(true); else showTitle(); };
+  $('#bOkHero').onclick = () => { SFX.tap(); if(selPick !== heroId){ heroId = selPick; rawSet('granny_hero', heroId); setHero(heroId); if(held) attach(held); if(MP.t) mpTrack(); } if(selFrom === 'pause') showPause(true); else if(selFrom === 'mp') mpBackFromSelect(); else showTitle(); };
 }
-function startGame(){
-  newRun(); setTitleView(false); H.setTitle(false);
+function startGame(plan){
+  newRun(plan); setTitleView(false); H.setTitle(false);
   overlay.hidden = true; state = 'play'; setPlayUI(true); placeJoyHome(); for(const k in hudCache) delete hudCache[k];
   runOn = false; runBtn.classList.remove('lit'); fp = false; $('#btnEye').classList.remove('lit'); $('#btnSnd').textContent = A.muted ? '🔇' : '🔊';
   A.music(true, 'calm');
@@ -823,20 +954,24 @@ function showPause(fromSelect){
   state = 'pause'; setPlayUI(false); showOverlay('dim'); card.className = 'card'; clearInput(); A.music(false);
   card.innerHTML = `<h2>⏸️ ${L('استراحة', 'Paused', 'Mola')}</h2>
     <p>☀️ ${L('اليوم ', 'Day ', 'Gün ') + N(GS.day) + '/' + N(DAYS)} · ${GS.locks.key ? '✅' : '🔒'}🔑 ${GS.locks.chain ? '✅' : '🔒'}⛓️ ${GS.locks.pad ? '✅' : '🔒'}🎨</p>
+    ${R.co ? `<p>👫 ${L('أصحابك لسّا عم يلعبوا، الجدّة ما بتستنّى!', "Your friends are still playing — Grandma doesn't wait!", 'Arkadaşların hâlâ oynuyor — Büyükanne beklemez!')}</p>` : ''}
     <button class="big-btn" id="bRes">▶️ ${L('كمّل', 'Continue', 'Devam')}</button>
-    <div class="row"><button class="ghost-btn" id="bRestart">🔁 ${L('من الأول', 'Start over', 'Baştan')}</button>
+    <div class="row">${R.co ? `<button class="ghost-btn" id="bLeaveP">🚪 ${L('اطلع من الغرفة', 'Leave the room', 'Odadan çık')}</button>` : `<button class="ghost-btn" id="bRestart">🔁 ${L('من الأول', 'Start over', 'Baştan')}</button>`}
     <button class="ghost-btn" id="bChar">🦸 ${L('غيّر الشخصية', 'Change hero', 'Kahraman değiştir')}</button>
     <button class="ghost-btn" id="bSnd2">${A.muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button></div>
     <button class="exit-btn">🚪 ${L('خروج', 'Exit', 'Çıkış')}</button>`;
   $('#bRes').onclick = () => { SFX.tap(); resume(); };
-  $('#bRestart').onclick = () => { SFX.tap(); startGame(); };
+  if(R.co) $('#bLeaveP').onclick = () => { SFX.tap(); coStop(); showTitle(); };
+  else $('#bRestart').onclick = () => { SFX.tap(); startGame(); };
   $('#bChar').onclick = () => { SFX.tap(); showSelect('pause'); };
   $('#bSnd2').onclick = () => { A.setMuted(!A.muted); $('#bSnd2').innerHTML = (A.muted ? '🔇' : '🔊') + ' ' + L('الصوت', 'Sound', 'Ses'); $('#btnSnd').textContent = A.muted ? '🔇' : '🔊'; if(!A.muted) SFX.tap(); };
 }
-function resume(){ overlay.hidden = true; state = 'play'; setPlayUI(true); placeJoyHome(); for(const k in hudCache) delete hudCache[k]; A.music(true, G.mode === 'chase' ? 'chase' : 'calm'); snapCam = true; }
+function resume(){ if(state !== 'pause' && state !== 'select') return; overlay.hidden = true; state = 'play'; setPlayUI(true); placeJoyHome(); for(const k in hudCache) delete hudCache[k]; A.music(true, G.mode === 'chase' ? 'chase' : 'calm'); snapCam = true; }
+const starsFor = (days, secs) => days === 1 && secs < 420 ? 3 : (days <= 2 || (days <= 3 && secs < 600)) ? 2 : 1;
 function showWin(){
+  if(R.co){ showWinCo(); return; }
   const days = GS.day, secs = Math.round(GS.t);
-  const stars = days === 1 && secs < 420 ? 3 : (days <= 2 || (days <= 3 && secs < 600)) ? 2 : 1;
+  const stars = starsFor(days, secs);
   const coins = [0, 5, 10, 15][stars];
   if(window.World) World.addCoins(coins, L('من بيت الجدّة نونا', "for Grandma Nona's House", 'Nona Ninenin Evi için'));
   if(window.World && World.track) try{ World.track('win', 'granny'); }catch(e){}
@@ -853,6 +988,7 @@ function showWin(){
   $('#bMenuW').onclick = () => { SFX.tap(); updateWin.shown = false; GS = null; showTitle(); };
 }
 function showLose(){
+  if(R.co){ showLoseCo(); return; }
   state = 'lost'; setPlayUI(false); showOverlay('dim'); card.className = 'card'; A.music(false);
   card.innerHTML = `<div class="bigstar">🌙</div><h2>${L('بكرا منجرّب!', "We'll try again tomorrow!", 'Yarın yine deneriz!')}</h2>
     <p>${L('الجدّة نونا مسكتك ٥ مرات وصار وقت النوم 😴 بس إنت قرّبت كتير!', 'Grandma Nona booped you 5 times — bedtime 😴 but you got so close!', 'Nona Nine seni 5 kez yakaladı — uyku vakti 😴 ama çok yaklaştın!').replace('٥', N(5))}</p>
@@ -875,7 +1011,7 @@ function renderItems(dt){
   if(!GS) return;
   for(const id of ['jar', 'key', 'pliers', 'note']){
     const it = GS.items[id], o = IT[id];
-    const visible = it.state === 'world' || it.state === 'held' || (id === 'key' && it.state === 'injar' && false);
+    const visible = it.state === 'world' || (it.state === 'held' && o.mesh.parent !== scene);
     o.mesh.visible = visible; o.spr.visible = false;
     if(it.state === 'world'){
       if(o.mesh.parent !== scene) scene.add(o.mesh);
@@ -892,7 +1028,7 @@ function renderItems(dt){
 let last = performance.now(), fps = 60, fpsN = 0, fpsT = 0, slowT = 0;
 function update(dt){
   GS.t += dt;
-  stepPlayer(dt); updateNona(dt); updateVases(dt); updateLocks(dt); updateHint(dt);
+  stepPlayer(dt); if(!R.co){ updateNona(dt); updateVases(dt); updateLocks(dt); } updateHint(dt);
 }
 function shadowFollow(){
   const lv = H.lvOf(P.y), st = H.stairAt(P.x, P.z, P.y), fy = st && P.y > LY[st.lo] + 1.8 ? LY[st.hi] : st ? LY[st.lo] : LY[lv];
@@ -905,11 +1041,12 @@ function frame(now){
   T += dt; fpsN++; fpsT += dt;
   if(fpsT >= 1){ fps = fpsN / fpsT; fpsN = 0; fpsT = 0;
     if(state === 'play' && fps < 40){ slowT++; if(slowT >= 2){ slowT = 0; degrade(); } } else slowT = 0; }
+  if(R.co && GS) coWorld(dt);       // co-op: the house keeps going whatever this kid is doing (pause, padlock, boop)
   if(state === 'play'){ update(dt); updateCamera(dt); hudFrame(); }
-  else if(state === 'caught'){ GS.t += dt; updateNona(dt); updateCaught(dt); updateCamera(dt); }
+  else if(state === 'caught'){ GS.t += dt; if(!R.co) updateNona(dt); updateCaught(dt); updateCamera(dt); }
   else if(state === 'win' || state === 'won'){ updateWin(dt); }
   else if(state === 'code'){ updateCamera(dt); }
-  else if(state === 'title' || state === 'select' || state === 'overview'){
+  else if(state === 'title' || state === 'select' || state === 'overview' || state === 'mp'){
     menuT += dt; const a = Math.sin(menuT * .12) * .12;
     const ov = state === 'overview';
     camera.position.set(Math.sin(a) * 33 + .5, ov ? 9 : 4.6, -Math.cos(a) * 33); camera.lookAt(.5, ov ? 2.6 : 3.3, 0);
@@ -918,7 +1055,8 @@ function frame(now){
   if(state === 'play' || state === 'caught' || state === 'code' || state === 'pause'){ if(camera.fov !== 62){ camera.fov = 62; camera.updateProjectionMatrix(); } }
   if(camOverride){ camera.position.set(camOverride[0], camOverride[1], camOverride[2]); camera.lookAt(camOverride[3], camOverride[4], camOverride[5]); }
   shadowFollow();
-  renderKid(dt); renderNona(dt); renderItems(dt); updateParts(dt); updateRings(dt); H.update(dt, T);
+  renderKid(dt); renderNona(dt); renderItems(dt); renderPeers(dt); updateParts(dt); updateRings(dt); H.update(dt, T);
+  mpFrame(dt);
   if(GS) for(const t of GS.toys) if(!(t.squash > 0)) t.m.scale.set(1, 1, 1);
   if(T < topUntil || (GS && GS.hint)){}
   H.sky.position.copy(camera.position);
@@ -929,6 +1067,677 @@ function degrade(){
   if(quality >= 1){ quality = 0; sun.shadow.mapSize.set(512, 512); if(sun.shadow.map){ sun.shadow.map.dispose(); sun.shadow.map = null; } renderer.shadowMap.type = THREE.BasicShadowMap; return; }
 }
 
+/* ======================================================================
+   Online co-op («👫 العب مع أصحابك»): up to 4 kids in the same house. Nothing is stored on a server.
+   The room owner (host) runs Grandma's brain, the noise, the items, the locks and the shared day counter.
+   Events: pos (every kid, ≤ 8 a second while moving), st (host snapshot), ev (host events), req (a friend asks the host), lob (lobby)
+   Names never travel between phones: only the friend code (presence 'fc'); every phone asks the server for the name (../rt.js).
+   ====================================================================== */
+const MP_URL = 'https://vgpwtrzplggvlsuvqsas.supabase.co', MP_KEY = 'sb_publishable_D9thEhZlZnfn0t06j8h1Rw_H-LVF786';
+const MP_EVENTS = ['pos', 'st', 'ev', 'req', 'lob'];
+const MP_MAX = 4;
+function loadSupabase(){
+  if(window.supabase && window.supabase.createClient) return Promise.resolve();
+  if(loadSupabase.p) return loadSupabase.p;
+  return (loadSupabase.p = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = '../supabase.js';
+    s.onload = () => (window.supabase && window.supabase.createClient) ? res() : rej(new Error('no client'));
+    s.onerror = () => { loadSupabase.p = null; s.remove(); rej(new Error('load')); };
+    document.head.appendChild(s);
+  }));
+}
+/* the room connection itself (re-join after a drop, no HTTP fallback, watchdog, reconnect chip) lives in the shared ../rt.js */
+class SupabaseTransport{
+  async open(code, id, h){
+    if(navigator.onLine === false) throw new Error('offline');
+    await loadSupabase();
+    if(this.closed) throw new Error('cancelled');
+    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:'bobo-granny-' + code, id, events:MP_EVENTS, eps:30, h });
+    await this.rt.ready;
+  }
+  track(meta){ if(this.rt) this.rt.track(meta); }
+  send(ev, payload){ if(this.rt) this.rt.send(ev, payload); }
+  close(){ this.closed = true; if(this.rt){ this.rt.close(); this.rt = null; } }
+}
+/* ?mp=local: tabs of the same browser talk through a BroadcastChannel (tests) */
+class LocalTransport{
+  open(code, id, h){
+    this.id = id; this.h = h; this.meta = null; this.peers = new Map(); this.ready = false;
+    const bc = this.bc = new BroadcastChannel('bobo-granny-' + code);
+    bc.onmessage = e => {
+      const m = e.data || {};
+      if(m.k === 'hb'){ const old = this.peers.get(m.from), js = JSON.stringify(m.meta); this.peers.set(m.from, { meta:m.meta, js, last:Date.now() }); if(!old || old.js !== js) this.sync(); }
+      else if(m.k === 'hello'){ if(this.meta) this.beat(); }
+      else if(m.k === 'bye'){ if(this.peers.delete(m.from)) this.sync(); }
+      else if(m.k === 'b') h.msg(m.ev, m.p);
+    };
+    this.iv = setInterval(() => {
+      if(this.meta) this.beat();
+      const now = Date.now(); let ch = false;
+      for(const [k, p] of this.peers) if(now - p.last > 6000){ this.peers.delete(k); ch = true; }
+      if(ch) this.sync();
+    }, 1000);
+    bc.postMessage({ k:'hello', from:id });
+    return new Promise(res => setTimeout(() => { this.ready = true; res(); this.sync(); }, 400));
+  }
+  sync(){
+    if(!this.ready || !this.bc) return;
+    const list = [...this.peers].map(([k, p]) => Object.assign({}, p.meta, { id:k }));
+    if(this.meta) list.push(Object.assign({}, this.meta, { id:this.id }));
+    this.h.presence(list);
+  }
+  beat(){ if(this.bc) this.bc.postMessage({ k:'hb', from:this.id, meta:this.meta }); }
+  track(meta){ this.meta = Object.assign({}, meta); this.beat(); setTimeout(() => this.sync(), 0); }
+  send(ev, p){ if(this.bc) this.bc.postMessage({ k:'b', ev, p }); }
+  close(){ clearInterval(this.iv); if(this.bc){ if(this.meta) this.bc.postMessage({ k:'bye', from:this.id }); this.bc.close(); this.bc = null; } }
+}
+const MP = { t:null, id:null, code:null, list:[], players:[], meta:null, isHost:false, hostId:null, synced:false, screen:'off', tok:0, sendT:0, stT:0, lobT:0, posAt:0, posK:'', inviteFor:null, typed:'', hostGone:0 };
+window.__boboRoom = () => (MP.t && MP.meta && MP.code) ? MP.code : null;
+const mpActive = () => !!(MP.t && MP.meta);
+isHostCo = () => MP.isHost;
+const mpNewId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const mpSort = (a, b) => ((a.o || 0) - (b.o || 0)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+const okHero = id => (typeof id === 'string' && Object.prototype.hasOwnProperty.call(HEROES, id)) ? id : 'sara';
+const r2 = v => Math.round(v * 100) / 100;
+const numIn = (v, a, b, d = 0) => { v = +v; return isFinite(v) ? clamp(v, a, b) : d; };
+const MODES = ['still', 'sneak', 'walk', 'run'];
+/* the kid's own avatar ('me' hero): sent in presence, always repaired by Avatar.normalize before it is built */
+const myAv = () => { try{ return heroId === 'me' && window.Avatar ? Avatar.load() : null; }catch(e){ return null; } };
+const okAv = av => {
+  try{
+    if(!window.Avatar || !av || typeof av !== 'object') return null;
+    const o = {};                     // keep only small plain values (ids, numbers, flags) before Avatar.normalize looks them up
+    for(const k of Object.keys(av).slice(0, 30)){ const v = av[k]; if(v === null || typeof v === 'boolean' || (typeof v === 'number' && isFinite(v)) || (typeof v === 'string' && /^[A-Za-z][A-Za-z0-9]{0,15}$/.test(v) && !(v in Object.prototype))) o[k] = v; }
+    return Avatar.normalize(o);
+  }catch(e){ return null; }
+};
+const avPic = new Map();
+function heroPic(hero, av){ if(hero !== 'me' || !av || !window.Avatar) return charImg(hero); const k = JSON.stringify(av); if(!avPic.has(k)){ try{ avPic.set(k, Avatar.portrait(av)); }catch(e){ avPic.set(k, charImg('sara')); } } return avPic.get(k); }
+/* each kid wakes up on their own spot next to the bed */
+const BED_OFF = [[0, 0], [.75, 0], [0, .75], [.75, .75]];
+bedOff = () => R.co && MP.meta ? BED_OFF[(MP.meta.c | 0) % 4] : [0, 0];
+let meSafe = 0;                   // after a boop the kid is left alone for a few seconds
+
+/* «أصحابي»: tell friends which room I'm in. The server may not know the game id: every call is guarded. */
+const FR_GAME = 'granny';
+let frRoomCode = null, frRoomIv = 0;
+function frRoom(code){
+  try{
+    if(!(window.Friends && Friends.has()) || code === frRoomCode) return;
+    clearInterval(frRoomIv); frRoomIv = 0; frRoomCode = code;
+    const safe = f => { try{ const p = f(); if(p && p.catch) p.catch(() => {}); }catch(e){} };
+    if(code){ const beat = () => safe(() => Friends.setRoom(code, FR_GAME)); beat(); frRoomIv = setInterval(beat, 60000); }
+    else safe(() => Friends.setRoom(null));
+  }catch(e){}
+}
+addEventListener('pagehide', () => { try{ if(frRoomCode && window.Friends){ clearInterval(frRoomIv); frRoomIv = 0; frRoomCode = null; Friends.setRoom(null, null, true); } }catch(e){} });
+addEventListener('pagehide', () => { try{ if(MP.t) mpClose(); }catch(e){} });
+
+function mpClose(){
+  frRoom(null);
+  if(MP.t){ try{ MP.t.close(); }catch(e){} }
+  MP.t = null; MP.meta = null; MP.list = []; MP.players = []; MP.isHost = false; MP.hostId = null; MP.synced = false; MP.hostGone = 0;
+  peersSync();
+}
+async function mpOpen(code, how){
+  mpClose();
+  const t = MP_LOCAL ? new LocalTransport() : new SupabaseTransport(), tok = ++MP.tok;
+  MP.t = t; MP.code = code; MP.id = MP.id || mpNewId();
+  const live = () => MP.t === t && MP.tok === tok;
+  try{
+    await t.open(code, MP.id, {
+      presence:list => { if(live()) mpPresence(list); },
+      msg:(ev, p) => { if(live() && p && typeof p === 'object' && typeof p.id === 'string') mpMsg(ev, p); },
+      status:s => { if(live() && s === 'up') mpTrack(); }
+    });
+  }catch(e){ if(live()) mpClose(); throw e; }
+  if(!live()) throw new Error('cancelled');
+  const t0 = performance.now();
+  // the server only sends the room's member list after we track something: send a short 'probe' first, then wait for the list
+  t.track({ ph:'probe' });
+  await new Promise(res => { const chk = () => (MP.synced || performance.now() - t0 > 6000 || !live()) ? res() : setTimeout(chk, 40); chk(); });
+  if(MP.synced) await new Promise(r => setTimeout(r, 300));
+  if(!live()) throw new Error('cancelled');
+  const others = MP.list.filter(p => p.id !== MP.id);
+  if(how === 'create' && others.length){ mpClose(); return 'busy'; }
+  if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
+  if(others.length >= MP_MAX){ mpClose(); return 'full'; }
+  const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, av:myAv(), c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play' };
+  t.track(MP.meta);
+  MP.hostId = how === 'create' ? MP.id : others.slice().sort(mpSort)[0].id;
+  mpPresence(MP.list);
+  frRoom(code);
+  return 'ok';
+}
+function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.meta.av = myAv(); MP.t.track(MP.meta); } }
+function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+function mpPresence(list){
+  list = (list || []).filter(p => p && p.ph !== 'probe');
+  BoboRT.see(list, () => { if(MP.screen === 'lobby') mpLobbyDraw(); peersNames(); if(state === 'won' || state === 'lost') redrawEnd(); });
+  MP.list = list; MP.synced = true;
+  if(!MP.meta) return;
+  const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
+  if(all.findIndex(p => p.id === MP.id) >= MP_MAX){ coStop(); showTitle(); toast(L('الغرفة مليانة 🙈', 'The room is full 🙈', 'Oda dolu 🙈')); return; }
+  const before = MP.players.map(p => p.id);
+  MP.players = all.slice(0, MP_MAX);
+  MP.isHost = MP.hostId === MP.id;
+  // the owner missing from the list: wait a few seconds (a slow phone can miss a heartbeat) before leaving
+  if(!MP.isHost && MP.hostId && !MP.players.some(p => p.id === MP.hostId)){ if(!MP.hostGone) MP.hostGone = performance.now(); }
+  else MP.hostGone = 0;
+  const joined = MP.players.filter(p => p.id !== MP.id && !before.includes(p.id));
+  if(joined.length && before.length) SFX.yay();
+  peersSync();
+  // a friend came in while the house is running: send them the run so they can join in
+  if(MP.isHost && R.co && GS && !GS.over && joined.length) coSendStart();
+  if(MP.screen === 'lobby') mpLobbyDraw();
+}
+
+/* ---------- the other kids in the house ---------- */
+const PEERS = new Map();
+function peersSync(){
+  const ids = new Set();
+  for(const p of MP.players){
+    if(p.id === MP.id) continue;
+    ids.add(p.id);
+    let a = PEERS.get(p.id);
+    if(!a){
+      const lbl = document.createElement('div'); lbl.className = 'ntag'; lbl.hidden = true; stage.appendChild(lbl);
+      const hd = new THREE.Group(); hd.position.set(0, .62, .34);
+      a = { id:p.id, c:0, hero:null, av:null, avK:'', h:null, holder:hd, lbl, x:0, y:0, z:0, f:0, m:0, tx:0, ty:0, tz:0, tf:0, tm:0, md:'still', hid:-1, seen:false, inRun:false, safe:0, snk:0, nm:'' };
+      PEERS.set(p.id, a);
+    }
+    a.c = p.c | 0;
+    const hero = okHero(p.hero), av = hero === 'me' ? okAv(p.av) : null, avK = av ? JSON.stringify(av) : '';
+    if(a.hero !== hero || a.avK !== avK){
+      if(a.h){ a.h.grp.remove(a.holder); scene.remove(a.h.grp); }
+      a.hero = hero; a.av = av; a.avK = avK;
+      try{ a.h = hero === 'me' ? HEROES.me(av || undefined) : HEROES[hero](); }catch(e){ a.h = HEROES.sara(); }
+      a.h.grp.add(a.holder); a.h.grp.visible = false; scene.add(a.h.grp);
+      a.lbl.style.setProperty('--c', HERO_COLOR[hero] || '#ffcd4d');
+      if(GS) syncHeld();
+    }
+  }
+  for(const a of [...PEERS.values()]) if(!ids.has(a.id)) peerGone(a);
+  peersNames();
+}
+function peerName(id){ const a = PEERS.get(id); return BoboRT.who(id, a ? HERO_NAME[a.hero] : '') || L('صاحبك', 'Your friend', 'Arkadaşın'); }
+function peersNames(){ for(const a of PEERS.values()){ const n = peerName(a.id); if(a.nm !== n){ a.nm = n; a.lbl.textContent = n; } } }
+function peerGone(a){
+  if(a.h) scene.remove(a.h.grp);
+  a.lbl.remove(); PEERS.delete(a.id);
+  if(!GS) return;
+  if(R.co && MP.isHost && !GS.over){
+    // whatever they carried stays where they were
+    const id = heldBy(a.id);
+    if(id){ const it = GS.items[id]; it.state = 'world'; it.by = ''; it.x = a.tx; it.z = a.tz; it.y = H.groundY(a.tx, a.tz, a.ty); it.lv = H.lvOf(it.y); coShare('drop', { by:a.id, i:id }); }
+    if(G.kid === a.id && (G.mode === 'chase' || G.mode === 'toHide' || G.mode === 'shrug')) toTired();
+  }
+  syncHeld();
+}
+function renderPeers(dt){
+  const inHouse = R.co && GS && (state === 'play' || state === 'pause' || state === 'code' || state === 'caught' || state === 'win' || state === 'won' || state === 'select');
+  const k = 1 - Math.exp(-10 * dt), win = state === 'win' || state === 'won';
+  for(const a of PEERS.values()){
+    if(!a.h) continue;
+    const vis = inHouse && a.inRun && a.seen && (a.hid < 0 || win);
+    if(!win){
+      if(Math.hypot(a.tx - a.x, a.tz - a.z) > 3 || Math.abs(a.ty - a.y) > 1.5){ a.x = a.tx; a.y = a.ty; a.z = a.tz; a.f = a.tf; }
+      a.x = lerp(a.x, a.tx, k); a.y = lerp(a.y, a.ty, k); a.z = lerp(a.z, a.tz, k); a.f += angDiff(a.tf, a.f) * k; a.m = lerp(a.m, a.tm, k);
+    }
+    a.h.grp.visible = vis;
+    if(!vis){ a.lbl.hidden = true; continue; }
+    a.h.grp.position.set(a.x, a.y, a.z); a.h.grp.rotation.y = a.f;
+    a.snk = lerp(a.snk, a.md === 'sneak' ? 1 : 0, Math.min(1, 8 * dt));
+    poseHero(a.h, { t:T + a.c, dt, run:clamp(a.m * (a.md === 'run' ? 1.15 : 1), 0, 1), grounded:true, vy:0, sq:0, flip:0, sneak:a.snk, pace:a.md === 'sneak' ? .6 : 1 });
+    // name tag above the head (dimmer behind a wall)
+    _v.set(a.x, a.y + (a.hero === 'qamar' ? 1.35 : 1.6), a.z).project(camera);
+    const on = _v.z < 1 && Math.abs(_v.x) < 1.02 && Math.abs(_v.y) < 1.02 && !(state === 'caught' && boopT > .9);
+    a.lbl.hidden = !on;
+    if(on){
+      a.lbl.style.left = ((_v.x + 1) / 2 * SW).toFixed(1) + 'px'; a.lbl.style.top = ((1 - _v.y) / 2 * SH).toFixed(1) + 'px';
+      if(((T * 4) | 0) % 2 === (a.c & 1)) a.lbl.classList.toggle('far', !win && !H.los({ x:camera.position.x, y:camera.position.y, z:camera.position.z }, { x:a.x, y:a.y + 1.2, z:a.z }));
+    }
+  }
+}
+
+/* ---------- my position for everyone (≤ 8 a second while moving, a slow beat when still) ---------- */
+function mpPos(force){
+  if(!mpActive() || !R.co || !GS) return;
+  const now = performance.now();
+  const hid = P.hidden ? HIDES.indexOf(P.hidden) : -1;
+  const key = hid + ':' + P.mode + ':' + (state === 'caught' ? 1 : 0);
+  const moving = P.move > .03 || Math.hypot(P.vx, P.vz) > .05;
+  if(!force){
+    if(now - MP.posAt < 125) return;
+    if(!moving && key === MP.posK && now - MP.posAt < 1000) return;
+  }
+  MP.posAt = now; MP.posK = key;
+  mpSend('pos', { r:R.n, x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.face), m:r2(P.move), md:P.mode, h:hid });
+}
+function coPosNow(){ mpPos(true); }
+function onPos(p){
+  const a = PEERS.get(p.id); if(!a || !R.co || p.r !== R.n || state === 'win' || state === 'won') return;
+  a.tx = numIn(p.x, -30, 30); a.ty = numIn(p.y, -6, 12); a.tz = numIn(p.z, -30, 30); a.tf = numIn(p.f, -1e4, 1e4); a.tm = numIn(p.m, 0, 1.5);
+  a.md = MODES.includes(p.md) ? p.md : 'walk';
+  const h = Number.isInteger(p.h) && p.h >= 0 && p.h < HIDES.length ? p.h : -1;
+  if(!a.seen){ a.seen = true; a.x = a.tx; a.y = a.ty; a.z = a.tz; a.f = a.tf; }
+  a.inRun = true;
+  if(h !== a.hid){
+    a.hid = h;
+    if(h >= 0 && MP.isHost && GS && !GS.over) hideReact(a.id, HIDES[h], a.tx, a.tz);
+  }
+}
+
+/* ---------- host: share the house ---------- */
+const ITEM_ST = ['world', 'held', 'injar', 'used'];
+function packShared(){
+  const it = {};
+  for(const id of ['jar', 'key', 'pliers', 'note']){ const v = GS.items[id]; it[id] = [v.state, r2(v.x), r2(v.y), r2(v.z), v.by || '']; }
+  return { d:GS.day, l:[GS.locks.key ? 1 : 0, GS.locks.chain ? 1 : 0, GS.locks.pad ? 1 : 0], j:GS.jarOpen ? 1 : 0, it, v:VASES.map(v => v.down ? 1 : 0) };
+}
+function coShare(k, extra){ if(R.co && MP.isHost && GS) mpSend('ev', Object.assign({ r:R.n, k, s:packShared() }, extra || {})); }
+netFx = o => { if(R.co && MP.isHost) mpSend('ev', Object.assign({ r:R.n }, o)); };
+function hostSnap(){
+  mpSend('st', { r:R.n, g:[r2(G.x), r2(G.y), r2(G.z), r2(G.face), G.mode, G.act, r2(G.actK), r2(G.speed)], k:G.kid || '', s:packShared() });
+}
+/* a friend's phone: apply the host's house state; changes play their little effects here too */
+function applyShared(s, ev){
+  if(!s || typeof s !== 'object' || !GS) return;
+  if(s.j && !GS.jarOpen){ GS.jarOpen = true; SFX.jar(); }
+  const jarNow = GS.jarOpen && keyPop >= 1 && GS.items.key.state === 'injar';
+  if(s.it && typeof s.it === 'object') for(const id of ['jar', 'key', 'pliers', 'note']){
+    const r = s.it[id]; if(!Array.isArray(r)) continue;
+    const it = GS.items[id], st = ITEM_ST.includes(r[0]) ? r[0] : it.state, by = typeof r[4] === 'string' ? r[4].slice(0, 40) : '';
+    if(st === 'held' && by === MP.id && !(it.state === 'held' && it.by === MP.id)){
+      SFX.pickup(); burst(it.x, it.y + .2, it.z, 14, ['#fff1a0', '#ffffff', '#ffcd4d'], { speed:1.5, up:2, g:3, life:.8, size:.7 });
+      if(!GS.locks[NEED[id]]) bubbleTop(INFO[id].e + ' ' + INFO[id].n + ' — ' + L('روح عالباب الكبير تحت 🚪', 'take it to the big front door downstairs 🚪', 'aşağıdaki büyük kapıya götür 🚪'), 3);
+    }
+    if(st !== it.state || by !== it.by) progress();
+    it.state = st; it.by = st === 'held' ? by : '';
+    it.x = numIn(r[1], -30, 30, it.x); it.y = numIn(r[2], -6, 12, it.y); it.z = numIn(r[3], -30, 30, it.z); it.lv = H.lvOf(it.y);
+  }
+  if(jarNow && GS.items.key.state === 'world') jarFx();
+  syncHeld();
+  if(Array.isArray(s.l)) ['key', 'chain', 'pad'].forEach((lk, i) => { if(s.l[i] && !GS.locks[lk]){ GS.locks[lk] = true; lockFx(lk); progress(); afterLock(); } });
+  if(Array.isArray(s.v)) s.v.forEach((d, i) => { if(d && VASES[i] && !VASES[i].down) vaseFx(i, ev && ev.k === 'vase' && ev.i === i ? numIn(ev.f, -7, 7) : 0); });
+  const d = numIn(s.d, 1, DAYS + 1, GS.day) | 0; if(d !== GS.day) GS.day = d;
+}
+const GT = { x:0, y:0, z:0, f:0, set:false };
+function onSnap(p){
+  if(MP.isHost || !R.co || !GS || p.r !== R.n || GS.over) return;
+  const g = p.g;
+  if(Array.isArray(g)){
+    GT.x = numIn(g[0], -30, 30); GT.y = numIn(g[1], -6, 12); GT.z = numIn(g[2], -30, 30); GT.f = numIn(g[3], -1e4, 1e4);
+    if(!GT.set){ GT.set = true; G.x = GT.x; G.y = GT.y; G.z = GT.z; G.face = GT.f; }
+    const md = String(g[4]); if(['sleep', 'wake', 'curious', 'search', 'wander', 'chase', 'toHide', 'shrug', 'tired', 'boop', 'wave'].includes(md)){ if(md === 'sleep' && G.mode !== 'sleep'){ G.x = GT.x; G.y = GT.y; G.z = GT.z; } G.mode = md; }
+    const act = String(g[5]); if(['walk', 'yawn', 'look', 'shrug', 'boop', 'wave'].includes(act)) G.act = act;
+    G.actK = numIn(g[6], 0, 1.5); G.speed = numIn(g[7], 0, 8);
+  }
+  G.kid = typeof p.k === 'string' ? p.k : '';
+  applyShared(p.s);
+}
+/* a friend's phone: grandma moves smoothly between the host's snapshots */
+function clientNona(dt){
+  const k = 1 - Math.exp(-10 * dt);
+  if(Math.hypot(GT.x - G.x, GT.z - G.z) > 3 || Math.abs(GT.y - G.y) > 1.5){ G.x = GT.x; G.y = GT.y; G.z = GT.z; }
+  G.x = lerp(G.x, GT.x, k); G.y = lerp(G.y, GT.y, k); G.z = lerp(G.z, GT.z, k); G.face += angDiff(GT.f, G.face) * k;
+  if(G.mode === 'sleep') snore(dt);
+  if(state === 'play'){ if(G.mode === 'chase' && G.kid === MP.id){ if(A.musicMode !== 'chase') A.setMode('chase'); } else if(A.musicMode === 'chase') A.setMode('calm'); }
+}
+/* the house keeps going in co-op whatever this kid is doing */
+function coWorld(dt){
+  if(!GS || GS.over || !(state === 'play' || state === 'pause' || state === 'code' || state === 'caught' || state === 'select')) return;
+  if(state !== 'play' && state !== 'caught') GS.t += dt;
+  if(MP.isHost) updateNona(dt); else clientNona(dt);
+  updateVases(dt); updateLocks(dt);
+}
+/* a friend's phone: noise and actions go to the host */
+function coReq(p){ coPosNow(); mpSend('req', Object.assign({ r:R.n }, p)); }
+function coNoise(x, y, z, Rr, kind){ if(R.co && GS && !GS.over) coReq({ k:'n', x:r2(x), y:r2(y), z:r2(z), R:r2(Rr) }); }
+function coAsk(c){
+  if(c.k === 'pick') coReq({ k:'pick', i:c.id });
+  else if(c.k === 'drop') coReq({ k:'drop', x:r2(P.x + Math.sin(P.face) * .45), z:r2(P.z + Math.cos(P.face) * .45) });
+  else if(c.k === 'jar') coReq({ k:'jar' });
+  else if(c.k === 'use') coReq({ k:'use' });
+  SFX.tap();
+}
+/* host: a friend asks */
+function onReq(p){
+  if(!MP.isHost || !R.co || !GS || GS.over || p.r !== R.n) return;
+  const a = PEERS.get(p.id); if(!a || !a.seen) return;
+  const k = kidById(a.id); if(!k) return;
+  const near = (x, y, z, r) => Math.hypot(k.x - x, k.z - z) < r && Math.abs(k.y - y) < 2;
+  const nearDoorK = () => H.lvOf(k.y) === 1 && Math.abs(k.y) < .8 && Math.hypot(k.x - .5, k.z + 6.3) < 2.6;
+  if(p.k === 'n'){
+    const x = +p.x, y = +p.y, z = +p.z, rr = numIn(p.R, 0, 12);
+    if(isFinite(x) && isFinite(y) && isFinite(z) && near(x, y, z, 5)){ ring(x, y, z, rr); hearNoise(x, y, z, rr); }
+  }
+  else if(p.k === 'pick'){ if(['key', 'pliers', 'note'].includes(p.i)){ const it = GS.items[p.i]; if(it.state === 'world' && near(it.x, it.y, it.z, 2.4)) pickUp(p.i, a.id); } }
+  else if(p.k === 'drop'){ dropHeld(true, a.id, { x:numIn(p.x, -30, 30), z:numIn(p.z, -30, 30) }); }
+  else if(p.k === 'jar'){ const j = GS.items.jar; if(!GS.jarOpen && near(j.x, j.y, j.z, 2.4)) openJar(a.id); }
+  else if(p.k === 'use'){ if(nearDoorK()) useOnDoor(a.id); }
+  else if(p.k === 'pad'){ if(nearDoorK()) padOpen(a.id); }
+  else if(p.k === 'vase'){ const i = p.i | 0, v = VASES[i]; if(v && !v.down && near(v.x, v.y, v.z, 2.6)) knockVase(i, k.x, k.z); }
+}
+
+/* ---------- boops in co-op: only that kid goes to bed, the team keeps going; 5 boops for the team = «بكرا منجرّب!» ---------- */
+function coBoop(k){
+  G.mode = 'boop'; G.t = 0; G.kid = k.id; G.path = [];
+  say('boop'); SFX.boop(); netFx({ k:'sfx', n:'boop' });
+  if(k.peer) k.peer.safe = T + 5;
+  mpSend('ev', { r:R.n, k:'boop', t:k.id, s:packShared() });
+  onBoop(k.id);
+}
+function onBoop(t){
+  if(t === MP.id) coBoopMe();
+  else bubbleTop('🪶 ' + peerName(t) + ' ' + L('رجع عالتخت! كمّلوا 💪', 'went back to bed! Keep going 💪', 'yatağa döndü! Devam edin 💪'), 2.8);
+}
+function coAfterBoop(){
+  const who = G.kid; const id = heldBy(who); if(id) itemHome(id);
+  GS.day++;
+  if(GS.day > DAYS){ GS.over = true; mpSend('ev', { r:R.n, k:'lose', s:packShared() }); showLose(); return; }
+  G.mode = 'sleep'; G.t = 0; G.sleepT = 0; G.wakeAt = lerp(D().selfWake[0], D().selfWake[1], Math.random()); G.path = []; G.tgt = null; G.spotT = 0; G.chaseT = 0; G.speed = 0; G.kid = '';
+  placeNonaInBed();
+  coShare('day', { t:who });
+  onDay();
+}
+function onDay(){ if(state === 'play') bubbleTop('☀️ ' + L('اليوم ', 'Day ', 'Gün ') + N(GS.day) + '/' + N(DAYS) + ' · ' + L('الجدّة رجعت تنام 😴', 'Grandma went back to sleep 😴', 'Büyükanne yine uyudu 😴'), 2.6); }
+function coBoopMe(){
+  if(state === 'win' || state === 'won' || state === 'lost') return;
+  $('#code').hidden = true; if(state === 'pause' || state === 'select'){ overlay.hidden = true; setPlayUI(true); }
+  if(P.hidden) exitHide();
+  state = 'caught'; boopT = 0; updateCaught.reset = false; meSafe = T + 5; clearInput(); A.setMode('calm');
+  setTimeout(() => { SFX.feathers(); burst(P.x, P.y + 1.0, P.z, 40, ['#ffffff', '#fff3f8', '#ffe3ef'], { speed:2.2, up:2.2, g:1.2, drag:2.4, life:2.6, size:1.4, sway:.8 }); }, 380);
+}
+function updateCaughtCo(dt){
+  boopT += dt;
+  const ov = $('#sleepov');
+  if(boopT > .9 && ov.hidden && !updateCaught.reset){
+    ov.hidden = false; ov.classList.remove('out');
+    const next = GS.day + 1;
+    $('#sleepT').textContent = L('بوووب! 🪶 رجعت عالتخت', 'Boop! 🪶 Back to bed', 'Bup! 🪶 Yatağa geri');
+    $('#sleepS').textContent = next <= DAYS ? L('اليوم ', 'Day ', 'Gün ') + N(next) + L(' من ', ' of ', ' / ') + N(DAYS) + ' · 👫 ' + L('أصحابك لسّا عم يدوّروا!', 'your friends keep looking!', 'arkadaşların aramaya devam!') : L('خلصت الأيام…', 'No more days…', 'Günler bitti…');
+    A.music(false);
+  }
+  if(boopT > 2.2 && !updateCaught.reset){ updateCaught.reset = true; wakeInBed(); coPosNow(); }
+  if(boopT > 3.4){ updateCaught.reset = false; ov.classList.add('out'); setTimeout(() => { ov.hidden = true; }, 500); state = 'play'; setPlayUI(true); for(const k in hudCache) delete hudCache[k]; A.music(true, 'calm'); bubbleTop(L('يلّا كمّل! انتبه عالجدّة 👵🏻', 'Off you go! Watch out for Grandma 👵🏻', 'Hadi devam! Büyükanneye dikkat 👵🏻'), 2.5); }
+}
+
+/* ---------- win together ---------- */
+function coWin(){
+  if(!GS || GS.over) return;
+  GS.over = true;
+  const days = GS.day, secs = Math.round(GS.t), stars = starsFor(days, secs);
+  GS.result = { stars, days, secs };
+  mpSend('ev', { r:R.n, k:'win', res:GS.result, s:packShared() });
+  startWin();
+}
+function coWinPlace(){
+  if(!R.co) return;
+  const offs = [[-.75, .5], [.75, .5], [0, 1.1]];
+  [...PEERS.values()].filter(a => a.inRun).sort((p, q) => p.c - q.c).forEach((a, i) => { const o = offs[i % 3]; a.winI = i; a.wx = .5 + o[0]; a.wz = -5.6 + o[1]; a.x = a.wx; a.z = a.wz; a.y = 0; a.f = Math.PI; a.hid = -1; a.seen = true; });
+}
+function coWinFrame(t){
+  if(!R.co) return;
+  for(const a of PEERS.values()){
+    if(a.winI == null || !a.inRun) continue;
+    const w = clamp((t - 1.15 - a.winI * .2) / 2.6, 0, 1);
+    a.z = lerp(a.wz, -12.5 + a.winI * .4, w); a.x = a.wx + Math.sin(w * 6 + a.winI) * .2; a.f = Math.PI; a.m = w > 0 && w < 1 ? 1 : 0; a.md = 'run'; a.y = H.groundY(a.x, a.z, a.y);
+  }
+}
+/* everyone on one card, with the team's stars */
+function teamList(){
+  const out = [{ id:MP.id, hero:heroId, av:myAv(), me:true, c:MP.meta ? MP.meta.c : 0 }];
+  for(const a of PEERS.values()) if(a.inRun && a.h) out.push({ id:a.id, hero:a.hero, av:a.av, c:a.c });
+  return out.sort((p, q) => p.c - q.c);
+}
+function teamSlots(stars){
+  return `<div class="pslots">${teamList().map(p => `<div class="pslot" style="--c:${HERO_COLOR[p.hero] || '#ffcd4d'}"><img src="${p.me ? charImg(p.hero) : heroPic(p.hero, p.av)}" alt=""><span dir="auto">${p.me ? L('إنت', 'You', 'Sen') : BoboRT.whoH(p.id, HERO_NAME[p.hero])}${p.id === MP.hostId ? ' 👑' : ''}</span>${stars != null ? `<small>${'⭐'.repeat(stars)}</small>` : ''}</div>`).join('')}</div>`;
+}
+function endButtons(){
+  return `<div class="row">${MP.isHost ? `<button class="big-btn" id="bAgainCo">🔁 ${L('كمان مرة', 'Play again', 'Tekrar oyna')}</button>` : `<p>${L('استنّى صاحب الغرفة…', 'Waiting for the room owner…', 'Oda sahibini bekle…')}</p>`}
+    <button class="ghost-btn" id="bLeaveCo">🚪 ${L('اطلع من الغرفة', 'Leave the room', 'Odadan çık')}</button></div>`;
+}
+function wireEnd(){
+  const a = $('#bAgainCo'); if(a) a.onclick = () => { SFX.tap(); updateWin.shown = false; coStartRun(); };
+  $('#bLeaveCo').onclick = () => { SFX.tap(); updateWin.shown = false; coStop(); showTitle(); };
+}
+let coinsGiven = -1;
+function showWinCo(){
+  const r = GS.result || { stars:starsFor(GS.day, Math.round(GS.t)), days:GS.day, secs:Math.round(GS.t) };
+  const stars = clamp(r.stars | 0, 1, 3), days = clamp(r.days | 0, 1, DAYS), secs = clamp(r.secs | 0, 0, 36000);
+  const coins = [0, 5, 10, 15][stars];
+  if(coinsGiven !== R.n){
+    coinsGiven = R.n;
+    if(window.World) World.addCoins(coins, L('من بيت الجدّة نونا', "for Grandma Nona's House", 'Nona Ninenin Evi için'));
+    if(window.World && World.track) try{ World.track('win', 'granny'); }catch(e){}
+    if(stars > (+rawGet('granny_best') || 0)) rawSet('granny_best', String(stars));
+  }
+  GS.result = { stars, coins, days, secs, team:true };
+  state = 'won'; showOverlay('clear'); card.className = 'card wide';
+  redrawEnd();
+}
+function showLoseCo(){
+  state = 'lost'; setPlayUI(false); $('#sleepov').hidden = true; $('#code').hidden = true; showOverlay('dim'); card.className = 'card wide'; A.music(false);
+  redrawEnd();
+}
+function redrawEnd(){
+  if(!R.co || !GS) return;
+  if(state === 'won'){
+    const r = GS.result, mm = Math.floor(r.secs / 60), ss = r.secs % 60;
+    card.innerHTML = `<div class="bigstar">${'⭐'.repeat(r.stars)}${'<span class="off">⭐</span>'.repeat(3 - r.stars)}</div>
+      <h2>🎉 ${L('هربنا من البيت سوا!', 'We escaped together!', 'Evden birlikte kaçtık!')}</h2>
+      ${teamSlots(r.stars)}
+      <div class="tally"><span>☀️ ${N(r.days)} ${L(r.days === 1 ? 'يوم' : 'أيام', r.days === 1 ? 'day' : 'days', 'gün')}</span><span>⏱️ ${N(mm)}:${N((ss < 10 ? '0' : '') + ss)}</span><span>🪙 +${N(r.coins)}</span></div>
+      ${endButtons()}`;
+  } else if(state === 'lost'){
+    card.innerHTML = `<div class="bigstar">🌙</div><h2>${L('بكرا منجرّب!', "We'll try again tomorrow!", 'Yarın yine deneriz!')}</h2>
+      <p>${L('الجدّة نونا مسكت الفريق ٥ مرات وصار وقت النوم 😴 بس قرّبتوا كتير!', 'Grandma Nona booped the team 5 times — bedtime 😴 but you got so close!', 'Nona Nine takımı 5 kez yakaladı — uyku vakti 😴 ama çok yaklaştınız!').replace('٥', N(5))}</p>
+      ${teamSlots(null)}
+      ${endButtons()}`;
+  } else return;
+  wireEnd();
+}
+
+/* ---------- starting a run ---------- */
+function coSendStart(){ mpSend('ev', { r:R.n, k:'start', n:R.n, plan:GS.plan, diff:diffId, s:packShared(), t:Math.round(GS.t) }); }
+function coStartRun(){
+  if(!MP.isHost || !mpActive()) return;
+  R.n++;
+  const plan = makePlan();
+  R.co = true; MP.screen = 'in';
+  coBegin(plan);
+  coSendStart();
+}
+function coBegin(plan){
+  for(const a of PEERS.values()){ a.inRun = false; a.seen = false; a.hid = -1; a.safe = 0; a.winI = null; }
+  GT.set = false; meSafe = 0; updateCaught.reset = false; updateWin.shown = false;
+  $('#sleepov').hidden = true; $('#code').hidden = true;
+  startGame(plan);
+  G.kid = '';
+  coPosNow();
+}
+function onStart(p){
+  const plan = okPlan(p.plan); if(!plan) return;
+  const n = p.n | 0;
+  if(R.co && n === R.n && GS && !GS.over) return;     // already in this run
+  if(MP.screen !== 'lobby' && MP.screen !== 'in') return;
+  R.n = n; R.co = true; MP.screen = 'in';
+  diffId = p.diff === 'normal' ? 'normal' : 'easy';
+  coBegin(plan);
+  applyShared(p.s); GS.t = numIn(p.t, 0, 36000);
+}
+function mpMsg(ev, p){
+  if(ev === 'pos'){ onPos(p); return; }
+  if(ev === 'req'){ onReq(p); return; }
+  if(p.id !== MP.hostId) return;                    // only the room owner decides
+  if(ev === 'lob'){ if(!MP.isHost){ if(p.diff === 'easy' || p.diff === 'normal') MP.diff = p.diff; if(MP.screen === 'lobby') mpLobbyDraw(); } return; }
+  if(MP.isHost) return;
+  if(ev === 'st'){ onSnap(p); return; }
+  if(ev !== 'ev') return;
+  if(p.k === 'start'){ onStart(p); return; }
+  if(!R.co || !GS || p.r !== R.n) return;
+  if(p.k === 'say'){ const l = Object.prototype.hasOwnProperty.call(LINES, p.c) ? LINES[p.c] : null; if(l && l[p.i | 0]){ A.mumble(5, p.c === 'spot' ? 260 : 210); bubbleNona(l[p.i | 0], 2.6); } }
+  else if(p.k === 'mk'){ showMark(p.m ? excl : ques, numIn(p.s, .2, 3, 1)); }
+  else if(p.k === 'sfx'){ if(p.n === 'wake') SFX.wake(); else if(p.n === 'spot') SFX.spot(); else if(p.n === 'boop') SFX.boop(); }
+  else if(p.k === 'boop'){ applyShared(p.s); if(typeof p.t === 'string') onBoop(p.t); }
+  else if(p.k === 'day'){ applyShared(p.s); onDay(); }
+  else if(p.k === 'win'){ if(GS.over) return; applyShared(p.s); GS.over = true; GS.result = p.res && typeof p.res === 'object' ? { stars:p.res.stars, days:p.res.days, secs:p.res.secs } : null; startWin(); }
+  else if(p.k === 'lose'){ if(GS.over) return; applyShared(p.s); GS.over = true; showLose(); }
+  else applyShared(p.s, p);
+}
+function mpFrame(dt){
+  if(!mpActive()) return;
+  if(MP.hostGone && performance.now() - MP.hostGone > 5000){
+    MP.hostGone = 0; coStop(); showTitle();
+    toast(L('صاحب الغرفة طلع 🚪 بتقدر تلعب لحالك أو تعمل غرفة جديدة', 'The room owner left 🚪 play alone or make a new room', 'Oda sahibi çıktı 🚪 tek başına oyna ya da yeni oda kur'), 5000);
+    return;
+  }
+  MP.stT -= dt; MP.lobT -= dt;
+  if(R.co && GS && !GS.over && state !== 'mp') mpPos(false);
+  if(MP.isHost && R.co && GS && !GS.over && MP.stT <= 0){ MP.stT = .15; hostSnap(); }
+  if(MP.isHost && MP.screen === 'lobby' && MP.lobT <= 0){ MP.lobT = 1; mpSend('lob', { diff:diffId, ph:'idle' }); }
+}
+/* leave the room and the co-op run */
+function coStop(){
+  const was = R.co;
+  MP.tok++; mpClose(); MP.screen = 'off'; R.co = false; meSafe = 0; GT.set = false;
+  for(const a of [...PEERS.values()]) peerGone(a);
+  if(was){ GS = null; held = null; }
+}
+
+/* ---------- menu, lobby, keypad ---------- */
+let toastTO = 0;
+function toast(text, ms = 3500){ const el = $('#toast'); el.textContent = text; el.hidden = false; clearTimeout(toastTO); toastTO = setTimeout(() => { el.hidden = true; }, ms); }
+function mpCard(wide){ state = 'mp'; setPlayUI(false); showOverlay('dim'); card.className = 'card' + (wide ? ' wide' : ''); }
+function myHeroBtn(){ return `<button class="hero-btn" id="bMyHero" style="--c:${HERO_COLOR[heroId]}"><img src="${charImg(heroId)}" alt=""><span>${HERO_NAME[heroId]} 🔄</span></button>`; }
+function mpMenu(){
+  MP.tok++; mpClose(); MP.screen = 'menu'; R.co = false; mpCard(false);
+  card.innerHTML = `<h2>👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</h2>
+    <p>👵🏻 ${L('لحتى 4 أصحاب ببيت الجدّة سوا: دوّروا عالأغراض وافتحوا الباب مع بعض!', "Up to 4 friends in Grandma's house: find the things and open the door together!", 'Büyükannenin evinde 4 arkadaşa kadar: eşyaları bulun, kapıyı birlikte açın!')}</p>
+    ${myHeroBtn()}
+    <div class="row"><button class="big-btn" id="bCreate">🏠 ${L('اعمل غرفة', 'Create room', 'Oda kur')}</button>
+    <button class="big-btn mint" id="bJoin">🔢 ${L('فوت على غرفة', 'Join room', 'Odaya katıl')}</button></div>
+    <div class="row"><button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>`;
+  $('#bMyHero').onclick = () => { SFX.tap(); showSelect('mp'); };
+  $('#bCreate').onclick = () => { SFX.tap(); mpCreate(); };
+  $('#bJoin').onclick = () => { SFX.tap(); mpKeypad(''); };
+  $('#bBack').onclick = () => { SFX.tap(); showTitle(); };
+}
+function mpBack(){
+  if(MP.screen === 'menu') showTitle();
+  else if(MP.screen === 'lobby'){ mpLeave(); mpMenu(); }
+  else mpMenu();
+}
+function mpBackFromSelect(){ if(mpActive() && MP.screen === 'lobby'){ mpTrack(); mpLobby(); } else mpMenu(); }
+function mpLeave(){ MP.tok++; mpClose(); MP.screen = 'off'; R.co = false; }
+function mpConnecting(){
+  MP.screen = 'connecting'; mpCard(false);
+  card.innerHTML = `<div class="bigstar"><span class="spin">⏳</span></div><h2>${L('عم نتصل…', 'Connecting…', 'Bağlanıyor…')}</h2>
+    <button class="ghost-btn" id="bCancel">↩️ ${L('رجوع', 'Back', 'Geri')}</button>`;
+  $('#bCancel').onclick = () => { SFX.tap(); mpMenu(); };
+}
+function mpError(retry){
+  MP.screen = 'error'; mpCard(false);
+  card.innerHTML = `<div class="bigstar">📡</div><h2>${L('ما في إنترنت؟ جرّب كمان مرة', 'No internet? Try again', 'İnternet yok mu? Tekrar dene')}</h2>
+    <div class="row"><button class="big-btn" id="bRetry">🔄 ${L('جرّب كمان مرة', 'Try again', 'Tekrar dene')}</button><button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>`;
+  $('#bRetry').onclick = () => { SFX.tap(); retry(); };
+  $('#bBack').onclick = () => { SFX.tap(); mpMenu(); };
+}
+/* the room's waiting card: who is here, the room number and (for the owner) «ابدأ» */
+function mpLobby(){
+  if(!mpActive()){ mpMenu(); return; }
+  R.co = false; MP.screen = 'lobby'; MP.diff = MP.diff || diffId; mpCard(true); mpLobbyDraw();
+  if(MP.isHost) mpSend('lob', { diff:diffId, ph:'idle' });
+}
+function mpLobbyDraw(){
+  if(MP.screen !== 'lobby' || state !== 'mp') return;
+  const pl = MP.players, code = [...(MP.code || '')].map(N).join('');
+  const slots = [0, 1, 2, 3].map(i => { const p = pl[i]; if(!p) return `<div class="pslot empty"><div class="wait">⏳</div><small>${L('استنّى…', 'Waiting…', 'Bekle…')}</small></div>`;
+    const hero = okHero(p.hero), me = p.id === MP.id;
+    return `<div class="pslot" style="--c:${HERO_COLOR[hero]}"><img src="${me ? charImg(hero) : heroPic(hero, okAv(p.av))}" alt=""><span dir="auto">${me ? L('إنت', 'You', 'Sen') : ('👫 ' + BoboRT.whoH(p.id, '')).trim()}${p.id === MP.hostId ? ' 👑' : ''}</span></div>`; }).join('');
+  const dname = d => d === 'normal' ? '🙂 ' + L('عادي', 'Normal', 'Normal') : '😊 ' + L('سهل', 'Easy', 'Kolay');
+  card.innerHTML = `<h2>🏠 ${L('غرفة رقم', 'Room number', 'Oda numarası')} <bdi dir="ltr">${code}</bdi></h2>
+    <div class="pslots">${slots}</div>
+    ${MP.isHost ? `<p>${L('قلّ لأصحابك رقم الغرفة 👆', 'Tell your friends the room number 👆', 'Arkadaşlarına oda numarasını söyle 👆')}</p>
+      <div class="row" style="align-items:center"><div class="seg" role="radiogroup"><button class="${diffId === 'easy' ? 'on' : ''}" data-d="easy" role="radio" aria-checked="${diffId === 'easy'}">${dname('easy')}</button><button class="${diffId === 'normal' ? 'on' : ''}" data-d="normal" role="radio" aria-checked="${diffId === 'normal'}">${dname('normal')}</button></div>${myHeroBtn()}</div>
+      <div class="row"><button class="big-btn" id="bStart">▶️ ${L('ابدأ', 'Start', 'Başla')}</button><button class="ghost-btn" id="bLeave">🚪 ${L('اطلع', 'Leave', 'Çık')}</button></div>`
+    : `<p>${dname(MP.diff || 'easy')} · ${L('استنّى صاحب الغرفة يبدأ…', 'Wait for the room owner to start…', 'Oda sahibinin başlatmasını bekle…')}</p>
+      <div class="row">${myHeroBtn()}<button class="ghost-btn" id="bLeave">🚪 ${L('اطلع', 'Leave', 'Çık')}</button></div>`}`;
+  if(MP.isHost){
+    card.querySelectorAll('.seg button').forEach(b => b.onclick = () => { diffId = b.dataset.d; rawSet('granny_diff', diffId); SFX.tap(); mpSend('lob', { diff:diffId, ph:'idle' }); mpLobbyDraw(); });
+    $('#bStart').onclick = () => { A.ac(); SFX.tap(); coStartRun(); };
+  }
+  $('#bMyHero').onclick = () => { SFX.tap(); showSelect('mp'); };
+  $('#bLeave').onclick = () => { SFX.tap(); mpLeave(); mpMenu(); };
+}
+async function mpCreate(want){
+  mpConnecting();
+  try{
+    for(let i = 0; i < 4; i++){
+      const code = i === 0 && /^\d{4}$/.test(want || '') ? String(want) : String(1000 + Math.floor(Math.random() * 9000));
+      const r = await mpOpen(code, 'create');
+      if(MP.screen !== 'connecting'){ if(r === 'ok') mpLeave(); return; }
+      if(r === 'ok'){ mpLobby(); mpSendInvite(); return; }
+    }
+    throw new Error('busy');
+  }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpCreate(want)); }
+}
+async function mpJoin(code, until){
+  mpConnecting();
+  try{
+    let r = await mpOpen(code, 'join');
+    if(MP.screen !== 'connecting'){ if(r === 'ok') mpLeave(); return; }
+    while(r === 'nobody' && until && performance.now() < until){
+      await new Promise(res => setTimeout(res, 700)); if(MP.screen !== 'connecting') return;
+      r = await mpOpen(code, 'join'); if(MP.screen !== 'connecting'){ if(r === 'ok') mpLeave(); return; }
+    }
+    if(r === 'ok'){ mpLobby(); mpSend('lob', { ask:1 }); }
+    else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
+    else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
+  }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpJoin(code)); }
+}
+/* «تعا العب» from the friends page: ?host=1&invite=<friendCode>. The server may not accept 'granny': guarded. */
+function mpSendInvite(){
+  const who = MP.inviteFor; if(!who || !MP.code || !window.Friends) return;
+  MP.inviteFor = null;
+  const no = () => toast(L('ما قدرنا نبعت الدعوة 🙈 قلّو رقم الغرفة', "Couldn't send the invite 🙈 tell them the room number", 'Davet gönderilemedi 🙈 oda numarasını söyle'));
+  try{
+    Friends.invite(who, MP.code, FR_GAME).then(r => {
+      if(r && r.status === 'sent') toast(L('✉️ بعتنا دعوة لصاحبك! استنّاه يفوت', '✉️ Invite sent! Wait for your friend to join', '✉️ Davet gönderildi! Arkadaşının gelmesini bekle'));
+      else no();
+    }, no);
+  }catch(e){ no(); }
+}
+function mpKeypad(msg){
+  MP.tok++; mpClose();
+  MP.screen = 'keypad'; MP.typed = ''; mpCard(true);
+  const keys9 = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-k="${d}">${N(d)}</button>`).join('');
+  card.innerHTML = `<h2>🔢 ${L('اكتب رقم الغرفة', 'Type the room number', 'Oda numarasını yaz')}</h2>
+    <div class="mp-cols"><div class="mp-col"><div class="mp-code" id="kpCode"></div><p class="mp-msg" id="kpMsg"></p>
+      <button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>
+    <div class="keypad" id="keypad">${keys9}<button data-k="del" aria-label="${L('امسح', 'Delete', 'Sil')}">⌫</button><button data-k="0">${N(0)}</button><button class="ok" data-k="ok" aria-label="${L('تمام', 'OK', 'Tamam')}">✅</button></div></div>`;
+  $('#kpMsg').textContent = msg || '';
+  card.querySelectorAll('#keypad button').forEach(b => b.onclick = () => mpKey(b.dataset.k));
+  $('#bBack').onclick = () => { SFX.tap(); mpMenu(); };
+  mpKeyDraw();
+}
+function mpKeyDraw(){ const el = $('#kpCode'); if(!el) return; el.innerHTML = [0, 1, 2, 3].map(i => `<b class="${i === MP.typed.length ? 'cur' : ''}">${MP.typed[i] != null ? N(MP.typed[i]) : ''}</b>`).join(''); }
+function mpKey(k){
+  if(MP.screen !== 'keypad') return;
+  if(k === 'del'){ MP.typed = MP.typed.slice(0, -1); SFX.tap(); }
+  else if(k === 'ok'){ if(MP.typed.length === 4) mpJoin(MP.typed); else SFX.wrong(); return; }
+  else if(/^\d$/.test(k) && MP.typed.length < 4){ MP.typed += k; SFX.tap(); }
+  const m = $('#kpMsg'); if(m) m.textContent = '';
+  mpKeyDraw();
+  if(MP.typed.length === 4){ const code = MP.typed; setTimeout(() => { if(MP.screen === 'keypad' && MP.typed === code) mpJoin(code); }, 300); }
+}
+addEventListener('keydown', e => {
+  if(state !== 'mp' || MP.screen !== 'keypad') return;
+  if(/^\d$/.test(e.key)) mpKey(e.key); else if(e.key === 'Backspace') mpKey('del'); else if(e.key === 'Enter') mpKey('ok');
+});
+
 /* ---------- test hook ---------- */
 window.__granny = {
   get state(){ return state; }, get diff(){ return diffId; }, get fps(){ return fps; }, get dpr(){ return dpr; }, get hero(){ return heroId; },
@@ -937,7 +1746,7 @@ window.__granny = {
   get grandma(){ return { x:G.x, y:G.y, z:G.z, mode:G.mode, lv:H.lvOf(G.y), room:H.roomOf(G.x, G.y, G.z), tgt:G.tgt, path:G.path.length }; },
   get items(){ return GS ? Object.fromEntries(Object.entries(GS.items).map(([k, v]) => [k, { x:v.x, y:v.y, z:v.z, lv:v.lv, state:v.state }])) : null; },
   get ctx(){ const c = context(); return c && c.k; }, get result(){ return GS && GS.result; }, get hides(){ return HIDES.map(h => ({ kind:h.kind, x:h.x, z:h.z, lv:h.lv, out:h.out })); },
-  start(d){ if(d) diffId = d; startGame(); }, title:() => showTitle(), back(){ if(state === 'select' && selFrom === 'pause') showPause(true); else showTitle(); }, pause:() => showPause(), resume:() => resume(), act:() => doAction(),
+  start(d){ if(d) diffId = d; startGame(); }, title:() => showTitle(), back(){ if(state === 'select' && selFrom === 'pause') showPause(true); else if(state === 'select' && selFrom === 'mp') mpBackFromSelect(); else if(state === 'mp') mpBack(); else showTitle(); }, pause:() => showPause(), resume:() => resume(), act:() => doAction(),
   teleport(x, z, lv){
     if(typeof x === 'string'){ const n = x; if(n === 'door'){ x = .5; z = -5.6; lv = 1; } else if(GS.items[n]){ const it = GS.items[n]; const o = { x:it.x + .6, z:it.z }; lv = it.lv; const free = [[.7, 0], [-.7, 0], [0, .7], [0, -.7], [.9, .5], [-.9, .5], [.5, -.9]].map(([a, b]) => ({ x:it.x + a, z:it.z + b })).find(q => H.floorAt(lv, q.x, q.z) && !H.blocked(q.x, LY[lv] + .5, q.z, .3) && !H.blocked(q.x, LY[lv] + .2, q.z, .3)) || o; x = free.x; z = free.z; } else if(H.ROOM[n]){ const r = H.ROOM[n]; x = r.c[0]; z = r.c[1]; lv = r.lv; } }
     if(P.hidden) exitHide(); P.x = x; P.z = z; P.y = LY[lv != null ? lv : H.lvOf(P.y)]; P.vx = P.vz = 0; snapCam = true; return this.player;
@@ -954,7 +1763,15 @@ window.__granny = {
   overview(){ state = 'overview'; overlay.hidden = true; setPlayUI(false); H.setTitle(true); camera.clearViewOffset(); placeTitleScene(); },
   cam(a){ camOverride = a; }, peek:(y, p) => { cam.peekY = y; cam.peekP = p || 0; }, yaw(a, p){ cam.yaw = a; if(p != null) cam.pitch = p; snapCam = true; },
   hint(){ if(GS){ GS.progressT = GS.t - HINT_AFTER - 1; } }, get arrow(){ return arrow.visible; },
-  H, wakeNona:() => wakeNona(null, 'self'), knock:(i) => knockVase(i), get vases(){ return VASES.map(v => v.down); }
+  H, wakeNona:() => wakeNona(null, 'self'), knock:(i) => knockVase(i), get vases(){ return VASES.map(v => v.down); },
+  /* online co-op */
+  get mpScreen(){ return MP.screen; }, get co(){ return R.co; }, get run(){ return R.n; },
+  get mp(){ return { code:MP.code, active:mpActive(), isHost:MP.isHost, hostId:MP.hostId, screen:MP.screen, id:MP.id, players:MP.players.map(p => ({ id:p.id, hero:p.hero, c:p.c })) }; },
+  get peers(){ return [...PEERS.values()].map(a => ({ id:a.id, hero:a.hero, x:a.x, y:a.y, z:a.z, hid:a.hid, inRun:a.inRun, seen:a.seen, visible:!!(a.h && a.h.grp.visible), label:a.lbl.hidden ? null : a.lbl.textContent, held:heldBy(a.id) })); },
+  get itemsBy(){ return GS ? Object.fromEntries(['key', 'pliers', 'note'].map(id => [id, GS.items[id].state === 'held' ? GS.items[id].by : GS.items[id].state])) : null; },
+  get kid(){ return G.kid; }, get over(){ return GS && GS.over; },
+  mpMenu:() => mpMenu(), mpCreate:(c) => mpCreate(c), mpJoin:(c) => mpJoin(c), mpStart:() => coStartRun(), mpLeave:() => { coStop(); showTitle(); },
+  pos:() => coPosNow()
 };
 
 /* ---------- boot ---------- */
@@ -962,3 +1779,13 @@ setHero(heroId);
 resize();
 showTitle();
 requestAnimationFrame(frame);
+/* ?host=1 (&room=<4 digits>, &invite=<friendCode>, &accept=<id> for invitepop.js) makes a room; ?join=<room> joins one
+   (it keeps trying for 20 s while nobody is there yet, e.g. friends coming from the island portal at the same moment) */
+(function(){
+  const join = QS.get('join'), host = QS.get('host') === '1', inv = QS.get('invite'), room = QS.get('room');
+  if(!/^\d{4}$/.test(join || '') && !host) return;
+  const q = new URLSearchParams(location.search); ['join', 'host', 'invite', 'room'].forEach(k => q.delete(k));
+  try{ history.replaceState(history.state, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
+  if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 20000);
+  else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(/^\d{4}$/.test(room || '') ? room : null); }
+})();

@@ -49,6 +49,8 @@ const GAMES = {
             name:['نحلات بوبو 🐝', 'Bobo Bees 🐝', 'Bobo Arıları 🐝'], game:['نحلات بوبو', 'Bobo Bees', 'Bobo Arıları'] },
   fashion:{ path:'fashion/', emoji:'👗', color:'#c77dff', dark:'#8a3fc2',
             name:['عرض أزياء بوبو 👗', 'Bobo Fashion Show 👗', 'Bobo Moda Şovu 👗'], game:['عرض أزياء بوبو', 'Bobo Fashion Show', 'Bobo Moda Şovu'] },
+  granny: { path:'granny/', emoji:'👵🏻', color:'#f07aa8', dark:'#b23f6c',
+            name:['بيت الجدّة نونا 👵🏻', "Grandma Nona's House 👵🏻", 'Nona Ninenin Evi 👵🏻'], game:['بيت الجدّة نونا', "Grandma Nona's House", 'Nona Ninenin Evi'] },
   surprise:{ path:'surprise/', emoji:'🌪️', color:'#3dc1c9', dark:'#1f8288',
             name:['جزيرة المفاجآت 🌪️', 'Surprise Island 🌪️', 'Sürpriz Adası 🌪️'], game:['جزيرة المفاجآت', 'Surprise Island', 'Sürpriz Adası'] },
   island: { path:'island/', emoji:'🏝️', color:'#2fb7a6', dark:'#1b7a6e',
