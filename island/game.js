@@ -533,7 +533,7 @@ async function mpJoin(from = 1){
     }
     mpClose(); MP.status = 'full';
   }catch(e){ if(MP.tok === tok){ mpClose(); MP.status = 'down'; setTimeout(() => { if(MP.status === 'down' && !MP.t) mpJoin(); }, 15000); } }
-  finally{ if(MP.tok === tok) MP.joining = false; hudKey = ''; }
+  finally{ if(MP.tok === tok){ MP.joining = false; if(MP.meta) mpPresence(MP.list); } hudKey = ''; }
 }
 function mpTrack(){ if(MP.t && MP.meta){ MP.meta.hero = heroId; MP.t.track(MP.meta); } }
 function mpSend(ev, p){ if(mpActive()) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
@@ -963,7 +963,7 @@ window.__island = {
   get cd(){ return CD ? { zone:CD.zone, left:CD.left } : null; }, get nav(){ return NAV; }, ring:() => myRing(), act:() => { updateActBtn(); const k = ctx && ctx.k; doAction(); return k; },
   ctx:() => (updateActBtn(), ctx && ctx.k), frMode:on => { frMode = on ? 15 : 0; if(on) refreshFriends().then(drawFrPanel); else frPanel.hidden = true; },
   W, get fps(){ return fps; }, get dpr(){ return dpr; }, renderer, COLL:W.COLL, plants:W.plants, cups:W.cups, nests:W.nests, eggStalls:W.eggStalls, pets:W.roamPets, climbTops:W.climbTops,
-  setCam:c => { camOverride = c; }, get carry(){ return P.carry; }, get inCup(){ return !!P.cup; }
+  setCam:c => { camOverride = c; }, setFog:(n, f) => { scene.fog.near = n; scene.fog.far = f; }, get carry(){ return P.carry; }, get inCup(){ return !!P.cup; }
 };
 
 /* ---------- boot ---------- */
