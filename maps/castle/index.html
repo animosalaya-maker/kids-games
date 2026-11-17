@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="../../i18n.js"></script>
+<script src="../../rt.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Toy Castle" data-tr="Oyuncak Kalesi">قلعة الألعاب</title>
 <meta name="description" content="خريطة مميزة ثلاثية الأبعاد: قلعة ألعاب كبيرة فيها تحديات وكنز مخبّى." data-en="A premium 3D map: a big toy castle with challenges and hidden treasure." data-tr="Premium 3D harita: meydan okumalar ve gizli hazinelerle dolu büyük bir oyuncak kalesi.">
@@ -1203,39 +1204,18 @@ function loadSupabase(){
     document.head.appendChild(s);
   }));
 }
+/* the room connection itself (re-join after a drop, no HTTP fallback, watchdog) lives in the shared ../rt.js */
 class SupabaseTransport{
   async open(code, id, h){
     if(navigator.onLine === false) throw new Error('offline');
     await loadSupabase();
-    if(!SupabaseTransport.client) SupabaseTransport.client = window.supabase.createClient(MP_URL, MP_KEY, {
-      auth:{ persistSession:false, autoRefreshToken:false, detectSessionInUrl:false }, realtime:{ params:{ eventsPerSecond:40 } } });
-    const sb = SupabaseTransport.client;
-    const ch = this.ch = sb.channel('bobo-castle-' + code, { config:{ broadcast:{ self:false, ack:false }, presence:{ key:id, enabled:true } } });
-    ch.on('presence', { event:'sync' }, () => {
-      const st = ch.presenceState(), list = [];
-      for(const k in st){ const m = st[k]; if(m && m.length) list.push(Object.assign({}, m[m.length - 1], { id:k })); }
-      h.presence(list);
-    });
-    MP_EVENTS.forEach(ev => ch.on('broadcast', { event:ev }, m => h.msg(ev, m && m.payload)));
-    await new Promise((res, rej) => {
-      let first = true;
-      const to = setTimeout(() => { if(first){ first = false; rej(new Error('timeout')); } }, 9000);
-      ch.subscribe(status => {
-        if(status === 'SUBSCRIBED'){ if(first){ first = false; clearTimeout(to); res(); } else h.status('up'); }
-        else if(status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED'){
-          if(first){ first = false; clearTimeout(to); rej(new Error(status)); } else if(!this.closed) h.status('down');
-        }
-      });
-    });
+    if(this.closed) throw new Error('cancelled');
+    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:'bobo-castle-' + code, id, events:MP_EVENTS, eps:40, h });
+    await this.rt.ready;
   }
-  track(meta){ try{ const p = this.ch && this.ch.track(Object.assign({}, meta)); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  send(ev, payload){ try{ const p = this.ch && this.ch.send({ type:'broadcast', event:ev, payload }); if(p && p.catch) p.catch(() => {}); }catch(e){} }
-  close(){
-    this.closed = true; const ch = this.ch, sb = SupabaseTransport.client; this.ch = null;
-    if(!ch || !sb) return;
-    try{ const p = ch.untrack(); if(p && p.catch) p.catch(() => {}); }catch(e){}
-    try{ const p = sb.removeChannel(ch); if(p && p.catch) p.catch(() => {}); }catch(e){}
-  }
+  track(meta){ if(this.rt) this.rt.track(meta); }
+  send(ev, payload){ if(this.rt) this.rt.send(ev, payload); }
+  close(){ this.closed = true; if(this.rt){ this.rt.close(); this.rt = null; } }
 }
 class LocalTransport{
   open(code, id, h){
@@ -1307,9 +1287,9 @@ function remoteFor(p){
   const hero = okHero(p.hero), c = p.c | 0;
   if(r && (r.hero !== hero || r.c !== c)){ dropRemote(p.id); r = null; }
   if(!r){
-    const h = newHero(hero), tag = new THREE.Sprite(new THREE.SpriteMaterial({ map:tagTex(mpLabel(c), MCOL[c] || '#fff'), transparent:true, depthWrite:false })); tag.scale.set(2.4, .68, 1); scene.add(tag);
+    const nm = BoboRT.who(p.id, mpLabel(c)), h = newHero(hero), tag = new THREE.Sprite(new THREE.SpriteMaterial({ map:tagTex(nm, MCOL[c] || '#fff'), transparent:true, depthWrite:false })); tag.scale.set(2.4, .68, 1); scene.add(tag);
     const boat = new THREE.Mesh(W.boatGeo(new THREE.Color(MCOL[c] || '#fff').getHex()), new THREE.MeshLambertMaterial({ vertexColors:true })); boat.visible = false; scene.add(boat);
-    r = { id:p.id, hero, c, h, tag, boat, x:SPOTS.spawn.x, y:0, z:SPOTS.spawn.z, f:0, m:0, md:0, w:0, rx:SPOTS.spawn.x, ry:0, rz:SPOTS.spawn.z, rf:0, seen:false, t:0 };
+    r = { id:p.id, hero, c, nm, h, tag, boat, x:SPOTS.spawn.x, y:0, z:SPOTS.spawn.z, f:0, m:0, md:0, w:0, rx:SPOTS.spawn.x, ry:0, rz:SPOTS.spawn.z, rf:0, seen:false, t:0 };
     h.grp.visible = false; tag.visible = false; remotes.set(p.id, r);
   }
   return r;
@@ -1361,7 +1341,7 @@ async function mpOpen(code, how){
   if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
   if(others.length >= MP_MAX){ mpClose(); return 'full'; }
   const used = new Set(others.map(p => p.c)); let c = 0; while(used.has(c)) c++;
-  MP.meta = { hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, w:wearBits() };
+  MP.meta = { fc:BoboRT.fc(), hero:heroId, c, o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, w:wearBits() };
   t.track(MP.meta);
   mpPresence(MP.list);
   frRoom(code);
@@ -1370,8 +1350,13 @@ async function mpOpen(code, how){
 }
 function mpTrack(){ if(MP.t && MP.meta) MP.t.track(MP.meta); }
 function mpSend(ev, p){ if(MP.t) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+/* saved names: each player's friend code is in the presence meta, the name behind it comes from the server (../rt.js) */
+function mpNamesIn(){
+  for(const r of remotes.values()){ const nm = BoboRT.who(r.id, mpLabel(r.c)); if(nm === r.nm) continue; r.nm = nm; if(r.tag.material.map) r.tag.material.map.dispose(); r.tag.material.map = tagTex(nm, MCOL[r.c] || '#fff'); r.tag.material.needsUpdate = true; }
+}
 function mpPresence(list){
   list = (list || []).filter(p => p.ph !== 'probe');
+  BoboRT.see(list, mpNamesIn);
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
@@ -1410,7 +1395,7 @@ let bannerT = 0;
 function banner(html, cls, ms){ const b = $('#banner'); b.className = 'banner' + (cls ? ' ' + cls : ''); b.innerHTML = html; b.hidden = false; clearTimeout(bannerT); bannerT = setTimeout(() => { b.hidden = true; }, ms || 4000); return b; }
 function showWinner(id, hero, c){
   const mine = id === MP.id;
-  banner(`<img src="${charImg(hero)}" alt=""><span>🏆 ${mine ? L('إنت وصلت أول!', 'You finished first!', 'İlk sen geldin!') : mpLabel(c) + ' ' + L('وصل أول!', 'finished first!', 'ilk geldi!')}</span>`, '', 4500);
+  banner(`<img src="${charImg(hero)}" alt=""><span>🏆 ${mine ? L('إنت وصلت أول!', 'You finished first!', 'İlk sen geldin!') : BoboRT.whoH(id, mpLabel(c)) + ' ' + L('وصل أول!', 'finished first!', 'ilk geldi!')}</span>`, '', 4500);
   if(mine) SFX.win();
 }
 function raceInvite(rid, k, from){
