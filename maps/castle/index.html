@@ -1451,22 +1451,26 @@ function mpInRoom(){
   enterPlay();
   if(state === 'play'){ say(L('رقم غرفتك ', 'Your room number is ', 'Oda numaran ') + [...MP.code].map(N).join('') + L(' — قوله لأصحابك 👫', ' — tell your friends 👫', ' — arkadaşlarına söyle 👫'), 5000); mpHud(); }
 }
-async function mpCreate(){
+async function mpCreate(want){
   mpConnecting();
   try{
     for(let i = 0; i < 4; i++){
-      const code = String(1000 + Math.floor(Math.random() * 9000));
+      const code = i === 0 && /^\d{4}$/.test(want || '') ? String(want) : String(1000 + Math.floor(Math.random() * 9000));
       const r = await mpOpen(code, 'create');
       if(r === 'ok'){ mpInRoom(); mpSendInvite(); return; }
     }
     throw new Error('busy');
   }catch(e){ if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(mpCreate); }
 }
-async function mpJoin(code){
+async function mpJoin(code, until){
   mpConnecting();
   try{
-    const r = await mpOpen(code, 'join');
+    let r = await mpOpen(code, 'join');
     if(MP.screen !== 'connecting') return;
+    while(r === 'nobody' && until && performance.now() < until){
+      await new Promise(res => setTimeout(res, 700)); if(MP.screen !== 'connecting') return;
+      r = await mpOpen(code, 'join'); if(MP.screen !== 'connecting') return;
+    }
     if(r === 'ok') mpInRoom();
     else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
     else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
@@ -1597,11 +1601,11 @@ setTimeout(() => { $('#loading').hidden = true; }, 60);
 if(owned()) showMenu(); else showLocked();
 /* links from the friends page: ?join=<room> joins that room, ?host=1&invite=<friendCode> creates a room and invites the friend */
 (function(){
-  const q = new URLSearchParams(location.search), join = q.get('join'), host = q.get('host') === '1', inv = q.get('invite');
+  const q = new URLSearchParams(location.search), join = q.get('join'), host = q.get('host') === '1', inv = q.get('invite'), room = q.get('room');
   if(!/^\d{4}$/.test(join || '') && !host) return;
-  ['join', 'host', 'invite'].forEach(k => q.delete(k));
+  ['join', 'host', 'invite', 'room'].forEach(k => q.delete(k));
   try{ history.replaceState(null, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
-  const go = () => { if(/^\d{4}$/.test(join || '')) mpJoin(join); else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(); } };
+  const go = () => { if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 20000); else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(room); } };
   if(owned()) go();
   else Trial.fetch(MAP).then(r => { trialInfo = r; if(r.left > 0){ preview = true; go(); } else showPreviewEnd(); });
 })();
