@@ -55,7 +55,9 @@ const GAMES = {
   surprise:{ path:'surprise/', emoji:'🌪️', color:'#3dc1c9', dark:'#1f8288',
             name:['جزيرة المفاجآت 🌪️', 'Surprise Island 🌪️', 'Sürpriz Adası 🌪️'], game:['جزيرة المفاجآت', 'Surprise Island', 'Sürpriz Adası'] },
   island: { path:'island/', emoji:'🏝️', color:'#2fb7a6', dark:'#1b7a6e',
-            name:['جزيرة بوبو الكبيرة 🏝️', 'Bobo Big Island 🏝️', 'Bobo Büyük Ada 🏝️'], game:['جزيرة بوبو الكبيرة', 'Bobo Big Island', 'Bobo Büyük Ada'] }
+            name:['جزيرة بوبو الكبيرة 🏝️', 'Bobo Big Island 🏝️', 'Bobo Büyük Ada 🏝️'], game:['جزيرة بوبو الكبيرة', 'Bobo Big Island', 'Bobo Büyük Ada'] },
+  desert: { path:'desert/', emoji:'🏜️', color:'#f2a33a', dark:'#b8701a',
+            name:['صحرا بوبو 🏜️', 'Bobo Desert 🏜️', 'Bobo Çölü 🏜️'], game:['صحرا بوبو', 'Bobo Desert', 'Bobo Çölü'] }
 };
 const gameOf = g => GAMES[g] ? g : '3d';
 const gameName = (g, inGame) => { const x = GAMES[gameOf(g)][inGame ? 'game' : 'name']; return T(x[0], x[1], x[2]); };
