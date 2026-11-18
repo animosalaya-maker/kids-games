@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="../i18n.js"></script>
+<script src="../rt.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Bobo Space" data-tr="Bobo Uzay">فضاء بوبو</title>
 <meta name="description" content="طير بصاروخك الحلو وفرقع الكائنات الزعلانة بفقاعات لامعة، اجمع المصاري والقوى، وتغلّب على الزعيم!" data-en="Fly your cute rocket, pop the grumpy space blobs with sparkly bubbles, grab coins and powers, and beat the boss!" data-tr="Sevimli roketinle uç, huysuz uzay yaratıklarını parlak baloncuklarla patlat, altın ve güç topla, patronu yen!">
@@ -82,7 +83,34 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .res b{font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1;direction:ltr}
 .res small{font-size:13px;font-weight:700;color:var(--muted)}
 .newbest{background:var(--pink);color:#fff;border-radius:12px;padding:2px 12px;font-weight:800;font-size:15px;animation:starPop .5s .5s both}
-@media (max-height:640px){.card{gap:8px;padding:14px}.card h1{font-size:38px}.how{display:none}.stars{font-size:44px}}
+/* online rooms */
+.friends-btn{font-size:19px;padding:10px 22px}
+.big-btn.sm{font-size:21px;padding:10px 20px;min-width:0}
+.big-btn.mint{background:linear-gradient(180deg,#8bf5c8,#4fe3a6);color:#063d2a;box-shadow:0 6px 0 #23a271,0 10px 24px rgba(79,227,166,.25)}
+.big-btn[disabled]{filter:grayscale(.7);opacity:.55}
+.face{display:block;width:60px;height:60px;border-radius:50%;background-color:#3b2f8a;background-repeat:no-repeat;box-shadow:0 0 0 3px var(--c,rgba(255,255,255,.25))}
+.mp-me{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.22);border-radius:40px;padding:6px 18px 6px 6px;font-family:var(--display);font-weight:800;font-size:19px}
+.mp-me .face{width:64px;height:64px;box-shadow:0 0 0 3px var(--gold)}
+.slots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
+.slot{background:rgba(0,0,0,.24);border-radius:18px;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0;box-shadow:inset 0 0 0 2px var(--c,rgba(255,255,255,.12))}
+.slot .nm{font-weight:800;font-size:14px;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--c,var(--ink))}
+.slot.empty .face{background:rgba(255,255,255,.06);box-shadow:inset 0 0 0 2px rgba(255,255,255,.15)}
+.slot small{color:var(--muted);font-weight:700}
+.team{display:flex;gap:8px;justify-content:center;width:100%}
+.team .slot{flex:0 1 82px;padding:6px 4px}.team .face{width:48px;height:48px}
+.mp-msg{min-height:1.5em}
+.mp-code{display:flex;gap:8px;direction:ltr;justify-content:center}
+.mp-code b{width:54px;height:64px;border-radius:16px;background:rgba(255,255,255,.1);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:40px;line-height:1;color:var(--gold);box-shadow:inset 0 0 0 3px rgba(255,255,255,.18)}
+.mp-code b.cur{box-shadow:inset 0 0 0 3px var(--gold)}
+.keypad{display:grid;grid-template-columns:repeat(3,68px);gap:8px;direction:ltr}
+.keypad button{height:54px;border:0;border-radius:16px;background:rgba(255,255,255,.14);font-family:var(--display);font-weight:800;font-size:28px;line-height:1;color:var(--ink);box-shadow:0 4px 0 rgba(0,0,0,.3)}
+.keypad button:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+.keypad .ok{background:var(--mint);color:#063d2a}
+.bigicon{font-size:56px;line-height:1}
+.spin{display:inline-block;animation:spin 1.4s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+#toast{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:calc(24px + var(--sa-b));max-width:calc(100% - 32px);background:rgba(30,20,80,.94);color:#fff;
+  font-weight:800;font-size:16px;line-height:1.35;padding:10px 18px;border-radius:18px;box-shadow:0 0 0 2px rgba(255,255,255,.2),0 8px 24px rgba(0,0,0,.4);text-align:center;pointer-events:none}
+@media (max-height:640px){.slot .face{width:48px;height:48px}.keypad button{height:46px}.mp-code b{height:54px;font-size:34px}.card{gap:8px;padding:14px}.card h1{font-size:38px}.how{display:none}.stars{font-size:44px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 </head>
@@ -99,6 +127,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <div class="label" data-en="Pick your pilot" data-tr="Pilotunu seç">اختار الطيّار</div>
     <div class="pilots" id="pilots"></div>
     <button class="big-btn" id="btnPlay"><span data-en="Play" data-tr="Oyna">العب</span> 🚀</button>
+    <button class="ghost-btn friends-btn" id="btnFriends">👫 <span data-en="Play with friends" data-tr="Arkadaşlarla oyna">العب مع أصحابك</span></button>
     <div class="best" id="bestLine"></div>
     <ul class="how">
       <li><span>👆</span><span data-en="Drag to move — the rocket shoots by itself" data-tr="Hareket için sürükle — roket kendi ateş eder">اسحب لتتحرك — الصاروخ بيطلق لحالو</span></li>
@@ -121,6 +150,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <div class="overlay dim" id="end" hidden>
   <div class="card">
     <h2 id="endTitle"></h2>
+    <div class="team" id="endTeam" hidden></div>
     <div class="stars" id="endStars"><span>★</span><span>★</span><span>★</span></div>
     <span class="newbest" id="newBest" hidden data-en="New best!" data-tr="Yeni rekor!">رقم قياسي جديد!</span>
     <div class="res">
@@ -131,17 +161,21 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     </div>
     <div class="row">
       <button class="big-btn" id="btnAgain"><span data-en="Play again" data-tr="Tekrar oyna">العب كمان</span> 🔁</button>
+      <p id="endWait" hidden data-en="Wait for the room owner to play again…" data-tr="Oda sahibinin tekrar başlatmasını bekle…">استنّى صاحب الغرفة يلعب كمان…</p>
     </div>
     <button class="ghost-btn" id="btnMenu" data-en="Menu" data-tr="Menü">القائمة</button>
   </div>
 </div>
 
+<div class="overlay dim" id="mp" hidden><div class="card" id="mpCard"></div></div>
+<div id="toast" role="status" hidden></div>
+
 <script src="../world.js"></script>
 <script src="./game.js"></script>
 <script src="../back.js"></script>
 <script>BoboBack.init({
-  visible: () => { const s = window.__space && window.__space.state; return s === 'menu' || s === 'pause'; },
-  onBack: () => { const h = window.__space; if(!h || h.state === 'menu') location.href = '../'; else h.toMenu(); }
+  visible: () => { const h = window.__space, s = h && h.state; return (s === 'menu' && h.mpScreen !== 'connecting') || s === 'pause'; },
+  onBack: () => { const h = window.__space; if(!h) location.href = '../'; else h.back(); }
 });</script>
 <script src="../friends.js"></script>
 <script src="../invitepop.js"></script>
