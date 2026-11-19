@@ -109,6 +109,8 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
 .feat.island b{font-size:28px}
 .feat.space{background:linear-gradient(135deg,#5b3fd6,#ff6fae);box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 6px 0 #3a2390}
 .feat.desert{background:linear-gradient(135deg,#f29a2e,#ffd27a);box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 6px 0 #b8691a}
+.feat.prank3d{background:linear-gradient(135deg,#7bc47f,#3f8a4a);box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 6px 0 #2f6a38}
+.feat.prank2d{background:linear-gradient(135deg,#ff9a6b,#e8543a);box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 6px 0 #a83620}
 .feat.granny{background:linear-gradient(135deg,#d9488f,#ff9e7a);box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 6px 0 #a3306a}
 .feat.granny:active{box-shadow:inset 0 0 0 4px rgba(255,255,255,.85),0 2px 0 #a3306a}
 .feat .badge{position:absolute;top:10px;inset-inline-end:12px;background:#ff3b4e;color:#fff;border-radius:999px;padding:2px 10px;font-size:13px;font-weight:800}
@@ -185,9 +187,15 @@ textarea{width:100%;min-height:84px;border-radius:14px;border:2px solid var(--ni
   </div>
 
   <section class="sec">
+    <div class="sec-h"><h2 data-en="Spooky World 👻" data-tr="Korkunç Dünya 👻">العالم المخيف 👻</h2><span data-en="🤫 sneak, hide & prank" data-tr="🤫 gizlen, saklan, şaka yap">🤫 تسلّل وتخبّى واعمل مقالب</span></div>
+    <a class="feat granny" id="grannyTile" href="granny/"><span class="badge" data-en="Spooky" data-tr="Korku">رعب 👻</span><span class="em">👻</span><span><b data-en="Spooky game: Grandma Nona's House" data-tr="Korku oyunu: Nona Ninenin Evi">لعبة الرعب: بيت الجدّة نونا</b><small data-en="Sneak out before Grandma catches you — shhh! 🤫" data-tr="Nine seni yakalamadan sessizce kaç — şşş! 🤫">اهرب من البيت قبل ما تمسكك الجدّة… هسّ! 🤫</small></span></a>
+    <a class="feat prank3d" id="prank3dTile" href="prank3d/"><span class="badge" data-en="New" data-tr="Yeni">جديد</span><span class="em">🎭</span><span><b data-en="Uncle Grumpy's House" data-tr="Somurtkan Amca'nın Evi">بيت عمّو زعلان</b><small data-en="Set up silly pranks without Uncle Grumpy seeing you! 🤭" data-tr="Somurtkan Amca'ya görünmeden komik şakalar hazırla! 🤭">حضّر مقالب مضحكة لعمّو زعلان بلا ما يشوفك! 🤭</small></span></a>
+    <a class="feat prank2d" id="prankTile" href="prank/"><span class="em">🎭</span><span><b data-en="Bobo's Pranks" data-tr="Bobo'nun Şakaları">مقالب بوبو</b><small data-en="Sneak in, set pranks, run! · 4 levels" data-tr="Gizlice gir, şaka yap, kaç! · 4 bölüm">تسلّل، اعمل مقالب، واهرب! · 4 مراحل</small></span></a>
+  </section>
+
+  <section class="sec">
     <div class="sec-h"><h2 data-en="Bobo Worlds 🌍" data-tr="Bobo Dünyaları 🌍">عوالم بوبو 🌍</h2><span data-en="🏃 3D obstacle courses" data-tr="🏃 3D engelli parkurlar">🏃 سباقات حواجز ثلاثية الأبعاد</span></div>
     <a class="feat island" id="islandTile" href="island/"><span class="badge" data-en="New" data-tr="Yeni">جديد</span><span class="em">🏝️</span><span><b data-en="Bobo Big Island 🏝️" data-tr="Bobo Büyük Ada 🏝️">جزيرة بوبو الكبيرة 🏝️</b><small data-en="All the maps in one place. Jump in and play with everyone!" data-tr="Tüm haritalar tek yerde. Gir ve herkesle oyna!">كل الخرايط بمكان واحد. فوت والعب مع الكل!</small></span></a>
-    <a class="feat granny" id="grannyTile" href="granny/"><span class="badge" data-en="Spooky" data-tr="Korku">رعب 👻</span><span class="em">👻</span><span><b data-en="Spooky game: Grandma Nona's House" data-tr="Korku oyunu: Nona Ninenin Evi">لعبة الرعب: بيت الجدّة نونا</b><small data-en="Sneak out before Grandma catches you — shhh! 🤫" data-tr="Nine seni yakalamadan sessizce kaç — şşş! 🤫">اهرب من البيت قبل ما تمسكك الجدّة… هسّ! 🤫</small></span></a>
     <a class="feat desert" id="desertTile" href="desert/"><span class="badge" data-en="New" data-tr="Yeni">جديد</span><span class="em">🏜️</span><span><b data-en="Bobo Desert 🏜️" data-tr="Bobo Çölü 🏜️">صحرا بوبو 🏜️</b><small data-en="Drive a sand buggy, find treasure and race with friends!" data-tr="Kum arabası sür, hazine bul ve arkadaşlarınla yarış!">سوق سيارة الرمل، لاقي الكنوز، وتسابق مع أصحابك!</small></span></a>
     <a class="feat space" id="spaceTile" href="space/"><span class="badge" data-en="New" data-tr="Yeni">جديد</span><span class="em">🚀</span><span><b data-en="Bobo Space 🚀" data-tr="Bobo Uzay 🚀">فضاء بوبو 🚀</b><small data-en="Pop the grumpy space blobs with sparkly bubbles!" data-tr="Huysuz uzay yaratıklarını parlak baloncuklarla patlat!">فرقع الكائنات الزعلانة بفقاعاتك اللامعة!</small></span></a>
     <a class="feat castle" id="castleTile" href="maps/castle/"><span class="badge" data-en="New" data-tr="Yeni">جديد</span><span class="em">🏰</span><span><b data-en="Toy Castle 🏰" data-tr="Oyuncak Kalesi 🏰">قلعة الألعاب 🏰</b><small data-en="A huge castle full of games. Try 5 minutes free!" data-tr="Oyun dolu dev bir kale. 5 dakika ücretsiz dene!">قلعة ضخمة مليانة ألعاب. جرّب 5 دقايق ببلاش!</small></span></a>
@@ -380,7 +388,6 @@ tile($id('worldTiles'), 'worlds/', { title:L('كل العوالم','All worlds',
  ['mushroom','🍄',L('غابة الفطر','Mushroom Forest','Mantar Ormanı'),'#2fa36b'],['clouds','☁️',L('مدينة الغيوم','Cloud City','Bulut Şehri'),'#5f8fff'],['ice','❄️',L('مملكة الثلج','Snow Kingdom','Kar Krallığı'),'#3f8fb8']]
   .forEach(([id, emoji, title, bg]) => tile($id('worldTiles'), 'worlds/?w=' + id, { title, emoji, bg }, L('جديد','New','Yeni')));
 tile($id('advTiles'), 'bobo/', { title:L('بيت بوبو',"Bobo's House","Bobo'nun Evi"), emoji:'🏠', bg:'#7b52e6' }, L('6 مراحل','6 levels','6 bölüm'));
-tile($id('advTiles'), 'prank/', { title:L('مقالب بوبو',"Bobo's Pranks","Bobo'nun Şakaları"), emoji:'🎭', bg:'#ff7a59' }, L('4 مراحل','4 levels','4 bölüm'));
 tile($id('advTiles'), 'adventure3d/', { title:L('مغامرة بوبو 3D',"Bobo's Adventure 3D","Bobo'nun Macerası 3D"), emoji:'🏝️', bg:'#1fa2d6' }, L('جديد ✨','New ✨','Yeni ✨'));
 tile($id('advTiles'), 'adventure/', { title:L('مغامرة بوبو',"Bobo's Adventure","Bobo'nun Macerası"), emoji:'🏔️', bg:'#2fb36d' }, L('12 مرحلة','12 levels','12 bölüm'));
 ['letters','math','colors','shapes','memory','puzzle'].forEach(id => SOLO_BY[id] && tile($id('learnTiles'), 'solo/#' + id, SOLO_BY[id]));
