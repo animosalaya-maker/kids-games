@@ -59,7 +59,8 @@ const GAMES = {
   desert: { path:'desert/', emoji:'🏜️', color:'#f2a33a', dark:'#b8701a',
             name:['صحرا بوبو 🏜️', 'Bobo Desert 🏜️', 'Bobo Çölü 🏜️'], game:['صحرا بوبو', 'Bobo Desert', 'Bobo Çölü'] },
   prank3d:{ path:'prank3d/', emoji:'🎭', color:'#7bc47f', dark:'#3f8a4a', name:['بيت عمّو زعلان 🎭', "Uncle Grumpy's House 🎭", "Somurtkan Amca'nın Evi 🎭"], game:['بيت عمّو زعلان', "Uncle Grumpy's House", "Somurtkan Amca'nın Evi"] },
-  kart:   { path:'kart/', emoji:'🏎️', color:'#f06a92', dark:'#b23f6c', name:['سباق بوبو 🏎️', 'Bobo Kart 🏎️', 'Bobo Kart Yarışı 🏎️'], game:['سباق بوبو', 'Bobo Kart', 'Bobo Kart Yarışı'] }
+  kart:   { path:'kart/', emoji:'🏎️', color:'#f06a92', dark:'#b23f6c', name:['سباق بوبو 🏎️', 'Bobo Kart 🏎️', 'Bobo Kart Yarışı 🏎️'], game:['سباق بوبو', 'Bobo Kart', 'Bobo Kart Yarışı'] },
+  survive:{ path:'survive/', emoji:'🪓', color:'#2fb7c9', dark:'#1b7f8f', name:['الجزيرة المهجورة 🪓', 'Deserted Island 🪓', 'Issız Ada 🪓'], game:['البقاء بالجزيرة المهجورة', 'Deserted Island Survival', "Issız Ada'da Hayatta Kalma"] }
 };
 const gameOf = g => GAMES[g] ? g : '3d';
 const gameName = (g, inGame) => { const x = GAMES[gameOf(g)][inGame ? 'game' : 'name']; return T(x[0], x[1], x[2]); };
