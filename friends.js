@@ -58,7 +58,8 @@ const GAMES = {
             name:['جزيرة بوبو الكبيرة 🏝️', 'Bobo Big Island 🏝️', 'Bobo Büyük Ada 🏝️'], game:['جزيرة بوبو الكبيرة', 'Bobo Big Island', 'Bobo Büyük Ada'] },
   desert: { path:'desert/', emoji:'🏜️', color:'#f2a33a', dark:'#b8701a',
             name:['صحرا بوبو 🏜️', 'Bobo Desert 🏜️', 'Bobo Çölü 🏜️'], game:['صحرا بوبو', 'Bobo Desert', 'Bobo Çölü'] },
-  prank3d:{ path:'prank3d/', emoji:'🎭', color:'#7bc47f', dark:'#3f8a4a', name:['بيت عمّو زعلان 🎭', "Uncle Grumpy's House 🎭", "Somurtkan Amca'nın Evi 🎭"], game:['بيت عمّو زعلان', "Uncle Grumpy's House", "Somurtkan Amca'nın Evi"] }
+  prank3d:{ path:'prank3d/', emoji:'🎭', color:'#7bc47f', dark:'#3f8a4a', name:['بيت عمّو زعلان 🎭', "Uncle Grumpy's House 🎭", "Somurtkan Amca'nın Evi 🎭"], game:['بيت عمّو زعلان', "Uncle Grumpy's House", "Somurtkan Amca'nın Evi"] },
+  kart:   { path:'kart/', emoji:'🏎️', color:'#f06a92', dark:'#b23f6c', name:['سباق بوبو 🏎️', 'Bobo Kart 🏎️', 'Bobo Kart Yarışı 🏎️'], game:['سباق بوبو', 'Bobo Kart', 'Bobo Kart Yarışı'] }
 };
 const gameOf = g => GAMES[g] ? g : '3d';
 const gameName = (g, inGame) => { const x = GAMES[gameOf(g)][inGame ? 'game' : 'name']; return T(x[0], x[1], x[2]); };
