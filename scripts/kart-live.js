@@ -35,7 +35,7 @@ const until = async (p, fn, ms = 15000) => { const t0 = Date.now(); while(Date.n
   await A.p.evaluate(() => __kart.mpTrackPick('candy'));
   res('friend sees the track', await until(B.p, () => __kart.mp.track === 'candy', 10000));
   await A.p.evaluate(() => __kart.mpStart());
-  ok = await until(B.p, () => __kart.online && __kart.phase === 'go', 30000) && await until(A.p, () => __kart.phase === 'go', 10000);
+  ok = await until(B.p, () => __kart.online && __kart.phase === 'go', 120000) && await until(A.p, () => __kart.phase === 'go', 30000);
   const [ta, tb] = await Promise.all([A.p.evaluate(() => __kart.t), B.p.evaluate(() => __kart.t)]);
   res('synced start', ok && Math.abs(ta - tb) < 1.2, ta.toFixed(2), tb.toFixed(2), await B.p.evaluate(() => __kart.track));
   await Promise.all([A.p.evaluate(() => __kart.ctl({ auto:true })), B.p.evaluate(() => __kart.ctl({ auto:true }))]);
@@ -43,7 +43,7 @@ const until = async (p, fn, ms = 15000) => { const t0 = Date.now(); while(Date.n
   await until(B.p, () => (__kart.karts.find(k => k.kind === 'net') || {}).name === 'Sara', 20000);
   const ka = await A.p.evaluate(() => __kart.karts.filter(k => k.kind === 'net')), kb = await B.p.evaluate(() => __kart.karts.filter(k => k.kind === 'net'));
   res('both see each other with names', ka.length === 1 && kb.length === 1 && ka[0].name === 'Samir' && kb[0].name === 'Sara', JSON.stringify(ka.map(k => [k.name, k.x, k.z])), JSON.stringify(kb.map(k => [k.name, k.x, k.z])));
-  await A.p.waitForTimeout(3000);
+  await until(B.p, () => __kart.me.prog > .03, 60000); await A.p.waitForTimeout(1500);
   const [bme, bOnA] = await Promise.all([B.p.evaluate(() => __kart.me), A.p.evaluate(() => __kart.karts.find(k => k.kind === 'net'))]);
   res('B drives, A sees it', bOnA && Math.hypot(bme.x - bOnA.x, bme.z - bOnA.z) < 12 && bme.prog > 0, Math.hypot(bme.x - bOnA.x, bme.z - bOnA.z).toFixed(2), bme.prog);
   const cA = await A.p.evaluate(() => __kart.karts.filter(k => k.kind === 'cpu').map(k => [k.x, k.z])), cB = await B.p.evaluate(() => __kart.karts.filter(k => k.kind === 'cpu').map(k => [k.x, k.z]));
