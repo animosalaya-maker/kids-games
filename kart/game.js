@@ -712,8 +712,8 @@ function frame(now){
   if(state === 'count' || state === 'race' || state === 'done'){ for(let i = 1; i < timeScale; i++){ raceStep(dt); mpFrame(dt); if(!(state === 'count' || state === 'race' || state === 'done')) break; } if(state === 'count' || state === 'race' || state === 'done'){ raceStep(dt); updateCamera(dt); } }
   else if(state === 'pause'){ if(R.online){ raceStep(dt); } updateCamera(0); }
   else if(state === 'podium'){ podiumFrame(dt); }
-  if(state !== 'podium') clearPodOff();
   else { menuCam(dt); }
+  if(state !== 'podium') clearPodOff();
   if(T){ T.update(dt, T0); T.sky.position.copy(camera.position); const sn = T.root.userData.snow; if(sn) sn.position.set(Math.round(camera.position.x / 10) * 10, camera.position.y - 20, Math.round(camera.position.z / 10) * 10); drawPickups(T0); }
   for(const k of karts) if(!k.gone) poseKart(k, T0, dt);
   drawBlobs();
@@ -754,8 +754,8 @@ function menuCam(dt){
   for(const k of karts){ if(k.kind !== 'cpu') continue; stepKart(k, dt, cpuControls(k, dt)); }
   const lead = karts[0];
   if(!lead){ return; }
-  const a = lead.h + Math.PI + Math.sin(menuT * .15) * .9 + (camSide = camSide || (T.OUTER > 0 ? -.5 : .5)), d = 11;
-  let x = lead.x + Math.sin(a) * d, z = lead.z + Math.cos(a) * d, y = lead.y + 4.2;
+  const a = lead.h + Math.PI + Math.sin(menuT * .2) * .45, d = 9.5;
+  let x = lead.x + Math.sin(a) * d, z = lead.z + Math.cos(a) * d, y = lead.y + 3.4;
   const g = T.groundH(x, z); if(y < g + 2) y = g + 2;
   const k2 = 1 - Math.exp(-3 * dt);
   camPos.x = lerp(camPos.x, x, menuT < .1 ? 1 : k2); camPos.y = lerp(camPos.y, y, menuT < .1 ? 1 : k2); camPos.z = lerp(camPos.z, z, menuT < .1 ? 1 : k2);
@@ -960,7 +960,7 @@ function clearPodOff(){ if(podOff){ podOff = 0; camera.clearViewOffset(); } }
 function podiumFrame(dt){
   podT += dt;
   // the result card covers one side: shift the picture so the podium shows in the other half
-  const off = overlay.hidden ? 0 : (I18N.dir === 'rtl' ? -1 : 1) * SW * .23;
+  const off = overlay.hidden ? 0 : SW * .23;   // the card sits on the right in every language
   if(off !== podOff){ podOff = off; if(off) camera.setViewOffset(SW, SH, off, 0, SW, SH); else camera.clearViewOffset(); }
   if(podiumCam){ const a = Math.sin(podT * .3) * .18, c = podiumCam, dx = c.x - c.lx, dz = c.z - c.lz;
     camera.position.set(c.lx + dx * Math.cos(a) - dz * Math.sin(a), c.y, c.lz + dx * Math.sin(a) + dz * Math.cos(a)); camera.lookAt(c.lx, c.ly, c.lz); if(camera.fov !== 55){ camera.fov = 55; camera.updateProjectionMatrix(); } }
