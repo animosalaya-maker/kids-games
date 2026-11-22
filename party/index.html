@@ -87,6 +87,29 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 .row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
 .board{display:grid;gap:6px;width:100%}
 .board div{display:flex;justify-content:space-between;align-items:center;background:var(--night);border-radius:12px;padding:8px 14px;font-weight:700}
+.tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.tabs button{border:0;border-radius:16px;background:var(--night-3);padding:10px 6px;font-family:var(--display);font-weight:800;font-size:17px;line-height:1.2;box-shadow:0 4px 0 var(--face)}
+.tabs button[aria-pressed="true"]{background:var(--gold);color:#3a2a00;box-shadow:0 4px 0 #c48f12}
+.tabs .new{display:inline-block;background:#ff5a5f;color:#fff;border-radius:8px;font-family:var(--body);font-size:11px;padding:1px 6px;margin-inline-start:4px;vertical-align:middle}
+.choice.c4{grid-template-columns:repeat(4,1fr)} .choice.c5{grid-template-columns:repeat(5,1fr)}
+.choice.c5 button{font-size:24px;padding:8px 2px}
+.choice button:disabled{opacity:.3;cursor:default}
+body.arena .card{max-width:640px;gap:10px;padding:14px 18px}
+body.arena #champCv{width:150px;height:82px}
+body.arena .card h2{font-size:26px}
+body.arena .board{grid-template-columns:1fr 1fr}
+body.arena .board div{padding:6px 12px}
+.cols{display:flex;flex-direction:column;gap:14px;width:100%;align-items:center}
+.cols > div{display:flex;flex-direction:column;gap:10px;width:100%;align-items:center}
+@media (orientation:landscape) and (max-height:520px){
+  .card{max-width:760px;padding:14px 18px;gap:10px}
+  .card h1{font-size:32px}
+  #menuCv{display:none}
+  .cols{flex-direction:row;align-items:flex-start;gap:18px}
+  .cols p{font-size:14px;line-height:1.45}
+  .choice button{font-size:21px;padding:6px 4px}
+  .card:has(.cols) .games{display:none}
+}
 .board i{font-style:normal;display:inline-block;width:14px;height:14px;border-radius:50%;margin-inline-end:8px;vertical-align:middle}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -101,6 +124,7 @@ button:focus-visible,a:focus-visible{outline:3px solid var(--gold);outline-offse
 <div class="overlay" id="overlay"><div class="card" id="card"></div></div>
 
 <script src="../world.js"></script>
+<script src="arena.js"></script>
 <script>
 (function(){
 'use strict';
@@ -192,8 +216,14 @@ function drawBuddy(c, x, y, r, pl, t, mood, look){
 function setMsg(big, small){
   const html = big ? '<span class="big">' + big + '</span>' + (small ? '<span class="small">' + small + '</span>' : '') : '';
   $('#msgA').innerHTML = html; $('#msgB').innerHTML = html;
+  if(ARENA) ARENA.setMsg(html);
 }
 let nPlayers = store.get('n', 2), target = store.get('target', 5);
+// arena (joystick) games: 1–4 kids on the phone held sideways, bots fill the empty seats
+let mode = store.get('mode', 'tap') === 'arena' ? 'arena' : 'tap', nHum = clampN(store.get('nh', 1), 1, 4), nBot = clampN(store.get('nb', 3), 0, 3), arenaPick = store.get('apick', 'all');
+function clampN(v, a, b){ v = Math.round(+v); return isFinite(v) ? Math.max(a, Math.min(b, v)) : a; }
+function fixBots(){ nBot = Math.max(2 - nHum, Math.min(4 - nHum, nBot)); }
+fixBots();
 let players = [];
 function buildButtons(){
   const box = $('#buttons'); box.innerHTML = '';
@@ -968,11 +998,21 @@ const GAMES = {
 
 };
 const ORDER = ['reaction','race','lava','tug','potato','mycolor','pump','jumprope','birds','fishing','stop10','chairs'];
+const ARENA = window.PartyArena ? window.PartyArena({
+  L, AR, SFX, tone, PLAYERS, ac, best, endAfter, ending, setMsg,
+  players: () => players, phase: () => phase, game: () => game,
+  refresh: refreshButtons, quit: () => { if(phase !== 'menu') showMenu(); }
+}) : null;
+if(ARENA) Object.assign(GAMES, ARENA.games);
+const ARENA_ORDER = ARENA ? ARENA.order : [];
+if(!ARENA_ORDER.includes(arenaPick)) arenaPick = 'all';
+const arenaMode = () => mode === 'arena' && !!ARENA;
 
 /* ---------- Match flow ---------- */
 let phase = 'menu', game = null, phaseTime = 0, queue = [], lastGame = null, countdown = 0;
 function nextGame(){
-  if(!queue.length){ queue = ORDER.slice().sort(() => Math.random() - 0.5); if(queue[0] === lastGame) queue.push(queue.shift()); }
+  const order = arenaMode() ? (arenaPick === 'all' ? ARENA_ORDER : [arenaPick]) : ORDER;
+  if(!queue.length){ queue = order.slice().sort(() => Math.random() - 0.5); if(queue[0] === lastGame) queue.push(queue.shift()); }
   lastGame = queue.shift(); game = GAMES[lastGame];
   players.forEach(p => p.out = false); refreshButtons();
   if(game.start && lastGame !== 'reaction') game.start(); // show the board during intro
@@ -1014,6 +1054,7 @@ function update(dt){
 
 /* ---------- Drawing ---------- */
 function draw(t){
+  if(ARENA && ARENA.on){ ARENA.render(t); return; }
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.fillStyle = '#1c1838'; ctx.fillRect(0, 0, W, H);
   // confetti-dot background
@@ -1024,13 +1065,35 @@ function draw(t){
 
 /* ---------- Screens ---------- */
 const overlay = $('#overlay'), card = $('#card');
+function arenaMenu(){
+  const gl = [['tiles','🌋',L('البلاط','Tiles','Karolar')],['haunt','👻',L('الشبح','Ghost','Hayalet')],['bunny','🐰',L('الأرانب','Bunnies','Tavşan')],['soccer','⚽',L('فوتبول','Soccer','Futbol')]];
+  return '<div class="cols"><div><p>' + L('امسكوا الجوال بالعرض 📱↔️ كل واحد إلو جويستيك بزاويته، والبوتات 🤖 بيلعبوا بالأماكن الفاضية.', 'Hold the phone sideways 📱↔️ Everyone gets a joystick in their own corner, and bots 🤖 play the empty seats.', 'Telefonu yan tutun 📱↔️ Herkesin kendi köşesinde bir joystick\'i var, boş yerlerde botlar 🤖 oynar.') + '</p>' +
+    '<span class="label">' + L('كم ولد رح يلعب؟', 'How many kids will play?', 'Kaç çocuk oynayacak?') + '</span>' +
+    '<div class="choice c4" id="chH">' + [1,2,3,4].map(n => '<button data-h="' + n + '" aria-pressed="' + (n === nHum) + '">' + AR(n) + '<small>' + (n === 1 ? L('لاعب', 'player', 'oyuncu') : L('لاعبين', 'players', 'oyuncu')) + '</small></button>').join('') + '</div>' +
+    '<span class="label">' + L('كم بوت 🤖؟', 'How many bots 🤖?', 'Kaç bot 🤖?') + '</span>' +
+    '<div class="choice c4" id="chB">' + [0,1,2,3].map(n => '<button data-b="' + n + '" aria-pressed="' + (n === nBot) + '"' + (nHum + n > 4 || nHum + n < 2 ? ' disabled' : '') + '>' + AR(n) + '<small>' + L('بوت', 'bots', 'bot') + '</small></button>').join('') + '</div>' +
+    '</div><div><span class="label">' + L('كم نقطة للفوز؟', 'How many points to win?', 'Kazanmak için kaç puan?') + '</span>' +
+    '<div class="choice" id="chT">' + [3,5,7].map(n => '<button data-t="' + n + '" aria-pressed="' + (n === target) + '">' + AR(n) + '<small>' + L('نقاط', 'points', 'puan') + '</small></button>').join('') + '</div>' +
+    '<span class="label">' + L('أي لعبة؟', 'Which game?', 'Hangi oyun?') + '</span>' +
+    '<div class="choice c5" id="chG">' + [['all','🎲']].concat(gl).map(g => '<button data-g="' + g[0] + '" aria-pressed="' + (g[0] === arenaPick) + '" aria-label="' + (g[0] === 'all' ? L('كلها', 'All', 'Hepsi') : GAMES[g[0]].title) + '">' + g[1] + '<small>' + (g[0] === 'all' ? L('كلها', 'all', 'hepsi') : g[2]) + '</small></button>').join('') + '</div>' +
+    '<button class="big-btn" id="btnStart">' + L('يلا نلعب', 'Let\'s play', 'Hadi oynayalım') + '</button></div></div>' +
+    '<ul class="games">' +
+      '<li><span>🌋</span><span>' + L('<b>البلاط الطايح:</b> البلاط بيوقع بالحمم، نطّ وضلّك واقف لآخر شي', '<b>Falling Tiles:</b> tiles drop into the lava, jump and be the last one standing', '<b>Düşen Karolar:</b> karolar lava düşüyor, zıpla ve son ayakta kalan ol') + '</span></li>' +
+      '<li><span>👻</span><span>' + L('<b>المقبرة المسكونة:</b> لمّ الشموع وهرب من الشبح اللطيف', '<b>Haunted Yard:</b> collect candles and run from the friendly ghost', '<b>Perili Bahçe:</b> mumları topla, şirin hayaletten kaç') + '</span></li>' +
+      '<li><span>🐰</span><span>' + L('<b>لمّ الأرانب:</b> ودّي الأرانب على الحظيرة اللي بلونك', '<b>Bunny Round-up:</b> bring bunnies to the pen with your color', '<b>Tavşan Toplama:</b> tavşanları kendi renkli ağılına götür') + '</span></li>' +
+      '<li><span>⚽</span><span>' + L('<b>فوتبول القبّعات:</b> واحد ضد واحد أو اتنين ضد اتنين', '<b>Mini Soccer:</b> one against one or two against two', '<b>Mini Futbol:</b> bire bir ya da ikiye iki') + '</span></li>' +
+    '</ul>';
+}
 function showMenu(){
   phase = 'menu'; setMsg('');
+  if(ARENA) ARENA.setOn(false);
   overlay.hidden = false;
+  const tabs = ARENA ? '<div class="tabs" id="chM"><button data-m="tap" aria-pressed="' + (mode === 'tap') + '">🔘 ' + L('ألعاب الزرّ', 'Button games', 'Düğme oyunları') + '</button>' +
+    '<button data-m="arena" aria-pressed="' + (mode === 'arena') + '">🕹️ ' + L('ألعاب الساحة', 'Arena games', 'Arena oyunları') + '<span class="new">' + L('جديد', 'new', 'yeni') + '</span></button></div>' : '';
   card.innerHTML =
     '<canvas id="menuCv" width="440" height="240"></canvas>' +
-    '<h1>' + L('حفلة الأصحاب', 'Friends Party', 'Arkadaş Partisi') + '</h1>' +
-    '<p>' + L('حطّوا الجوال عالطاولة بالنص، وكل واحد ياخد زاوية وزرّ. أول واحد بيجمع النقاط بياخد الكاس 🏆', 'Put the phone flat in the middle of the table. Each kid takes a corner and a button. The first to get the points wins the cup 🏆', 'Telefonu masanın ortasına koyun, herkes bir köşe ve bir düğme alsın. Puanları ilk toplayan kupayı kazanır 🏆') + '</p>' +
+    '<h1>' + L('حفلة الأصحاب', 'Friends Party', 'Arkadaş Partisi') + '</h1>' + tabs +
+    (arenaMode() ? arenaMenu() + '<a class="ghost-btn" href="../">' + L('⬅ كل الألعاب', '⬅ All games', '⬅ Bütün oyunlar') + '</a>' : '<p>' + L('حطّوا الجوال عالطاولة بالنص، وكل واحد ياخد زاوية وزرّ. أول واحد بيجمع النقاط بياخد الكاس 🏆', 'Put the phone flat in the middle of the table. Each kid takes a corner and a button. The first to get the points wins the cup 🏆', 'Telefonu masanın ortasına koyun, herkes bir köşe ve bir düğme alsın. Puanları ilk toplayan kupayı kazanır 🏆') + '</p>' +
     '<span class="label">' + L('كم ولد رح يلعب؟', 'How many kids will play?', 'Kaç çocuk oynayacak?') + '</span>' +
     '<div class="choice" id="chN">' + [2,3,4].map(n => '<button data-n="' + n + '" aria-pressed="' + (n === nPlayers) + '">' + AR(n) + '<small>' + L('لاعبين', 'players', 'oyuncu') + '</small></button>').join('') + '</div>' +
     '<span class="label">' + L('كم نقطة للفوز؟', 'How many points to win?', 'Kazanmak için kaç puan?') + '</span>' +
@@ -1050,14 +1113,25 @@ function showMenu(){
       '<li><span>⏱️</span><span>' + L('<b>وقّف على 10:</b> عدّ براسك واكبس عالعشرة', '<b>Stop at 10:</b> count in your head and press at ten', '<b>10\'da Dur:</b> içinden say, onda bas') + '</span></li>' +
       '<li><span>🪑</span><span>' + L('<b>الكراسي الموسيقية:</b> لما توقف الموسيقى اقعد بسرعة', '<b>Musical Chairs:</b> when the music stops, sit fast', '<b>Müzikli Sandalyeler:</b> müzik durunca hemen otur') + '</span></li>' +
     '</ul>' +
-    '<a class="ghost-btn" href="../">' + L('⬅ كل الألعاب', '⬅ All games', '⬅ Bütün oyunlar') + '</a>';
+    '<a class="ghost-btn" href="../">' + L('⬅ كل الألعاب', '⬅ All games', '⬅ Bütün oyunlar') + '</a>');
+  card.querySelectorAll('[data-m]').forEach(b => b.onclick = () => { mode = b.dataset.m; store.set('mode', mode); showMenu(); });
+  card.querySelectorAll('[data-h]').forEach(b => b.onclick = () => { nHum = +b.dataset.h; fixBots(); store.set('nh', nHum); store.set('nb', nBot); showMenu(); });
+  card.querySelectorAll('[data-b]').forEach(b => b.onclick = () => { nBot = +b.dataset.b; fixBots(); store.set('nb', nBot); showMenu(); });
+  card.querySelectorAll('[data-g]').forEach(b => b.onclick = () => { arenaPick = b.dataset.g; store.set('apick', arenaPick); card.querySelectorAll('[data-g]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
   card.querySelectorAll('[data-n]').forEach(b => b.onclick = () => { nPlayers = +b.dataset.n; store.set('n', nPlayers); card.querySelectorAll('[data-n]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
   card.querySelectorAll('[data-t]').forEach(b => b.onclick = () => { target = +b.dataset.t; store.set('target', target); card.querySelectorAll('[data-t]').forEach(x => x.setAttribute('aria-pressed', x === b)); });
   $('#btnStart').onclick = startMatch;
 }
 function startMatch(){
   ac();
-  players = PLAYERS.slice(0, nPlayers).map(p => Object.assign({}, p, { score:0, out:false }));
+  if(arenaMode()){
+    fixBots();
+    players = PLAYERS.slice(0, nHum + nBot).map((p, i) => Object.assign({}, p, { score:0, out:false, bot:i >= nHum }));
+    ARENA.setOn(true);
+  } else {
+    players = PLAYERS.slice(0, nPlayers).map(p => Object.assign({}, p, { score:0, out:false }));
+    if(ARENA) ARENA.setOn(false);
+  }
   buildButtons(); overlay.hidden = true; queue = []; lastGame = null; nextGame();
 }
 function showChampion(p){
@@ -1095,6 +1169,10 @@ function frame(now){
   }
   requestAnimationFrame(frame);
 }
+// read-only hooks for automated tests (state + a fast-forward)
+window.__party = { phase:() => phase, game:() => lastGame, players:() => players, mode:() => mode,
+  step(sec){ const n = Math.round(sec * 60); for(let k = 0; k < n && phase !== 'menu'; k++) update(1 / 60); },
+  open(key){ if(GAMES[key] && phase !== 'menu'){ queue = [key]; nextGame(); } } };
 function start(){
   fit(); showMenu(); requestAnimationFrame(frame);
   if('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('../sw.js').catch(() => {});
@@ -1103,7 +1181,7 @@ start();
 })();
 </script>
 <script src="../back.js"></script>
-<script>BoboBack.init({ visible: () => { const c = document.getElementById('chN'); return !!(c && c.offsetParent); } });</script>
+<script>BoboBack.init({ visible: () => { const c = document.getElementById('chT'); return !!(c && c.offsetParent); } });</script>
 <script src="../friends.js"></script>
 <script src="../invitepop.js"></script>
 </body>
