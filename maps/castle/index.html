@@ -993,8 +993,11 @@ function toyStep(){
     if(Math.abs(P.x - t.x) < 1.4 && Math.abs(P.z - t.z) < 1.4 && Math.hypot(P.x - t.x, P.y + .6 - t.y, P.z - t.z) < 1.45){
       SAVE.toys.push(i); MapSave.save(SAVE); SFX.toy(); burst(t.x, t.y, t.z, 18, ['#ffd23f', '#ffffff', '#ffb070'], 4);
       const n = SAVE.toys.length; popText('🧸 ' + N(n) + '/' + N(TOYS.length));
-      if(n === 1) say(LINE.firstToy, 3600); else if(n === 15) say(LINE.halfToys, 3600);
-      if(n >= TOYS.length && !SAVE.st.treasure.done) finishStation('treasure', n);
+      if(n === 1) say(LINE.firstToy, 3600); else if(n === 35) say(LINE.halfToys, 3600);
+      // the castle treasure = its own 30 toys; finding all 70 (castle + worlds) gives a big bonus
+      const nc = SAVE.toys.filter(k => TOYS[k] && TOYS[k].zone === 'castle').length, ncAll = TOYS.filter(q => q.zone === 'castle').length;
+      if(nc >= ncAll && !SAVE.st.treasure.done) finishStation('treasure', nc);
+      else if(n >= TOYS.length && !SAVE.allToys){ SAVE.allToys = 1; MapSave.save(SAVE); if(window.World) World.addCoins(40, L('من قلعة الألعاب', 'for Toy Castle', 'Oyuncak Kalesi için')); SFX.win(); say(LINE.allToys, 5000); }
       hudDirty = true;
     }
   }
@@ -1146,6 +1149,7 @@ const LINE = {
   cakeGo:L('اكبس «حط» لما الطبقة تكون فوق الكيكة 🍰', 'Tap «Drop» when the layer is over the cake 🍰', 'Kat pastanın üstündeyken «Bırak»a bas 🍰'),
   leftRun:L('بعدت كتير، وقّفنا التحدي 🙂', 'You went too far, the challenge stopped 🙂', 'Çok uzaklaştın, meydan okuma durdu 🙂'),
   firstToy:L('أول لعبة ذهبية! 🧸 ضل في كتير', 'Your first golden toy! 🧸 Many more to find', 'İlk altın oyuncak! 🧸 Daha çok var'),
+  allToys:L('لقيت كل الـ' + N(TOYS.length) + ' لعبة ذهبية! إنت أشطر صيّاد كنوز 👑 +40 🪙', 'You found all ' + N(TOYS.length) + ' golden toys! Best treasure hunter ever 👑 +40 🪙', N(TOYS.length) + ' altın oyuncağın hepsini buldun! En iyi hazine avcısı 👑 +40 🪙'),
   halfToys:L('نص الكنز صار معك! 🧸', 'Half of the treasure is yours! 🧸', 'Hazinenin yarısı senin! 🧸'),
   preview:L('هاي تجربة ببلاش لخمس دقايق 💛 استمتع!', 'This is a free 5-minute try 💛 Have fun!', 'Bu 5 dakikalık ücretsiz deneme 💛 İyi eğlenceler!'),
   previewLow:L('ضل دقيقة من التجربة ⏳', 'One minute of the try left ⏳', 'Denemenin bir dakikası kaldı ⏳'),
@@ -1268,7 +1272,7 @@ function showLocked(){
   if(trialInfo == null) Trial.fetch(MAP).then(r => { trialInfo = r; if(state === 'locked') showLocked(); });
 }
 function showPreviewEnd(){
-  preview = false; if(run) endRun(false, true); if(CAKE.on) endCake(true); if(P.mode === 'boat') stopBoat();
+  preview = false; stopMoving();
   state = 'previewEnd'; setPlayUI(false); overlay.className = 'overlay dim'; card.className = 'card'; clearInput(); hush();
   card.innerHTML = `<div class="bigstar">🏰</div>
     <h2>${L('عجبتك؟ اطلب من بابا وماما 💛', 'Did you like it? Ask a parent 💛', 'Beğendin mi? Annene babana sor 💛')}</h2>
@@ -1365,7 +1369,7 @@ function showList(){
   if(state !== 'play') return;
   state = 'list'; setPlayUI(false); overlay.classList.add('dim'); card.className = 'card wide'; clearInput();
   const rows = ALL_IDS.map(id => { const s = STN[id], st = SAVE.st[id];
-    return `<div class="st${st.done ? ' done' : ''}"><span class="ic">${s.e}</span><span class="tx"><b>${s.name}</b><small>${s.zone !== 'castle' ? `<span class="zn">${ZONES[s.zone].e} ${ZONES[s.zone].name}</span> · ` : ''}${st.done ? '⭐'.repeat(st.stars) + ' ' : ''}${bestText(id)}</small></span>
+    return `<div class="st${st.done ? ' done' : ''}"><span class="ic">${s.e}</span><span class="tx"><b>${s.name}</b><small>${[s.zone !== 'castle' ? `<span class="zn">${ZONES[s.zone].e} ${ZONES[s.zone].name}</span>` : '', (st.done ? '⭐'.repeat(st.stars) + ' ' : '') + bestText(id)].filter(Boolean).join(' · ')}</small></span>
       <span class="ok">${st.done ? '✅' : ''}</span><button class="go" data-id="${id}">🚀 ${L('روح', 'Go', 'Git')}</button></div>`; }).join('');
   const of = ['crown', 'cape'].map(k => { const own = SAVE.outfit.own.includes(k), on = own && SAVE.outfit.wear[k];
     return `<button class="of${on ? ' on' : ''}" data-of="${k}"${own ? '' : ' disabled'}>${k === 'crown' ? '👑' : '🦸'} ${k === 'crown' ? L('تاج', 'Crown', 'Taç') : L('عباية', 'Cape', 'Pelerin')}${own ? '' : ' 🔒'}</button>`; }).join('');
