@@ -42,6 +42,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #saProbe{position:absolute;left:0;top:0;visibility:hidden;pointer-events:none;width:var(--sa-l);height:var(--sa-b)}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 #touch{position:absolute;inset:0;z-index:2;touch-action:none}
+#glow{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse at 50% 35%,rgba(255,244,214,.10) 0,rgba(255,236,200,0) 45%,rgba(255,206,150,.20) 100%);mix-blend-mode:screen}
 
 /* ---------- cards ---------- */
 .overlay{position:absolute;inset:0;z-index:20;display:flex;background:rgba(74,47,29,.35);overflow-y:auto;
@@ -223,6 +224,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <div id="stage">
 <div id="saProbe"></div>
 <canvas id="cv" aria-label="بوبو الصغير" data-en-aria="Tiny Bobo" data-tr-aria="Minik Bobo"></canvas>
+<div id="glow"></div>
 <div id="labels"></div>
 <div id="touch"></div>
 <header class="hud" id="hud" hidden>
