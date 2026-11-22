@@ -195,6 +195,29 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .spin{display:inline-block;animation:spinL 1.2s linear infinite}
 @keyframes spinL{to{transform:rotate(360deg)}}
 #stage.short .mp-code b{width:44px;height:52px;font-size:34px;border-radius:13px} #stage.short .keypad{grid-template-columns:repeat(3,62px);gap:6px} #stage.short .keypad button{height:46px;font-size:26px}
+/* travel flash, race ranking, the world map */
+.travelfx{position:absolute;inset:0;z-index:19;pointer-events:none;opacity:0;transition:opacity .28s ease;
+  background:radial-gradient(circle at 50% 55%,#fffdf5 0,#ffe9a8 28%,#ffb0d0 55%,#9b7bff 100%)}
+.travelfx.on{opacity:1}
+.racebar{display:flex;gap:6px;justify-content:center;flex-wrap:wrap;direction:ltr;pointer-events:none}
+.racebar .chip{font-size:15px;padding:3px 10px 3px 3px;gap:5px;box-shadow:inset 0 0 0 3px var(--c)}
+.racebar .chip img{width:26px;height:26px;border-radius:50%;object-fit:cover;object-position:top;background:var(--night)}
+.racebar .chip.me{background:rgba(74,63,140,.95)}
+.zmap{position:relative;width:100%;height:min(340px,calc(var(--sh) - 150px));min-height:230px;border-radius:24px;overflow:hidden;direction:ltr;
+  background:radial-gradient(circle at 30% 30%,rgba(255,255,255,.14),transparent 40%),repeating-radial-gradient(circle at 50% 50%,#4b8fb0 0 18px,#4f95b6 18px 36px);box-shadow:inset 0 0 0 4px rgba(255,247,232,.5)}
+.zmap svg{position:absolute;inset:0;width:100%;height:100%}
+.zt{position:absolute;transform:translate(-50%,-50%);border:0;background:none;padding:0;display:flex;flex-direction:column;align-items:center;gap:2px;font-family:var(--display);color:#fff7e8;cursor:pointer}
+.zt .zi{width:min(80px,14vh);height:min(80px,14vh);border-radius:50%;display:grid;place-items:center;font-size:min(42px,7.4vh);line-height:1;background:radial-gradient(circle at 35% 30%,#fff7e8,var(--c) 62%);
+  box-shadow:0 0 0 4px #fff7e8,0 6px 0 rgba(0,0,0,.3);transition:transform .15s}
+.zt:active .zi{transform:scale(.92)}
+.zt.here .zi{box-shadow:0 0 0 5px var(--gold),0 0 0 10px rgba(255,205,77,.35),0 6px 0 rgba(0,0,0,.3);animation:actPulse 1.4s ease-in-out infinite}
+.zt b{font-weight:800;font-size:15px;line-height:1.1;text-shadow:0 2px 0 rgba(0,0,0,.45);white-space:nowrap;background:rgba(43,35,80,.75);border-radius:999px;padding:2px 10px}
+.zt small{font-weight:800;font-size:13px;background:rgba(43,35,80,.75);border-radius:999px;padding:1px 8px;white-space:nowrap}
+.zt .you{position:absolute;top:-10px;right:-6px;font-size:22px}
+#stage.short .zt b{font-size:13px;padding:1px 8px} #stage.short .zt small{font-size:11px} #stage.short .zt{gap:1px}
+.st .zn{font-size:13px;opacity:.85}
+.pmap{width:min(420px,70vw);aspect-ratio:1;border-radius:20px;display:block;box-shadow:0 0 0 4px #c48f12,0 8px 0 rgba(0,0,0,.3)}
+#stage.short .pmap{width:min(300px,52vh)}
 #nogl{position:absolute;inset:0;z-index:30;display:grid;place-items:center;padding:24px;text-align:center;background:var(--night);font-family:var(--display);font-size:22px}
 #loading{position:absolute;inset:0;z-index:40;display:grid;place-items:center;background:linear-gradient(#3a3f8f,#c86a8a 70%,#ffb070);font-family:var(--display);font-weight:800;font-size:28px;color:#fff7e8;text-align:center}
 #loading i{font-style:normal;font-size:70px;display:block;animation:wob 1.4s ease-in-out infinite}
@@ -211,12 +234,14 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <div class="hud-row">
       <button class="icon-btn" id="btnPause" aria-label="استراحة" data-en-aria="Pause" data-tr-aria="Mola">⏸️</button>
       <button class="icon-btn" id="btnList" aria-label="المحطات" data-en-aria="Stations" data-tr-aria="İstasyonlar">📋<span class="badge" id="listBadge">0/5</span></button>
+      <button class="icon-btn" id="btnMap" aria-label="الخريطة" data-en-aria="World map" data-tr-aria="Dünya haritası">🗺️</button>
     </div>
     <span class="chip toys" id="hudToys"></span>
   </div>
   <div class="hud-mid">
     <span class="chip prev" id="hudPrev" hidden></span>
     <span class="chip timer" id="hudTimer" hidden><span id="timerT">0:00</span><button id="btnQuit" aria-label="وقّف" data-en-aria="Stop" data-tr-aria="Durdur">✖</button></span>
+    <div class="racebar" id="raceBar" hidden></div>
     <div class="mpbar" id="mpBar" hidden></div>
   </div>
   <canvas id="mini" width="236" height="236"></canvas>
@@ -228,6 +253,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <div class="pop" id="pop"></div>
 <div class="cd" id="cd" hidden></div>
 <div class="banner" id="banner" hidden></div>
+<div class="travelfx" id="travelFx" hidden></div>
 <div class="overlay" id="overlay"><div class="card" id="card"></div></div>
 <div id="loading"><div><i>🏰</i><span data-en="Building the castle…" data-tr="Kale kuruluyor…">عم نبني القلعة…</span></div></div>
 <div id="nogl" hidden><span data-en="Sorry, this phone can't show 3D games 😢" data-tr="Üzgünüz, bu telefon 3D oyunları gösteremiyor 😢">عذراً، هالتلفون ما بيقدر يشغّل ألعاب ثلاثية الأبعاد 😢</span></div>
@@ -241,7 +267,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <script type="module">
 import * as THREE from '../../adventure3d/three.module.min.js';
 import { makeKit } from '../../worlds/kit.js';
-import { buildCastle, groundAt, inGate, bridgeAt, onBridge, ISL_R, MOAT_IN, MOAT_OUT, MOAT_MID, WALL_R, BRIDGE_W, WATER_Y, KEEP, DIRS, SPOTS, BOAT_A0, PARK } from './build.js';
+import { buildCastle, groundAt as castleGround, inGate, bridgeAt, onBridge, ISL_R, MOAT_IN, MOAT_OUT, MOAT_MID, WALL_R, BRIDGE_W, WATER_Y, KEEP, DIRS, SPOTS, BOAT_A0, PARK } from './build.js';
+import { ZONES, ZONE_IDS, ZSTN, ZSTN_IDS, HUB, zoneAt, portal as makePortal, vehGeo } from './zones.js';
 
 const $ = s => document.querySelector(s);
 { const md = document.querySelector('meta[name="description"]'), dl = window.I18N && md && md.getAttribute('data-' + I18N.lang); if(dl) md.setAttribute('content', dl); }
@@ -314,7 +341,10 @@ const SFX = {
   go(){ [440, 440, 880].forEach((f, i) => tone(f, .14, 'square', .07, i * .16)); },
   fail(){ tone(500, .4, 'sawtooth', .05, 0, 160); },
   boom(){ tone(120, .5, 'sine', .12, 0, 50); [1500, 1800, 1300].forEach((f, i) => tone(f, .06, 'triangle', .03, .1 + i * .07)); },
-  zip(){ tone(700, 1.2, 'sine', .04, 0, 300); }
+  zip(){ tone(700, 1.2, 'sine', .04, 0, 300); },
+  warp(){ tone(220, .5, 'sine', .1, 0, 1400); [880, 1175, 1568].forEach((f, i) => tone(f, .12, 'triangle', .07, .25 + i * .07)); },
+  pop(){ tone(900, .08, 'triangle', .1, 0, 1400); }, splash(){ tone(300, .25, 'sine', .1, 0, 90); },
+  coin(){ [1568, 2093].forEach((f, i) => tone(f, .07, 'square', .05, i * .05)); }, key(){ [784, 1046, 1318, 1568].forEach((f, i) => tone(f, .09, 'triangle', .1, i * .06)); }
 };
 
 /* ======================================================================
@@ -339,7 +369,7 @@ function resize(){
 addEventListener('resize', resize);
 addEventListener('orientationchange', () => setTimeout(resize, 120));
 const SUN_DIR = new THREE.Vector3(-.72, .36, .6).normalize();
-scene.add(new THREE.HemisphereLight(0xffe2c6, 0x6a5a8a, 1.35));
+const hemi = new THREE.HemisphereLight(0xffe2c6, 0x6a5a8a, 1.35); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffc48a, 2.5);
 sun.position.copy(SUN_DIR).multiplyScalar(160); sun.target.position.set(0, 0, 0); scene.add(sun.target);
 sun.castShadow = true; sun.shadow.mapSize.set(2048, 2048);
@@ -410,34 +440,48 @@ function updateParts(dt){
 /* ======================================================================
    The world
    ====================================================================== */
-const W = buildCastle(THREE, K, scene, L);
+const castleG = new THREE.Group(); castleG.name = 'castle'; scene.add(castleG);
+const W = buildCastle(THREE, K, castleG, L);
+/* zones: the castle island plus 5 far islands built on the first visit (zone_<id>.js). ZN = where the kid is now. */
+let ZN = 'castle', Zc = null;               // Zc = the built zone object of ZN (null in the castle)
+const built = {};
+/* the ground anywhere in the world */
+function groundAt(x, z){
+  const id = ZN !== 'castle' && Zc ? (Math.abs(x - Zc.cx) < 170 && Math.abs(z - Zc.cz) < 170 ? ZN : zoneAt(x, z)) : zoneAt(x, z);
+  if(id === 'castle') return castleGround(x, z);
+  const B = built[id]; if(B) return B.ground(x - B.cx, z - B.cz);
+  return -4;
+}
 const FONT = '"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif';
 
-/* collision grid */
-const CELL = 8, GOFF = 120, GN = 30, grid = [];
-for(let i = 0; i < GN * GN; i++) grid.push([]);
-W.solids.forEach(s => {
-  const ex = s.t === 'c' ? s.r : s.hx, ez = s.t === 'c' ? s.r : s.hz;
-  for(let gx = Math.floor((s.x - ex + GOFF) / CELL); gx <= Math.floor((s.x + ex + GOFF) / CELL); gx++)
-    for(let gz = Math.floor((s.z - ez + GOFF) / CELL); gz <= Math.floor((s.z + ez + GOFF) / CELL); gz++)
-      if(gx >= 0 && gz >= 0 && gx < GN && gz < GN) grid[gz * GN + gx].push(s);
-});
+/* collision: a hashed grid over the whole world (the castle + zones that are built), plus the moving platforms of the zone you are in */
+const CELL = 8, grid = new Map(), gkey = (gx, gz) => (gx + 4096) * 8192 + (gz + 4096);
+function addSolids(list){
+  for(const s of list){
+    const ex = s.t === 'c' ? s.r : s.hx, ez = s.t === 'c' ? s.r : s.hz;
+    for(let gx = Math.floor((s.x - ex) / CELL); gx <= Math.floor((s.x + ex) / CELL); gx++)
+      for(let gz = Math.floor((s.z - ez) / CELL); gz <= Math.floor((s.z + ez) / CELL); gz++){ const k = gkey(gx, gz); let c = grid.get(k); if(!c) grid.set(k, c = []); c.push(s); }
+  }
+}
+addSolids(W.solids);
 const nearBuf = []; let nearTag = 0;
 function near(x, z){
   nearBuf.length = 0; nearTag++;
-  const gx0 = Math.floor((x - 1 + GOFF) / CELL), gz0 = Math.floor((z - 1 + GOFF) / CELL), gx1 = Math.floor((x + 1 + GOFF) / CELL), gz1 = Math.floor((z + 1 + GOFF) / CELL);
-  for(let gx = gx0; gx <= gx1; gx++) for(let gz = gz0; gz <= gz1; gz++){ if(gx < 0 || gz < 0 || gx >= GN || gz >= GN) continue; for(const s of grid[gz * GN + gx]) if(s._t !== nearTag){ s._t = nearTag; nearBuf.push(s); } }
+  const gx0 = Math.floor((x - 1) / CELL), gz0 = Math.floor((z - 1) / CELL), gx1 = Math.floor((x + 1) / CELL), gz1 = Math.floor((z + 1) / CELL);
+  for(let gx = gx0; gx <= gx1; gx++) for(let gz = gz0; gz <= gz1; gz++){ const c = grid.get(gkey(gx, gz)); if(!c) continue; for(const s of c) if(s._t !== nearTag){ s._t = nearTag; nearBuf.push(s); } }
+  if(Zc && Zc.movers.length) for(const s of Zc.movers){ if(s.off) continue; const ex = (s.t === 'c' ? s.r : s.hx) + 1.5, ez = (s.t === 'c' ? s.r : s.hz) + 1.5; if(Math.abs(x - s.x) < ex && Math.abs(z - s.z) < ez && s._t !== nearTag){ s._t = nearTag; nearBuf.push(s); } }
   return nearBuf;
 }
 const PR = .42, PH = 1.25, STEP = .45, GRAV = 26, JUMP_V = 10, SPEED = 6.6, BOUNCE_V = 20;
 /* horizontal push-out against solids + the wall ring, the moat and the island edge */
 function pushOut(o){
   for(const s of near(o.x, o.z)){
-    if(s.y1 <= o.y + STEP || s.y0 >= o.y + PH) continue;
+    if(s.y1 <= o.y + STEP || s.y0 >= o.y + PH || s.off) continue;
     if(s.t === 'c'){ const dx = o.x - s.x, dz = o.z - s.z, d = Math.hypot(dx, dz), m = s.r + PR; if(d < m){ if(d < 1e-4){ o.x += m; continue; } o.x = s.x + dx / d * m; o.z = s.z + dz / d * m; } }
     else { const cx = clamp(o.x, s.x - s.hx, s.x + s.hx), cz = clamp(o.z, s.z - s.hz, s.z + s.hz), dx = o.x - cx, dz = o.z - cz, d = Math.hypot(dx, dz);
       if(d < PR){ if(d > 1e-4){ o.x = cx + dx / d * PR; o.z = cz + dz / d * PR; } else { const px = s.hx - Math.abs(o.x - s.x), pz = s.hz - Math.abs(o.z - s.z); if(px < pz) o.x = s.x + Math.sign(o.x - s.x || 1) * (s.hx + PR); else o.z = s.z + Math.sign(o.z - s.z || 1) * (s.hz + PR); } } }
   }
+  if(ZN !== 'castle') return;
   let r = Math.hypot(o.x, o.z);
   if(Math.abs(r - WALL_R) < .8 + PR && o.y < 6.3 && !inGate(o.x, o.z)){ const t = r < WALL_R ? WALL_R - .8 - PR : WALL_R + .8 + PR; o.x *= t / r; o.z *= t / r; r = t; }
   const b = bridgeAt(o.x, o.z);
@@ -451,7 +495,7 @@ let floorSolid = null;
 function floorAt(x, y, z){
   let f = groundAt(x, z); floorSolid = null;
   for(const s of near(x, z)){
-    if(s.y1 > y + STEP) continue;
+    if(s.y1 > y + STEP || s.nofloor || s.off) continue;
     const inside = s.t === 'c' ? Math.hypot(x - s.x, z - s.z) < s.r + .18 : Math.abs(x - s.x) < s.hx + .18 && Math.abs(z - s.z) < s.hz + .18;
     if(inside && s.y1 > f){ f = s.y1; floorSolid = s; }
   }
@@ -463,22 +507,31 @@ const sp = W.spiral;
 const TOYS = [[-5, 0], [16, -10], [-16, -10], [-3, 20.5], [17, 12], [KEEP.x - 2.6, KEEP.z + 1.6, KEEP.top], [sp[4].x, sp[4].z, sp[4].y], [sp[12].x, sp[12].z, sp[12].y], [sp[21].x, sp[21].z, sp[21].y], [2.3, 4, .92],
   [-54, 6.5], [-62, -6], [-46, -14], [40, -34.5], [47, -44], [33, -40], [5, -56], [-3, -45], [-46, -32], [-30, -50],
   [PARK.x + 5, PARK.z - 2, 5.4], [PARK.x - 8, PARK.z + 8, 5], [PARK.x + 10, PARK.z + 6], [-17, 41], [12, 66], [66, -8], [-68, 12], [8, 27], [-27, -8], [10, 56]]
-  .map(([x, z, y]) => ({ x, z, y:(y == null ? groundAt(x, z) : y) + .75 }));
+  .map(([x, z, y]) => ({ x, z, y:(y == null ? groundAt(x, z) : y) + .75, zone:'castle' }));
+// + 8 golden toys in each new zone (ids 30…69, zone order of ZONE_IDS)
+for(const id of ZONE_IDS){ const Z = ZONES[id]; for(const [x, z, y] of Z.toys) TOYS.push({ x:x + Z.cx, z:z + Z.cz, y:y + .75, zone:id }); }
 const toyGeo = (() => { const m = new Merge();
   m.add(CG.sph, 0, 0, 0, .3, .34, .26, 0, 0, 0, 0xffc83a); m.add(CG.sph, 0, .44, 0, .25, .23, .22, 0, 0, 0, 0xffc83a);
   for(const s of [-1, 1]){ m.add(CG.sph, s * .17, .63, 0, .09, .09, .06, 0, 0, 0, 0xffc83a); m.add(CG.sph, s * .28, .08, .05, .1, .16, .1, 0, 0, s * .6, 0xffc83a); m.add(CG.sph, s * .14, -.28, .04, .11, .09, .12, 0, 0, 0, 0xffc83a); }
   m.add(CG.sph, 0, .4, .2, .09, .07, .06, 0, 0, 0, 0xffe7a0); return m.geometry(); })();
 const goldMat = new THREE.MeshPhongMaterial({ color:0xffc23a, specular:0xfff2b0, shininess:90, emissive:0x5a3600 });
-const toyMesh = new THREE.InstancedMesh(toyGeo, goldMat, TOYS.length); toyMesh.frustumCulled = false; scene.add(toyMesh);
-const toyGlow = TOYS.map(t => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, color:0xffd86a, transparent:true, opacity:.6, depthWrite:false, blending:THREE.AdditiveBlending })); s.position.set(t.x, t.y, t.z); s.scale.set(2, 2, 1); scene.add(s); return s; });
+/* one instanced set of toys per zone; only the zone you are in is drawn */
+const toyMeshes = {};
+TOYS.forEach((t, i) => { (toyMeshes[t.zone] = toyMeshes[t.zone] || { ids:[] }).ids.push(i); });
+for(const z in toyMeshes){ const m = toyMeshes[z].mesh = new THREE.InstancedMesh(toyGeo, goldMat, toyMeshes[z].ids.length); m.frustumCulled = false; scene.add(m); }
+const toyGlowMat = new THREE.SpriteMaterial({ map:glowTex, color:0xffd86a, transparent:true, opacity:.6, depthWrite:false, blending:THREE.AdditiveBlending });
+const toyGlow = TOYS.map(t => { const s = new THREE.Sprite(toyGlowMat); s.position.set(t.x, t.y, t.z); s.scale.set(2, 2, 1); scene.add(s); return s; });
 const hasToy = i => SAVE.toys.includes(i);
 function drawToys(t){
-  for(let i = 0; i < TOYS.length; i++){
-    const o = TOYS[i], got = hasToy(i), s = got ? 0 : 1;
-    _m.compose(_v.set(o.x, o.y + Math.sin(t * 2 + i) * .12, o.z), _q.setFromEuler(_e.set(0, t * 1.6 + i, 0)), _s.set(s, s, s)); toyMesh.setMatrixAt(i, _m);
-    toyGlow[i].visible = !got;
+  for(const z in toyMeshes){
+    const tm = toyMeshes[z], here = z === ZN; tm.mesh.visible = here;
+    tm.ids.forEach((i, j) => {
+      const o = TOYS[i], got = hasToy(i), s = got ? 0 : 1;
+      toyGlow[i].visible = !got && here; if(!here) return;
+      _m.compose(_v.set(o.x, o.y + Math.sin(t * 2 + i) * .12, o.z), _q.setFromEuler(_e.set(0, t * 1.6 + i, 0)), _s.set(s, s, s)); tm.mesh.setMatrixAt(j, _m);
+    });
+    if(here) tm.mesh.instanceMatrix.needsUpdate = true;
   }
-  toyMesh.instanceMatrix.needsUpdate = true;
 }
 
 /* ---------- station pads and signs ---------- */
@@ -490,7 +543,15 @@ const STN = {
   cake:    { e:'🍰', col:'#ff8fb8', x:SPOTS.cake.x, z:SPOTS.cake.z + 1.4, name:L('طاولة الحلويات', 'Cake Table', 'Pasta Masası') }
 };
 const STN_IDS = ['tower', 'treasure', 'boat', 'bounce', 'cake'];
-for(const id of STN_IDS){ const s = STN[id]; s.pad = W.startPad(id, s.x, s.z, s.col); s.sign = W.sign(s.name, s.col, s.x, groundAt(s.x, s.z) + 3.6, s.z); }
+for(const id of STN_IDS){ const s = STN[id]; s.zone = 'castle'; s.y = groundAt(s.x, s.z); s.pad = W.startPad(id, s.x, s.z, s.col); s.sign = W.sign(s.name, s.col, s.x, groundAt(s.x, s.z) + 3.6, s.z); }
+// the new zones' games (pads and signs are made by each zone when it is built)
+for(const id of ZSTN_IDS){ const d = ZSTN[id], Z = ZONES[d.zone]; STN[id] = { e:d.e, col:d.col, x:d.x + Z.cx, z:d.z + Z.cz, y:d.y, zone:d.zone, name:d.name }; }
+const ALL_IDS = STN_IDS.concat(ZSTN_IDS);
+const doneCount = () => ALL_IDS.filter(k => SAVE.st[k] && SAVE.st[k].done).length;
+/* the portal hub: 5 rainbow arches south of the castle, one per zone */
+const hubPortals = HUB.list.map(([id, a]) => { const Z = ZONES[id], x = Math.sin(a) * HUB.r, z = Math.cos(a) * HUB.r;
+  const p = makePortal(THREE, K, castleG, x, groundAt(x, z), z, a, Z.col, Z.name); p.to = id; p.a = a; return p; });
+W.sign(L('بوابات المغامرات', 'Adventure portals', 'Macera kapıları'), '#b48cff', 0, 9.6, HUB.r - 7, 5.6);
 W.sign(L('انزلق من هون', 'Zipline', 'Zipline'), '#ffb070', SPOTS.zipTop.x, SPOTS.zipTop.y + 4.6, SPOTS.zipTop.z + 1.2, 3.4);
 const zipPad = W.startPad('zip', SPOTS.zipTop.x, SPOTS.zipTop.z + .2, '#ffb070'); zipPad.position.y = KEEP.top + .5;
 
@@ -500,10 +561,10 @@ const RINGS = [[.25, 34], [1.2, 31.8], [2.45, 36.2], [3.6, 33.4], [4.85, 31.6], 
 const duckMesh = (() => { const m = new Merge();
   m.add(CG.sph, 0, .3, 0, .55, .42, .7, 0, 0, 0, 0xffd23f); m.add(CG.sph, 0, .8, .32, .33, .33, .33, 0, 0, 0, 0xffd23f); m.add(CG.cone, 0, .76, .72, .14, .3, .1, Math.PI / 2, 0, 0, 0xff8a2a);
   m.add(CG.sph, .2, .9, .58, .05, .05, .05, 0, 0, 0, 0x222222); m.add(CG.sph, -.2, .9, .58, .05, .05, .05, 0, 0, 0, 0x222222); m.add(G0().box, 0, .45, -.65, .3, .3, .2, -.6, 0, 0, 0xffd23f);
-  const im = new THREE.InstancedMesh(m.geometry(), new THREE.MeshLambertMaterial({ vertexColors:true }), DUCKS.length); scene.add(im); return im; })();
+  const im = new THREE.InstancedMesh(m.geometry(), new THREE.MeshLambertMaterial({ vertexColors:true }), DUCKS.length); castleG.add(im); return im; })();
 function G0(){ return GEO; }
-const ringMesh = new THREE.InstancedMesh(new THREE.TorusGeometry(1.5, .2, 10, 28), new THREE.MeshPhongMaterial({ color:0xffc83a, emissive:0x6a4000, shininess:80 }), RINGS.length); scene.add(ringMesh);
-const ringGlow = RINGS.map(() => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, color:0xffe08a, transparent:true, opacity:.5, depthWrite:false, blending:THREE.AdditiveBlending })); s.scale.set(4.5, 4.5, 1); scene.add(s); return s; });
+const ringMesh = new THREE.InstancedMesh(new THREE.TorusGeometry(1.5, .2, 10, 28), new THREE.MeshPhongMaterial({ color:0xffc83a, emissive:0x6a4000, shininess:80 }), RINGS.length); castleG.add(ringMesh);
+const ringGlow = RINGS.map(() => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map:glowTex, color:0xffe08a, transparent:true, opacity:.5, depthWrite:false, blending:THREE.AdditiveBlending })); s.scale.set(4.5, 4.5, 1); castleG.add(s); return s; });
 const polar = (a, r) => [Math.sin(a) * r, Math.cos(a) * r];
 function drawMoat(t){
   DUCKS.forEach((d, i) => { const [x, z] = polar(d.a, d.r), k = Math.max(0, d.hit - t); _m.compose(_v.set(x, WATER_Y + Math.sin(t * 2 + i) * .06 + k * 1.2, z), _q.setFromEuler(_e.set(0, t * .3 + i * 2 + k * 9, Math.sin(t * 1.5 + i) * .08)), _s.set(1, 1, 1)); duckMesh.setMatrixAt(i, _m); });
@@ -514,11 +575,11 @@ function drawMoat(t){
 
 /* ---------- bounce park stars ---------- */
 const starMat = new THREE.MeshPhongMaterial({ color:0xffd23f, emissive:0x6a4a00, shininess:80, specular:0xffffff });
-const bStars = W.bounceStars.map(s => { const m = new THREE.Mesh(K.starGeo, starMat); m.scale.setScalar(.5); m.position.set(s.x, s.y, s.z); scene.add(m); return m; });
+const bStars = W.bounceStars.map(s => { const m = new THREE.Mesh(K.starGeo, starMat); m.scale.setScalar(.5); m.position.set(s.x, s.y, s.z); castleG.add(m); return m; });
 
 /* ---------- fountain droplets ---------- */
 const DROPS = 36, dropMesh = new THREE.InstancedMesh(new THREE.SphereGeometry(.07, 6, 4), new THREE.MeshBasicMaterial({ color:0xd8f4ff, transparent:true, opacity:.85 }), W.fountains.length * DROPS);
-dropMesh.frustumCulled = false; scene.add(dropMesh);
+dropMesh.frustumCulled = false; castleG.add(dropMesh);
 function drawDrops(t){
   let n = 0;
   for(const f of W.fountains) for(let k = 0; k < DROPS; k++){
@@ -551,18 +612,18 @@ function newHero(id){ const h = HEROES[id](); h.type = id; scene.add(h.grp); h.b
 function dropHero(h){ if(!h) return; scene.remove(h.grp); scene.remove(h.blob); }
 const P = { x:SPOTS.spawn.x, y:0, z:SPOTS.spawn.z, vx:0, vz:0, vy:0, face:Math.PI, move:0, ground:true, sq:0, mode:'walk', boat:null, zip:null };
 let me = newHero(heroId); dressUp(me, SAVE.outfit.wear);
-const myBoat = new THREE.Mesh(W.boatGeo(0xff5d73), new THREE.MeshLambertMaterial({ vertexColors:true })); myBoat.visible = false; scene.add(myBoat);
+const myBoat = new THREE.Mesh(W.boatGeo(0xff5d73), new THREE.MeshLambertMaterial({ vertexColors:true })); myBoat.visible = false; castleG.add(myBoat);
 // Aunt Laila stands by her treasure board
-const laila = HEROES.laila(); laila.grp.position.set(SPOTS.laila.x, 0, SPOTS.laila.z); laila.grp.rotation.y = Math.PI * .85; scene.add(laila.grp);
+const laila = HEROES.laila(); laila.grp.position.set(SPOTS.laila.x, 0, SPOTS.laila.z); laila.grp.rotation.y = Math.PI * .85; castleG.add(laila.grp);
 let statue = null;
 function buildStatue(){
-  if(statue){ scene.remove(statue); statue = null; }
+  if(statue){ castleG.remove(statue); statue = null; }
   if(!SAVE.deco.includes('statue')) return;
   const h = HEROES[heroId](); const gm = new THREE.MeshPhongMaterial({ color:0xffcf4a, specular:0xfff0b0, shininess:80, emissive:0x7a5200 });
   h.grp.traverse(o => { if(o.isMesh){ o.material = gm; o.castShadow = true; } });
   poseHero(h, { t:0, dt:0, run:0, grounded:true, vy:0, sq:0, flip:0 }); h.arms.forEach((a, i) => { a.rotation.z = (i ? 1 : -1) * -2.6; });
   h.grp.scale.setScalar(1.9); h.grp.position.set(SPOTS.statue.x, 1.12, SPOTS.statue.z); h.grp.rotation.y = .5;
-  scene.add(h.grp); statue = h.grp;
+  castleG.add(h.grp); statue = h.grp;
 }
 
 /* ======================================================================
@@ -611,7 +672,7 @@ actBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagat
 const KEYMAP = { KeyW:'f', ArrowUp:'f', KeyS:'b', ArrowDown:'b', KeyA:'l', ArrowLeft:'l', KeyD:'r', ArrowRight:'r', KeyZ:'cl', KeyC:'cr' };
 addEventListener('keydown', e => {
   if(KEYMAP[e.code]){ keys[KEYMAP[e.code]] = true; e.preventDefault(); }
-  if(e.code === 'Space' && state === 'play' && !e.repeat){ if(P.mode === 'cake') doAction(); else jumpQ = .15; e.preventDefault(); }
+  if(e.code === 'Space' && state === 'play' && !e.repeat){ if(P.mode === 'cake' || (P.mode === 'veh' && P.veh && P.veh.space)) doAction(); else jumpQ = .15; e.preventDefault(); }
   if((e.code === 'KeyE' || e.code === 'Enter') && state === 'play' && !e.repeat){ doAction(); e.preventDefault(); }
   if((e.code === 'Escape' || e.code === 'KeyP') && state === 'play') showPause();
 });
@@ -635,11 +696,18 @@ function readInput(dt){
    Player movement (walk + jump + bounce), boat, zipline
    ====================================================================== */
 let landedOn = null;
+/* near the water line in a zone: too wet to walk (sea, the bay, the chocolate river) */
+function blocked(x, z, y){ if(ZN === 'castle' || !Zc) return false; if(y > 1.6) return false; const lx = x - Zc.cx, lz = z - Zc.cz; return (Zc.ground(lx, lz) < -.9 && floorAt(x, y + STEP, z) < -.5) || (Zc.blocked ? Zc.blocked(lx, lz, y) : false); }
 function stepWalk(dt){
   const frozen = run && T < run.cdEnd;
   const sp = SPEED;
-  P.vx += ((frozen ? 0 : inp.x * sp) - P.vx) * Math.min(1, (P.ground ? 14 : 5) * dt); P.vz += ((frozen ? 0 : inp.z * sp) - P.vz) * Math.min(1, (P.ground ? 14 : 5) * dt);
+  // standing on a moving platform: it carries you
+  if(P.ground && landedOn && landedOn.mv){ P.x += landedOn.dx; P.z += landedOn.dz; }
+  const acc = P.ground ? (P.slip ? 1.8 : 14) : (T < (P.airT || 0) ? .35 : 5);
+  P.vx += ((frozen ? 0 : inp.x * sp) - P.vx) * Math.min(1, acc * dt); P.vz += ((frozen ? 0 : inp.z * sp) - P.vz) * Math.min(1, acc * dt);
+  const px = P.x, pz = P.z;
   P.x += P.vx * dt; P.z += P.vz * dt; pushOut(P);
+  if(blocked(P.x, P.z, P.y) && !blocked(px, pz, P.y)){ if(!blocked(P.x, pz, P.y)) P.z = pz; else if(!blocked(px, P.z, P.y)) P.x = px; else { P.x = px; P.z = pz; } }
   if(jumpQ > 0){ jumpQ -= dt; if(P.ground && !frozen){ P.vy = JUMP_V; P.ground = false; jumpQ = 0; P.sq = -.18; SFX.jump(); } }
   P.vy -= GRAV * dt; P.y += P.vy * dt;
   const f = floorAt(P.x, P.y, P.z);
@@ -647,12 +715,17 @@ function stepWalk(dt){
   if(P.y <= f){ const was = P.ground; P.y = f; if(!was && P.vy < -6) P.sq = .22; P.vy = 0; P.ground = true; landedOn = floorSolid; }
   else if(P.ground && P.y - f < .5 && P.vy <= 0){ P.y = f; P.vy = 0; landedOn = floorSolid; }
   else P.ground = false;
-  if(landedOn && landedOn.bounce){ P.vy = BOUNCE_V; P.ground = false; P.sq = -.25; SFX.boing(); burst(P.x, P.y + .3, P.z, 6, ['#ffffff', '#5fe3b1'], 3); }
+  if(landedOn && landedOn.bounce){ P.vy = landedOn.bv || BOUNCE_V; P.ground = false; P.sq = -.25; SFX.boing(); burst(P.x, P.y + .3, P.z, 6, ['#ffffff', landedOn.bc || '#5fe3b1'], 3);
+    if(landedOn.lx != null){ P.vx = landedOn.lx; P.vz = landedOn.lz; P.airT = T + (landedOn.air || 1.2); } }
   if(P.y < -3){ respawnSafe(); }
+  else if(ZN !== 'castle' && P.ground && P.y < -.45 && groundAt(P.x, P.z) < -.9){ burst(P.x, WATER_Y + .2, P.z, 14, ['#ffffff', '#bfe8ff'], 4); SFX.bonk(); respawnSafe(); }
   if(inp.m > 0 && !frozen) P.face += angDiff(Math.atan2(inp.x, inp.z), P.face) * Math.min(1, 12 * dt);
   P.move = Math.min(1, Math.hypot(P.vx, P.vz) / SPEED);
 }
-function respawnSafe(){ tp(SPOTS.spawn.x, 0, SPOTS.spawn.z); }
+function respawnSafe(){
+  if(ZN !== 'castle' && Zc){ const sp = (Zc.safe && Zc.safe()) || ZONES[ZN].spawn; tp(sp.x + Zc.cx, sp.y == null ? null : sp.y, sp.z + Zc.cz, sp.f); return; }
+  tp(SPOTS.spawn.x, 0, SPOTS.spawn.z);
+}
 function tp(x, y, z, face){ P.x = x; P.z = z; P.y = y == null ? floorAt(x, groundAt(x, z) + 1.2, z) : y; P.vx = P.vz = P.vy = 0; P.ground = true; if(face != null) P.face = face; snapCam = true; }
 
 /* ======================================================================
@@ -667,6 +740,7 @@ function startRun(id, o = {}){
   if(id === 'tower'){ const s = W.checkpoints[0]; tp(STN.tower.x, null, STN.tower.z, Math.atan2(s.x - STN.tower.x, s.z - STN.tower.z)); cam.yaw = P.face + Math.PI; say(LINE.towerGo, 3200); }
   if(id === 'bounce'){ tp(STN.bounce.x, null, STN.bounce.z, Math.atan2(PARK.x - STN.bounce.x, PARK.z - STN.bounce.z)); cam.yaw = P.face + Math.PI; bStars.forEach(m => m.visible = true); say(LINE.bounceGo, 3200); }
   if(id === 'boat'){ startBoat(); say(LINE.boatGo, 3200); }
+  if(ZSTN[id]){ const m = Zc && Zc.modes[id]; if(!m || STN[id].zone !== ZN){ run = null; return; } m.start(run, o); if(LINE['go_' + id]) say(LINE['go_' + id], 3400); }
   hudTimer.hidden = false;
   if(cd <= 0){ popText(L('يلّا!', 'Go!', 'Başla!')); SFX.go(); }
   if(o.send && mpOthers() > 0){ const rid = run.rid = mpNewId(); run.race = true; mpSend('race', { rid, k:id }); }
@@ -677,6 +751,8 @@ function endRun(ok, quiet){
   const r = run; run = null; hudTimer.hidden = true; $('#cd').hidden = true;
   if(r.id === 'boat') stopBoat();
   if(r.id === 'bounce') bStars.forEach(m => m.visible = true);
+  if(ZSTN[r.id] && Zc && Zc.modes[r.id] && Zc.modes[r.id].end) Zc.modes[r.id].end(ok, r);
+  $('#raceBar').hidden = true;
   if(!quiet && !ok){ SFX.fail(); }
   return r;
 }
@@ -687,6 +763,7 @@ function updateTimer(force){
   let txt;
   if(run.id === 'bounce') txt = '⭐ ' + N(run.got.size) + '/' + N(W.bounceStars.length) + '  ⏳ ' + fmtSec(60 - runTime());
   else if(run.id === 'boat') txt = '🚤 ' + N(Math.min(2, Math.floor((P.boat ? P.boat.prog : 0) / (Math.PI * 2)) + 1)) + '/' + N(2) + '  ⏱️ ' + fmtSec(runTime());
+  else if(ZSTN[run.id] && Zc && Zc.modes[run.id] && Zc.modes[run.id].hud) txt = Zc.modes[run.id].hud(runTime());
   else txt = '⏱️ ' + fmtSec(runTime());
   if(force || txt !== lastTimer){ lastTimer = txt; $('#timerT').textContent = txt; }
   const cd = run.cdEnd - T, el = $('#cd');
@@ -746,10 +823,106 @@ function zipStep(dt){
   if(Z.t >= 1){ P.mode = 'walk'; P.zip = null; P.vy = 0; P.ground = false; P.vx = Math.sin(P.face) * 4; P.vz = Math.cos(P.face) * 4; burst(P.x, P.y, P.z, 10, ['#ffb070', '#ffffff'], 3); if(!SAVE.zipped){ SAVE.zipped = 1; MapSave.save(SAVE); } }
 }
 
+/* ======================================================================
+   Rides and vehicles in the zones
+   ride: the kid sits (or hangs) and a path does the rest — chairlift, ice slide, donut raft, balloon, Ferris wheel, zipline tour
+   veh:  a zone object drives the kid each frame — sled, pirate ship, cannon
+   ====================================================================== */
+function startRide(o){
+  if(P.mode !== 'walk') return false;
+  P.mode = 'ride'; P.ride = Object.assign({ t:0, dur:6, pose:'sit', md:6 }, o); hush(); actKey = '-';
+  const p = P.ride.at(0); P.x = p[0]; P.y = p[1]; P.z = p[2]; P.vx = P.vz = P.vy = 0;
+  return true;
+}
+function rideStep(dt){
+  const R = P.ride; if(!R) return;
+  R.t = Math.min(1, R.t + dt / R.dur);
+  const p = R.at(R.t), dx = p[0] - P.x, dz = p[2] - P.z;
+  if(R.face != null) P.face = typeof R.face === 'function' ? R.face(R.t) : R.face;
+  else if(dx * dx + dz * dz > 1e-6) P.face += angDiff(Math.atan2(dx, dz), P.face) * Math.min(1, 8 * dt);
+  P.x = p[0]; P.y = p[1]; P.z = p[2]; P.move = 0; P.vx = P.vz = P.vy = 0;
+  if(R.step) R.step(R.t, dt);
+  if(R.t >= 1) endRide();
+}
+function endRide(quiet){
+  const R = P.ride; if(!R) return;
+  P.mode = 'walk'; P.ride = null; P.vy = 0; P.ground = false; actKey = '-';
+  if(!quiet && R.end) R.end(); else P.y = floorAt(P.x, P.y + .5, P.z);
+}
+function startVeh(o){ if(P.mode === 'ride') endRide(true); P.mode = 'veh'; P.veh = o; hush(); actKey = '-'; }
+function endVeh(){ const V = P.veh; if(!V) return; P.mode = 'walk'; P.veh = null; actKey = '-'; P.vx = P.vz = P.vy = 0; if(V.end) V.end(); }
+function stopMoving(){ if(run) endRun(false, true); if(CAKE.on) endCake(true); if(P.mode === 'boat') stopBoat(); if(P.mode === 'veh') endVeh(); if(P.mode === 'ride') endRide(true); if(P.mode === 'zip'){ P.zip = null; P.mode = 'walk'; } }
+
+/* ======================================================================
+   Travel between the castle and the zones (portals + the map screen)
+   ====================================================================== */
+const travelFx = $('#travelFx');
+let travelling = false, portalCool = 0;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function loadZone(id){
+  if(built[id]) return built[id];
+  const meta = ZONES[id], mod = await import(meta.file);
+  if(built[id]) return built[id];
+  const Z = mod.build(ZAPI, meta);
+  Z.id = id; Z.cx = meta.cx; Z.cz = meta.cz; Z.movers = Z.movers || []; Z.modes = Z.modes || {}; Z.portals = Z.portals || [];
+  Z.group.visible = false; scene.add(Z.group);
+  addSolids(Z.solids);
+  built[id] = Z; return Z;
+}
+function setZone(id){
+  ZN = id; Zc = id === 'castle' ? null : built[id];
+  castleG.visible = id === 'castle';
+  for(const k in built) built[k].group.visible = k === id;
+  const Z = ZONES[id];
+  sun.target.position.set(Z.cx, id === 'sky' ? 20 : 0, Z.cz); sun.target.updateMatrixWorld();
+  sun.position.copy(SUN_DIR).multiplyScalar(160).add(sun.target.position);
+  renderer.shadowMap.needsUpdate = true;
+  const at = (Zc && Zc.atmo) || {}; hemi.color.set(at.hemi || 0xffe2c6); hemi.groundColor.set(at.hemiG || 0x6a5a8a); sun.color.set(at.sun || 0xffc48a); sun.intensity = at.sunI || 2.5; scene.fog.color.set(at.fog || 0xf3b896);
+  miniFor(id); hudDirty = true; landedOn = null; actKey = '-';
+}
+function arriveSpot(id, from){
+  if(id === 'castle'){ const h = hubPortals.find(p => p.to === from) || hubPortals[2]; return { x:Math.sin(h.a) * (HUB.r - 13), z:Math.cos(h.a) * (HUB.r - 13), f:h.a + Math.PI }; }
+  const Z = ZONES[id]; return { x:Z.spawn.x + Z.cx, z:Z.spawn.z + Z.cz, f:Z.spawn.f };
+}
+async function travel(id, spot){
+  if(travelling || !ZONES[id]) return false;
+  travelling = true; const from = ZN;
+  stopMoving(); clearInput();
+  SFX.warp(); travelFx.hidden = false; void travelFx.offsetWidth; travelFx.classList.add('on');
+  await sleep(280);
+  try{ if(id !== 'castle') await loadZone(id); }
+  catch(e){ console.error(e); travelFx.classList.remove('on'); setTimeout(() => { travelFx.hidden = true; }, 300); travelling = false; say(L('ما قدرنا نفتح هالعالم، جرّب كمان مرة 🙈', "Couldn't open that world, try again 🙈", 'Bu dünya açılamadı, tekrar dene 🙈')); return false; }
+  setZone(id);
+  const sp = spot || arriveSpot(id, from);
+  tp(sp.x, sp.y == null ? null : sp.y, sp.z, sp.f); P.face = sp.f; cam.yaw = sp.f + Math.PI; cam.pitch = .42; snapCam = true; portalCool = T + 1.5;
+  if(!SAVE.zv) SAVE.zv = [];
+  if(id !== 'castle' && !SAVE.zv.includes(id)){ SAVE.zv.push(id); MapSave.save(SAVE); setTimeout(() => { if(state === 'play' && ZN === id) say(ZONES[id].e + ' ' + ZONES[id].name + ' — ' + ZONES[id].sub, 5200); }, 500); }
+  await sleep(80);
+  travelFx.classList.remove('on'); setTimeout(() => { if(!travelFx.classList.contains('on')) travelFx.hidden = true; }, 420);
+  travelling = false; return true;
+}
+function portalStep(){
+  if(travelling || T < portalCool || P.mode !== 'walk' || run) return;
+  const list = ZN === 'castle' ? hubPortals : (Zc ? Zc.portals : []);
+  for(const p of list){ if(Math.hypot(P.x - p.x, P.z - p.z) < 1.5 && Math.abs(P.y - p.y) < 2.5){ portalCool = T + 3; travel(p.to); return; } }
+}
+
+/* what the zones can use from the game */
+const ZAPI = {
+  THREE, K, L, N, scene, P, SFX, tone, burst, popText, say, hush, fmtSec, inp, cam, WATER_Y, clamp, lerp, angDiff,
+  get T(){ return T; }, get run(){ return run; }, get state(){ return state; }, get save(){ return SAVE; }, get zone(){ return ZN; },
+  tp:(x, y, z, f) => { tp(x, y, z, f); if(f != null){ P.face = f; cam.yaw = f + Math.PI; } },
+  startRide, endRide, startVeh, endVeh, startRun:(id, o) => startRun(id, o || {}), endRun, finishStation, runTime,
+  failStation(id, score){ endRun(false); showResult({ id, fail:true, score }); },
+  groundAt, floorAt, hasToy, saveNow:() => MapSave.save(SAVE), mpOthers:() => mpOthers(), get jumpQ(){ return jumpQ; }, set jumpQ(v){ jumpQ = v; },
+  get landedOn(){ return landedOn; }, makePortal:(parent, x, y, z, ry, col, label, ox, oz) => makePortal(THREE, K, parent, x, y, z, ry, col, label, ox, oz),
+  vehGeo:(kind, col) => vehGeo(THREE, K, kind, col), showCard, banner, get snapCam(){ return snapCam; }, set snapCam(v){ snapCam = v; }
+};
+
 /* cake stacking at «طاولة الحلويات» */
 const CAKE = { on:false, layers:[], cur:null, dir:0, speed:2, w:1.6, d:1.6, x:0, z:0, fall:[], over:false };
 const LAYER_H = .26, cakeMats = [new THREE.MeshLambertMaterial({ color:0xf3cf96 }), new THREE.MeshLambertMaterial({ color:0xfff3e0 })];
-const cakeGroup = new THREE.Group(); scene.add(cakeGroup);
+const cakeGroup = new THREE.Group(); castleG.add(cakeGroup);
 function cakeLayer(w, d, x, y, z){
   const g = new THREE.Group(); const body = new THREE.Mesh(new THREE.BoxGeometry(w, LAYER_H * .8, d), cakeMats[0]); body.position.y = LAYER_H * .4; g.add(body);
   const icing = new THREE.Mesh(new THREE.BoxGeometry(w + .02, LAYER_H * .2, d + .02), cakeMats[1]); icing.position.y = LAYER_H * .9; g.add(icing);
@@ -832,22 +1005,27 @@ const STARS = {
   tower:t => t < 45 ? 3 : t < 75 ? 2 : 1, boat:t => t < 40 ? 3 : t < 52 ? 2 : 1, bounce:t => t < 25 ? 3 : t < 40 ? 2 : 1,
   cake:n => n >= 18 ? 3 : n >= 14 ? 2 : 1, treasure:() => 3
 };
+for(const id of ZSTN_IDS) STARS[id] = ZSTN[id].stars;
+/* repeat plays give a few coins, at most 10 times a day for the whole map */
+function repeatCoins(){ const d = new Date().toISOString().slice(0, 10); if(!SAVE.cd || SAVE.cd.d !== d) SAVE.cd = { d, n:0 }; if(SAVE.cd.n >= 10) return 0; SAVE.cd.n++; return 3; }
 const DECO_OF = { tower:'flag', boat:'fireworks', bounce:'statue', cake:'balloons', treasure:'crown' };
 const DECO_NAME = {
   flag:L('علم ذهبي فوق البرج 🚩', 'A golden flag on the tower 🚩', 'Kulede altın bayrak 🚩'), fireworks:L('ألعاب نارية فوق القلعة 🎆', 'Fireworks over the castle 🎆', 'Kalenin üstünde havai fişek 🎆'),
   statue:L('تمثال ذهبي لشخصيتك 🗿', 'A golden statue of your hero 🗿', 'Kahramanının altın heykeli 🗿'), balloons:L('قوس بالونات بالسوق 🎈', 'A balloon arch in the market 🎈', 'Pazarda balon kemeri 🎈'),
-  crown:L('تاج كبير عالبوابة + تاج إلك 👑', 'A giant crown on the gate + a crown for you 👑', 'Kapıda dev taç + sana bir taç 👑'), cape:L('عباية الأبطال 🦸', 'A hero cape 🦸', 'Kahraman pelerini 🦸')
+  crown:L('تاج كبير عالبوابة + تاج إلك 👑', 'A giant crown on the gate + a crown for you 👑', 'Kapıda dev taç + sana bir taç 👑'), cape:L('عباية الأبطال 🦸', 'A hero cape 🦸', 'Kahraman pelerini 🦸'),
+  allz:L('خلّصت كل العوالم الجديدة! 🌈 +25', 'You finished all the new worlds! 🌈 +25', 'Bütün yeni dünyaları bitirdin! 🌈 +25')
 };
 function finishStation(id, val){
   const raceRid = run && run.rid;
   if(id !== 'treasure' && id !== 'cake') endRun(true, true);
-  const st = SAVE.st[id], stars = STARS[id](val), first = !st.done;
-  const better = st.best == null || (id === 'cake' ? val > st.best : val < st.best);
+  const st = SAVE.st[id], stars = STARS[id](val), first = !st.done, hi = id === 'cake' || !!(ZSTN[id] && ZSTN[id].hi);
+  const better = st.best == null || (hi ? val > st.best : val < st.best);
   st.done = true; st.runs++; st.stars = Math.max(st.stars, stars); if(id !== 'treasure' && better) st.best = Math.round(val * 10) / 10;
   let coins = 0; const unlocked = [];
-  if(first){ coins = id === 'treasure' ? 30 : 15; const d = DECO_OF[id]; if(!SAVE.deco.includes(d)){ SAVE.deco.push(d); unlocked.push(d); } if(id === 'treasure' && !SAVE.outfit.own.includes('crown')){ SAVE.outfit.own.push('crown'); SAVE.outfit.wear.crown = true; } }
-  else coins = 3;
+  if(first){ coins = id === 'treasure' ? 30 : 15; const d = DECO_OF[id]; if(d && !SAVE.deco.includes(d)){ SAVE.deco.push(d); unlocked.push(d); } if(id === 'treasure' && !SAVE.outfit.own.includes('crown')){ SAVE.outfit.own.push('crown'); SAVE.outfit.wear.crown = true; } }
+  else coins = repeatCoins();
   if(first && STN_IDS.every(k => SAVE.st[k].done) && !SAVE.outfit.own.includes('cape')){ SAVE.outfit.own.push('cape'); SAVE.outfit.wear.cape = true; unlocked.push('cape'); coins += 20; }
+  if(first && ZSTN[id] && ZSTN_IDS.every(k => SAVE.st[k].done) && !SAVE.allz){ SAVE.allz = 1; coins += 25; unlocked.push('allz'); }
   SAVE.coins += coins; MapSave.save(SAVE);
   if(window.World && coins) World.addCoins(coins, L('من قلعة الألعاب', 'for Toy Castle', 'Oyuncak Kalesi için'));
   applyDeco(); dressUp(me, SAVE.outfit.wear); hudDirty = true;
@@ -878,6 +1056,8 @@ function updateCamera(dt){
   let tx = P.x, ty = P.y, tz = P.z, dist = cam.dist, pitch = cam.pitch;
   if(P.mode === 'boat' && P.boat){ const a = P.boat.a, want = Math.atan2(-Math.cos(a), Math.sin(a)); if(look.id == null) cam.yaw += angDiff(want, cam.yaw) * Math.min(1, 3 * dt); dist = 9; pitch = .3; }
   if(P.mode === 'zip'){ dist = 9; }
+  if(P.mode === 'ride' && P.ride){ dist = P.ride.dist || 9.5; pitch = P.ride.pitch != null ? P.ride.pitch : .36; if(P.ride.yaw != null && look.id == null) cam.yaw += angDiff(typeof P.ride.yaw === 'function' ? P.ride.yaw() : P.ride.yaw, cam.yaw) * Math.min(1, 2 * dt); }
+  if(P.mode === 'veh' && P.veh && P.veh.cam){ const c = P.veh.cam(); if(c.yaw != null && look.id == null) cam.yaw += angDiff(c.yaw, cam.yaw) * Math.min(1, (c.k || 3) * dt); if(c.dist) dist = c.dist; if(c.pitch != null) pitch = c.pitch; if(c.tx != null){ tx = c.tx; ty = c.ty; tz = c.tz; } }
   if(P.mode === 'cake'){
     const top = W.cakeTable.y + CAKE.layers.length * LAYER_H;
     const cx = W.cakeTable.x, cz = W.cakeTable.z, want = new THREE.Vector3(cx + .6, top + 1.15, cz + 3.7);
@@ -888,7 +1068,8 @@ function updateCamera(dt){
   const dx = Math.sin(cam.yaw) * Math.cos(pitch), dy = Math.sin(pitch), dz = Math.cos(cam.yaw) * Math.cos(pitch);
   let x = cam.tx + dx * dist, y = cam.ty + 1.2 + dy * dist, z = cam.tz + dz * dist;
   // keep the camera outside the keep and the big towers
-  const kd = Math.hypot(x - KEEP.x, z - KEEP.z); if(kd < KEEP.r + 1 && y < KEEP.top + .5){ x = KEEP.x + (x - KEEP.x) / kd * (KEEP.r + 1); z = KEEP.z + (z - KEEP.z) / kd * (KEEP.r + 1); }
+  if(Zc && Zc.camFix){ const f = Zc.camFix(x - Zc.cx, y, z - Zc.cz); if(f){ x = f[0] + Zc.cx; y = f[1]; z = f[2] + Zc.cz; } }
+  const kd = ZN === 'castle' ? Math.hypot(x - KEEP.x, z - KEEP.z) : 99; if(kd < KEEP.r + 1 && y < KEEP.top + .5){ x = KEEP.x + (x - KEEP.x) / kd * (KEEP.r + 1); z = KEEP.z + (z - KEEP.z) / kd * (KEEP.r + 1); }
   y = Math.max(y, groundAt(x, z) + .6);
   if(snapCam){ camPos.set(x, y, z); snapCam = false; } else camPos.lerp(_v.set(x, y, z), 1 - Math.exp(-10 * dt));
   camera.position.copy(camPos); camera.lookAt(cam.tx, cam.ty + 1.1, cam.tz);
@@ -897,35 +1078,43 @@ let ctxNow = null;
 function context(){
   if(state !== 'play') return null;
   if(P.mode === 'cake') return CAKE.over ? null : { k:'cakeDrop' };
+  if(P.mode === 'veh') return P.veh && P.veh.ctx ? P.veh.ctx() : null;
   if(P.mode !== 'walk') return null;
-  if(run) return null;
-  if(P.ground && P.y > KEEP.top - .3 && Math.hypot(P.x - SPOTS.zipTop.x, P.z - SPOTS.zipTop.z - .2) < 1.8) return { k:'zip' };
-  for(const id of STN_IDS){ const s = STN[id]; if(Math.hypot(P.x - s.x, P.z - s.z) < 1.6 && P.y < groundAt(s.x, s.z) + 1) return { k:'stn', id }; }
+  if(run){ const m = ZSTN[run.id] && Zc && Zc.modes[run.id]; return m && m.ctx ? m.ctx() : null; }
+  if(ZN === 'castle'){
+    if(P.ground && P.y > KEEP.top - .3 && Math.hypot(P.x - SPOTS.zipTop.x, P.z - SPOTS.zipTop.z - .2) < 1.8) return { k:'zip' };
+    for(const id of STN_IDS){ const s = STN[id]; if(Math.hypot(P.x - s.x, P.z - s.z) < 1.6 && P.y < groundAt(s.x, s.z) + 1) return { k:'stn', id }; }
+    return null;
+  }
+  for(const id of ZSTN_IDS){ const s = STN[id]; if(s.zone === ZN && Math.hypot(P.x - s.x, P.z - s.z) < 1.6 && P.y < s.y + 1 && P.y > s.y - .6) return { k:'stn', id }; }
+  if(Zc && Zc.ctx) return Zc.ctx();
   return null;
 }
 function doAction(){
   const c = context(); if(!c) return;
   if(c.k === 'cakeDrop'){ cakeDrop(false); return; }
   if(c.k === 'zip'){ startZip(); return; }
+  if(c.k === 'z'){ c.go(); return; }
   if(c.k === 'stn'){
     SFX.tap();
     if(c.id === 'treasure'){ showTreasure(); return; }
     if(c.id === 'cake'){ startCake(); return; }
-    startRun(c.id, { send:true, cd:mpOthers() > 0 ? 3 : 0 });
+    startRun(c.id, runOpts(c.id));
   }
 }
 const ACT_LOOK = {
   stn:id => [STN[id].e, id === 'treasure' ? L('شوف', 'Look', 'Bak') : L('ابدأ', 'Start', 'Başla'), STN[id].col],
   zip:() => ['🎢', L('انزلق', 'Zip!', 'Kay!'), '#ffb070'], cakeDrop:() => ['🍰', L('حط', 'Drop', 'Bırak'), '#ff8fb8']
 };
+ACT_LOOK.z = (id, c) => [c.icon, c.label, c.col];
 let actKey = '';
 function updateActBtn(){
-  const c = ctxNow = context(), key = c ? c.k + (c.id || '') : '';
+  const c = ctxNow = context(), key = c ? c.k + (c.id || c.key || '') : '';
   if(key === actKey) return; actKey = key;
   if(!c){ actBtn.hidden = true; actBtn.classList.remove('big'); return; }
-  const [ic, lb, col] = ACT_LOOK[c.k](c.id);
+  const [ic, lb, col] = ACT_LOOK[c.k](c.id, c);
   actBtn.hidden = false; actBtn.style.setProperty('--ac', col); $('#actI').textContent = ic; $('#actB').textContent = lb;
-  actBtn.classList.add('pulse'); actBtn.classList.toggle('big', c.k === 'cakeDrop');
+  actBtn.classList.toggle('pulse', !c.big); actBtn.classList.toggle('big', c.k === 'cakeDrop' || !!c.big);
   if(c.k === 'stn' && !hintSaid[c.id]){ hintSaid[c.id] = 1; say(LINE['hint_' + c.id], 4200); }
 }
 
@@ -934,7 +1123,16 @@ function updateActBtn(){
    ====================================================================== */
 const LINE = {
   hello:L('أهلا وسهلا بقلعة الألعاب! 🏰 أنا العمة ليلى', 'Welcome to the Toy Castle! 🏰 I\'m Aunt Laila', 'Oyuncak Kalesi\'ne hoş geldin! 🏰 Ben Leyla Teyze'),
-  hello2:L('في 30 لعبة ذهبية مخبّاية بالقلعة، دوّر عليهن 🧸', 'There are 30 golden toys hidden around the castle — find them 🧸', 'Kalede 30 altın oyuncak saklı, onları bul 🧸'),
+  hello2:L('في ' + N(TOYS.length) + ' لعبة ذهبية مخبّاية بالقلعة والعوالم، دوّر عليهن 🧸', 'There are ' + N(TOYS.length) + ' golden toys hidden in the castle and the worlds — find them 🧸', 'Kalede ve dünyalarda ' + N(TOYS.length) + ' altın oyuncak saklı, onları bul 🧸'),
+  hello4:L('البوابات الملوّنة ورا الجسر بتاخدك لعوالم جديدة! 🌈', 'The rainbow portals past the bridge take you to new worlds! 🌈', 'Köprünün ötesindeki gökkuşağı kapıları seni yeni dünyalara götürür! 🌈'),
+  hint_sled:L('اركب الزلاجة وانزل عالجبل! يمين وشمال لتلقط ندف التلج ❄️', 'Ride the sled down the mountain! Steer to catch the snowflakes ❄️', 'Kızakla dağdan in! Kar tanelerini yakalamak için sağa sola dön ❄️'),
+  hint_candy:L('لاقي 4 مفاتيح بالمتاهة لتفتح غرفة العرش 🗝️', 'Find 4 keys in the maze to open the throne room 🗝️', 'Taht odasını açmak için labirentte 4 anahtar bul 🗝️'),
+  hint_obby:L('اطلع عالبركان من حجر لحجر! الجيلي البرتقالي بيرجعك للعلم 🌋', 'Climb the volcano block by block! The orange jelly sends you back to the flag 🌋', 'Yanardağa bloktan bloğa tırman! Turuncu jöle seni bayrağa geri gönderir 🌋'),
+  hint_hunt:L('شوف الخريطة واحفر عند علامات X 🗺️', 'Read the map and dig at the X marks 🗺️', 'Haritaya bak ve X işaretlerinde kaz 🗺️'),
+  hint_cannon:L('حرّك الدايرة عالهدف واكبس 💥 — 10 أهداف!', 'Move the ring onto a target and tap 💥 — 10 targets!', 'Halkayı hedefe getir ve 💥 bas — 10 hedef!'),
+  hint_coins:L('اجمع أكتر عملات عالغيم بدقيقة 🪙', 'Grab as many coins on the clouds as you can in a minute 🪙', 'Bir dakikada bulutlardaki altınlardan topla 🪙'),
+  go_sled:L('يلّا انزل! ❄️', 'Go go go! ❄️', 'Hadi hadi! ❄️'), go_obby:L('اطلع! الأعلام بتحفظ مكانك 🚩', 'Up you go! Flags save your spot 🚩', 'Tırman! Bayraklar yerini kaydeder 🚩'),
+  go_coins:L('اجمع العملات! 🪙', 'Grab the coins! 🪙', 'Altınları topla! 🪙'), go_candy:L('دوّر عالمفاتيح الذهبية 🗝️', 'Look for the golden keys 🗝️', 'Altın anahtarları ara 🗝️'),
   hello3:L('الدواير المضوّية هي ألعاب! روح لعندها 🌟', 'The glowing circles are games! Go to them 🌟', 'Parlayan halkalar oyun! Onlara git 🌟'),
   back:L('رجعت! القلعة اشتاقتلك 💛', 'You\'re back! The castle missed you 💛', 'Geri geldin! Kale seni özledi 💛'),
   hint_tower:L('اطلع عالبرج من حجر لحجر ⬆️ الأعلام بتحفظلك مكانك', 'Climb the tower block by block ⬆️ The flags save your spot', 'Kuleye bloktan bloğa tırman ⬆️ Bayraklar yerini kaydeder'),
@@ -973,7 +1171,7 @@ function hudFrame(){
   if(hudDirty){
     hudDirty = false;
     $('#hudToys').textContent = '🧸 ' + N(SAVE.toys.length) + '/' + N(TOYS.length);
-    $('#listBadge').textContent = N(STN_IDS.filter(k => SAVE.st[k].done).length) + '/' + N(5);
+    $('#listBadge').textContent = N(doneCount()) + '/' + N(ALL_IDS.length);
   }
   const pv = $('#hudPrev');
   if(preview){ const left = Trial.left(MAP); const t = '⏳ ' + fmtSec(left) + ' · ' + L('تجربة', 'Free try', 'Deneme'); if(pv.textContent !== t) pv.textContent = t; pv.hidden = false; pv.classList.toggle('low', left <= 60); }
@@ -995,12 +1193,25 @@ const miniBg = (() => {
   x.fillStyle = 'rgba(95,227,177,.5)'; x.beginPath(); x.arc(o + PARK.x * MK, o + PARK.z * MK, 13 * MK, 0, 7); x.fill();
   return c;
 })();
+let miniCx = 0, miniCz = 0, miniK = MK, miniImg = miniBg;
+function miniFor(id){
+  if(id === 'castle' || !built[id]){ miniCx = 0; miniCz = 0; miniK = MK; miniImg = miniBg; return; }
+  const Z = built[id];
+  if(!Z.miniImg){ const c = document.createElement('canvas'); c.width = c.height = MS; const x = c.getContext('2d'), k = MS / 2 / (ZONES[id].R + 6);
+    x.fillStyle = '#4b8fb0'; x.beginPath(); x.arc(MS / 2, MS / 2, MS / 2, 0, 7); x.fill();
+    x.save(); x.beginPath(); x.arc(MS / 2, MS / 2, MS / 2, 0, 7); x.clip(); x.translate(MS / 2, MS / 2); if(Z.miniBg) Z.miniBg(x, k); x.restore(); Z.miniImg = c; Z.miniK = k; }
+  miniCx = Z.cx; miniCz = Z.cz; miniK = Z.miniK; miniImg = Z.miniImg;
+}
 function drawMini(){
-  const o = MS / 2; mx.clearRect(0, 0, MS, MS); mx.save(); mx.beginPath(); mx.arc(o, o, o, 0, 7); mx.clip(); mx.drawImage(miniBg, 0, 0);
-  for(const id of STN_IDS){ const s = STN[id], done = SAVE.st[id].done; mx.fillStyle = s.col; mx.strokeStyle = '#fff7e8'; mx.lineWidth = 3; mx.beginPath(); mx.arc(o + s.x * MK, o + s.z * MK, 7, 0, 7); mx.fill(); mx.stroke();
-    if(done){ mx.strokeStyle = '#1c1838'; mx.lineWidth = 2.5; mx.beginPath(); mx.moveTo(o + s.x * MK - 3.5, o + s.z * MK); mx.lineTo(o + s.x * MK - 1, o + s.z * MK + 3); mx.lineTo(o + s.x * MK + 4, o + s.z * MK - 3); mx.stroke(); } }
-  for(const r of remotes.values()){ mx.fillStyle = MCOL[r.c] || '#fff'; mx.beginPath(); mx.arc(o + r.x * MK, o + r.z * MK, 5.5, 0, 7); mx.fill(); }
-  mx.translate(o + P.x * MK, o + P.z * MK); mx.rotate(-P.face + Math.PI);
+  const o = MS / 2, MX = x => o + (x - miniCx) * miniK, MZ = z => o + (z - miniCz) * miniK;
+  mx.clearRect(0, 0, MS, MS); mx.save(); mx.beginPath(); mx.arc(o, o, o, 0, 7); mx.clip(); mx.drawImage(miniImg, 0, 0);
+  const portals = ZN === 'castle' ? hubPortals : Zc ? Zc.portals : [];
+  for(const p of portals){ const col = ZONES[p.to].col; mx.fillStyle = col; mx.strokeStyle = '#fff7e8'; mx.lineWidth = 2.5; mx.beginPath(); mx.arc(MX(p.x), MZ(p.z), 5.5, 0, 7); mx.fill(); mx.stroke(); }
+  for(const id of ALL_IDS){ const s = STN[id]; if(s.zone !== ZN) continue; const done = SAVE.st[id].done, sx = MX(s.x), sz = MZ(s.z); mx.fillStyle = s.col; mx.strokeStyle = '#fff7e8'; mx.lineWidth = 3; mx.beginPath(); mx.arc(sx, sz, 7, 0, 7); mx.fill(); mx.stroke();
+    if(done){ mx.strokeStyle = '#1c1838'; mx.lineWidth = 2.5; mx.beginPath(); mx.moveTo(sx - 3.5, sz); mx.lineTo(sx - 1, sz + 3); mx.lineTo(sx + 4, sz - 3); mx.stroke(); } }
+  if(Zc && Zc.miniDots){ mx.save(); mx.translate(o, o); Zc.miniDots(mx, miniK); mx.restore(); }
+  for(const r of remotes.values()){ if(!r.seen || zoneAt(r.x, r.z) !== ZN) continue; mx.fillStyle = MCOL[r.c] || '#fff'; mx.beginPath(); mx.arc(MX(r.x), MZ(r.z), 5.5, 0, 7); mx.fill(); }
+  mx.translate(MX(P.x), MZ(P.z)); mx.rotate(-P.face + Math.PI);
   mx.fillStyle = '#fff7e8'; mx.strokeStyle = '#2b2350'; mx.lineWidth = 3; mx.beginPath(); mx.moveTo(0, -11); mx.lineTo(8, 8); mx.lineTo(0, 4); mx.lineTo(-8, 8); mx.closePath(); mx.fill(); mx.stroke();
   mx.restore();
 }
@@ -1020,13 +1231,13 @@ function wireExit(){ const b = $('#bExit'); if(b) b.onclick = () => { SFX.tap();
 function leaveAll(){ try{ if(preview) Trial.flush(MAP); }catch(e){} try{ if(MP.t) mpLeave(true); }catch(e){} MapSave.save(SAVE); }
 function showMenu(){
   state = 'menu'; setPlayUI(false); overlay.classList.add('clear'); card.className = 'card bare'; clearInput();
-  const rotHint = ROT && !rawGet('castle_rothint'), done = STN_IDS.filter(k => SAVE.st[k].done).length;
+  const rotHint = ROT && !rawGet('castle_rothint'), done = doneCount();
   card.innerHTML = `<div class="menu">
     ${rotHint ? `<div class="rothint"><i aria-hidden="true">📱</i><span>${L('لفّ الجوال على جنب', 'Turn your phone sideways', 'Telefonu yan çevir')}</span></div>` : ''}
     <span class="prem">✨ ${L('خريطة مميزة', 'Premium map', 'Premium harita')}</span>
     <div class="top"><div class="logo">🏰</div><h1>${MAP_NAME}</h1></div>
-    <p class="sub">${L('قلعة ضخمة فيها تحديات، قوارب، ترامبولين، وكنز مخبّى!', 'A huge castle with challenges, boats, trampolines and hidden treasure!', 'Meydan okumalar, tekneler, trambolinler ve gizli hazinelerle dev bir kale!')}</p>
-    <div class="row"><div class="mine"><span>🧸 ${N(SAVE.toys.length)}/${N(TOYS.length)}</span><span>✅ ${N(done)}/${N(5)}</span></div>${heroBtn()}</div>
+    <p class="sub">${L('قلعة ضخمة و5 عوالم: جبل التلج، قلعة الحلويات، البركان، القراصنة، ومدينة الملاهي بالغيم!', 'A huge castle and 5 worlds: Snow Mountain, Candy Castle, a volcano, pirates and a Sky Fun Park!', 'Dev bir kale ve 5 dünya: Karlı Dağ, Şeker Kalesi, yanardağ, korsanlar ve Bulut Lunaparkı!')}</p>
+    <div class="row"><div class="mine"><span>🧸 ${N(SAVE.toys.length)}/${N(TOYS.length)}</span><span>✅ ${N(done)}/${N(ALL_IDS.length)}</span></div>${heroBtn()}</div>
     <div class="row"><button class="big-btn" id="bPlay">▶️ ${L('ادخل القلعة', 'Enter the castle', 'Kaleye gir')}</button>
     <button class="big-btn alt" id="bMp">👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</button></div>
     ${exitBtn()}</div>`;
@@ -1062,7 +1273,7 @@ function showPreviewEnd(){
   card.innerHTML = `<div class="bigstar">🏰</div>
     <h2>${L('عجبتك؟ اطلب من بابا وماما 💛', 'Did you like it? Ask a parent 💛', 'Beğendin mi? Annene babana sor 💛')}</h2>
     <p>${L('خلصت التجربة المجانية. كل شي عملته محفوظ، وبيستنّاك! 🧸', 'The free try is over. Everything you did is saved and waiting for you! 🧸', 'Ücretsiz deneme bitti. Yaptığın her şey kayıtlı ve seni bekliyor! 🧸')}</p>
-    <div class="tally"><span>🧸 ${N(SAVE.toys.length)}/${N(TOYS.length)}</span><span>✅ ${N(STN_IDS.filter(k => SAVE.st[k].done).length)}/${N(5)}</span></div>
+    <div class="tally"><span>🧸 ${N(SAVE.toys.length)}/${N(TOYS.length)}</span><span>✅ ${N(doneCount())}/${N(ALL_IDS.length)}</span></div>
     <div class="row"><button class="big-btn alt" id="bAsk">💛 ${L('اطلب من بابا وماما', 'Ask a parent', 'Annene babana sor')}</button><span class="price">${Billing.price(SKU)}</span></div>
     <div class="row"><button class="ghost-btn" id="bShop">🛍️ ${L('المتجر', 'Shop', 'Mağaza')}</button></div>${exitBtn()}`;
   $('#bAsk').onclick = () => { SFX.tap(); askParent({ mount:stage, sku:SKU, name:MAP_NAME, onDone:ok => { if(ok || owned()) unlockNow(); } }); };
@@ -1079,7 +1290,7 @@ function enterPlay(){
   if(!entered){ entered = true; tp(SPOTS.spawn.x, null, SPOTS.spawn.z, Math.PI); cam.yaw = 0; cam.pitch = .42; }
   state = 'play'; setPlayUI(true); clearInput(); placeJoyHome(); hush(); hudDirty = true; hudFrame();
   if(preview && !enterPlay.pv){ enterPlay.pv = true; setTimeout(() => say(LINE.preview, 4000), 400); }
-  else if(!SAVE.met){ SAVE.met = 1; MapSave.save(SAVE); setTimeout(() => { say(LINE.hello, 3800); setTimeout(() => { if(state === 'play') say(LINE.hello2, 4200); }, 4000); setTimeout(() => { if(state === 'play') say(LINE.hello3, 4200); }, 8400); }, 300); }
+  else if(!SAVE.met){ SAVE.met = 1; MapSave.save(SAVE); setTimeout(() => { say(LINE.hello, 3800); setTimeout(() => { if(state === 'play') say(LINE.hello2, 4200); }, 4000); setTimeout(() => { if(state === 'play') say(LINE.hello3, 4200); }, 8400); setTimeout(() => { if(state === 'play') say(LINE.hello4, 4600); }, 12800); }, 300); }
 }
 let selFrom = 'menu', selPick = heroId;
 function showSelect(from){
@@ -1104,7 +1315,7 @@ function showPause(){
   if(preview) Trial.flush(MAP);
   card.innerHTML = `<h2>⏸️ ${L('استراحة', 'Paused', 'Mola')}</h2>
     ${MP.t ? `<p>👫 ${L('رقم الغرفة', 'Room number', 'Oda numarası')}: <b style="color:var(--gold);font-size:22px;direction:ltr;display:inline-block">${N(MP.code)}</b></p>` : ''}
-    <div class="tally"><span>🧸 ${N(SAVE.toys.length)}/${N(TOYS.length)}</span><span>✅ ${N(STN_IDS.filter(k => SAVE.st[k].done).length)}/${N(5)}</span></div>
+    <div class="tally"><span>🧸 ${N(SAVE.toys.length)}/${N(TOYS.length)}</span><span>✅ ${N(doneCount())}/${N(ALL_IDS.length)}</span></div>
     <button class="big-btn" id="bRes">▶️ ${L('كمّل', 'Resume', 'Devam')}</button>
     <div class="row"><button class="ghost-btn" id="bHeroP">🦸 ${L('غيّر الشخصية', 'Change hero', 'Kahramanı değiştir')}</button>
     <button class="ghost-btn" id="bSnd">${muted ? '🔇' : '🔊'} ${L('الصوت', 'Sound', 'Ses')}</button>
@@ -1119,32 +1330,65 @@ function showPause(){
 }
 function resume(){ if(preview && Trial.left(MAP) <= 0){ showPreviewEnd(); return; } state = 'play'; setPlayUI(true); placeJoyHome(); hudDirty = true; hudFrame(); actKey = ''; }
 $('#btnPause').onclick = () => { SFX.tap(); showPause(); };
+$('#btnMap').onclick = () => { SFX.tap(); showZones(); };
+/* the world map: big islands to tap (fast travel) */
+const ZMAP_POS = { castle:[50, 42], snow:[29, 21], candy:[89, 60], volcano:[11, 60], pirate:[50, 80], sky:[71, 21] };
+function zoneStats(id){
+  const toys = TOYS.map((t, i) => [t, i]).filter(([t]) => t.zone === id), got = toys.filter(([, i]) => hasToy(i)).length;
+  const ids = ALL_IDS.filter(k => STN[k].zone === id), stars = ids.reduce((a, k) => a + (SAVE.st[k].stars || 0), 0);
+  return { got, total:toys.length, stars, max:ids.length * 3 };
+}
+function showZones(){
+  if(state !== 'play') return;
+  state = 'zones'; setPlayUI(false); overlay.classList.add('dim'); card.className = 'card wide'; clearInput(); hush();
+  const ids = ['castle'].concat(ZONE_IDS);
+  const lines = ZONE_IDS.map(id => { const [x, y] = ZMAP_POS[id], [cx, cy] = ZMAP_POS.castle; return `<line x1="${cx}%" y1="${cy}%" x2="${x}%" y2="${y}%" stroke="#fff7e8" stroke-width="4" stroke-dasharray="2 12" stroke-linecap="round" opacity=".7"/>`; }).join('');
+  const tiles = ids.map(id => { const Z = ZONES[id], st = zoneStats(id), [x, y] = ZMAP_POS[id];
+    return `<button class="zt${id === ZN ? ' here' : ''}" data-id="${id}" style="left:${x}%;top:${y}%;--c:${Z.col}"><span class="zi">${Z.e}</span>${id === ZN ? '<span class="you">📍</span>' : ''}<b>${Z.name}</b><small>🧸 ${N(st.got)}/${N(st.total)} · ⭐ ${N(st.stars)}/${N(st.max)}</small></button>`; }).join('');
+  card.innerHTML = `<h2>🗺️ ${L('خريطة العوالم', 'World map', 'Dünya haritası')}</h2>
+    <div class="zmap"><svg aria-hidden="true">${lines}</svg>${tiles}</div>
+    <button class="big-btn" id="bBackZ">▶️ ${L('كمّل', 'Resume', 'Devam')}</button>`;
+  card.querySelectorAll('.zt').forEach(b => b.onclick = () => { SFX.tap(); const id = b.dataset.id; resume(); if(id !== ZN) travel(id); });
+  $('#bBackZ').onclick = () => { SFX.tap(); resume(); };
+}
+/* a simple card over the game (the pirate map, …): onClose runs after «OK» */
+function showCard(html, onClose, btn){
+  state = 'card'; setPlayUI(false); overlay.classList.add('dim'); card.className = 'card'; clearInput();
+  card.innerHTML = html + `<button class="big-btn" id="bCardOk">${btn || '▶️ ' + L('يلّا!', "Let's go!", 'Hadi!')}</button>`;
+  $('#bCardOk').onclick = () => { SFX.tap(); resume(); if(onClose) onClose(); };
+}
 $('#btnList').onclick = () => { SFX.tap(); showList(); };
 function starsHtml(n, max = 3){ let s = ''; for(let i = 0; i < max; i++) s += `<i class="${i < n ? '' : 'off'}" style="animation-delay:${i * .15}s">⭐</i>`; return s; }
-function bestText(id){ const st = SAVE.st[id]; if(id === 'treasure') return '🧸 ' + N(SAVE.toys.length) + '/' + N(TOYS.length); if(st.best == null) return ''; return id === 'cake' ? '🍰 ' + N(st.best) : '⏱️ ' + fmtT(st.best); }
+function bestText(id){ const st = SAVE.st[id]; if(id === 'treasure') return '🧸 ' + N(SAVE.toys.length) + '/' + N(TOYS.length); if(st.best == null) return ''; return id === 'cake' ? '🍰 ' + N(st.best) : (ZSTN[id] && ZSTN[id].hi) ? STN[id].e + ' ' + N(st.best) : '⏱️ ' + fmtT(st.best); }
+const runOpts = id => { const race = ['tower', 'boat', 'bounce'].includes(id) || !!(ZSTN[id] && ZSTN[id].race); return { send:race, cd:race && mpOthers() > 0 ? 3 : 0 }; };
 function showList(){
   if(state !== 'play') return;
   state = 'list'; setPlayUI(false); overlay.classList.add('dim'); card.className = 'card wide'; clearInput();
-  const rows = STN_IDS.map(id => { const s = STN[id], st = SAVE.st[id];
-    return `<div class="st${st.done ? ' done' : ''}"><span class="ic">${s.e}</span><span class="tx"><b>${s.name}</b><small>${st.done ? '⭐'.repeat(st.stars) + ' ' : ''}${bestText(id)}</small></span>
+  const rows = ALL_IDS.map(id => { const s = STN[id], st = SAVE.st[id];
+    return `<div class="st${st.done ? ' done' : ''}"><span class="ic">${s.e}</span><span class="tx"><b>${s.name}</b><small>${s.zone !== 'castle' ? `<span class="zn">${ZONES[s.zone].e} ${ZONES[s.zone].name}</span> · ` : ''}${st.done ? '⭐'.repeat(st.stars) + ' ' : ''}${bestText(id)}</small></span>
       <span class="ok">${st.done ? '✅' : ''}</span><button class="go" data-id="${id}">🚀 ${L('روح', 'Go', 'Git')}</button></div>`; }).join('');
   const of = ['crown', 'cape'].map(k => { const own = SAVE.outfit.own.includes(k), on = own && SAVE.outfit.wear[k];
     return `<button class="of${on ? ' on' : ''}" data-of="${k}"${own ? '' : ' disabled'}>${k === 'crown' ? '👑' : '🦸'} ${k === 'crown' ? L('تاج', 'Crown', 'Taç') : L('عباية', 'Cape', 'Pelerin')}${own ? '' : ' 🔒'}</button>`; }).join('');
   const deco = ['flag', 'fireworks', 'statue', 'balloons', 'crown'].map(d => `<span style="opacity:${SAVE.deco.includes(d) ? 1 : .4}">${SAVE.deco.includes(d) ? '' : '🔒 '}${DECO_NAME[d]}</span>`).join('');
-  card.innerHTML = `<h2>📋 ${L('ألعاب القلعة', 'Castle games', 'Kale oyunları')}</h2><div class="st-list">${rows}</div>
+  card.innerHTML = `<h2>📋 ${L('كل الألعاب', 'All the games', 'Bütün oyunlar')}</h2><div class="st-list">${rows}</div>
     <p>${L('خلّص الألعاب لتفتح زينة القلعة:', 'Finish the games to unlock castle decorations:', 'Kale süslerini açmak için oyunları bitir:')}</p><div class="tally" style="font-size:14px">${deco}</div>
     <div class="outfits">${of}</div>
     <button class="big-btn" id="bBackL">▶️ ${L('كمّل', 'Resume', 'Devam')}</button>`;
-  card.querySelectorAll('.go').forEach(b => b.onclick = () => { SFX.tap(); goStation(b.dataset.id); resume(); });
+  card.querySelectorAll('.go').forEach(b => b.onclick = () => { SFX.tap(); resume(); goStation(b.dataset.id); });
   card.querySelectorAll('.of').forEach(b => b.onclick = () => { const k = b.dataset.of; SAVE.outfit.wear[k] = !SAVE.outfit.wear[k]; MapSave.save(SAVE); dressUp(me, SAVE.outfit.wear); if(MP.meta){ MP.meta.w = wearBits(); mpTrack(); } SFX.tap(); state = 'play'; showList(); });
   $('#bBackL').onclick = () => { SFX.tap(); resume(); };
 }
-function goStation(id){ if(run) endRun(false, true); if(CAKE.on) endCake(true); if(P.mode === 'boat') stopBoat(); const s = STN[id]; tp(s.x + Math.sin(Math.atan2(-s.x, -s.z)) * 2.2, null, s.z + Math.cos(Math.atan2(-s.x, -s.z)) * 2.2, Math.atan2(s.x - P.x, s.z - P.z)); P.face = Math.atan2(s.x - P.x, s.z - P.z); cam.yaw = P.face + Math.PI; }
+async function goStation(id){
+  stopMoving(); const s = STN[id];
+  if(s.zone !== ZN){ if(!(await travel(s.zone))) return; }
+  if(s.zone !== 'castle'){ const Z = ZONES[s.zone], a = Math.atan2(Z.cx - s.x, Z.cz - s.z), d = Math.hypot(Z.cx - s.x, Z.cz - s.z) > 1 ? 2.2 : 0, x = s.x + Math.sin(a) * d, z = s.z + Math.cos(a) * d;
+    tp(x, floorAt(x, s.y + 1.2, z), z); P.face = Math.atan2(s.x - P.x, s.z - P.z); cam.yaw = P.face + Math.PI; return; }
+  tp(s.x + Math.sin(Math.atan2(-s.x, -s.z)) * 2.2, null, s.z + Math.cos(Math.atan2(-s.x, -s.z)) * 2.2, Math.atan2(s.x - P.x, s.z - P.z)); P.face = Math.atan2(s.x - P.x, s.z - P.z); cam.yaw = P.face + Math.PI; }
 function showTreasure(){
   state = 'list'; setPlayUI(false); overlay.classList.add('dim'); clearInput();
   const n = SAVE.toys.length, left = TOYS.map((t, i) => i).filter(i => !hasToy(i));
-  const area = i => { const t = TOYS[i], r = Math.hypot(t.x, t.z); if(t.y > 3) return L('فوق 🔝', 'up high 🔝', 'yukarıda 🔝'); if(r < WALL_R) return L('جوّا القلعة 🏰', 'inside the castle 🏰', 'kalenin içinde 🏰'); if(Math.hypot(t.x - PARK.x, t.z - PARK.z) < 16) return L('حديقة النطّ 🤸', 'the bounce park 🤸', 'zıplama parkı 🤸'); if(t.x < -35) return L('الحديقة الغربية ⛲', 'the west garden ⛲', 'batı bahçesi ⛲'); if(t.z < -30) return L('الشمال 🌬️', 'the north 🌬️', 'kuzey 🌬️'); return L('حول القلعة 🌳', 'around the castle 🌳', 'kalenin etrafı 🌳'); };
-  const hints = [...new Set(left.map(area))].slice(0, 4);
+  const area = i => { const t = TOYS[i], r = Math.hypot(t.x, t.z); if(t.zone !== 'castle') return ZONES[t.zone].e + ' ' + ZONES[t.zone].name; if(t.y > 3) return L('فوق 🔝', 'up high 🔝', 'yukarıda 🔝'); if(r < WALL_R) return L('جوّا القلعة 🏰', 'inside the castle 🏰', 'kalenin içinde 🏰'); if(Math.hypot(t.x - PARK.x, t.z - PARK.z) < 16) return L('حديقة النطّ 🤸', 'the bounce park 🤸', 'zıplama parkı 🤸'); if(t.x < -35) return L('الحديقة الغربية ⛲', 'the west garden ⛲', 'batı bahçesi ⛲'); if(t.z < -30) return L('الشمال 🌬️', 'the north 🌬️', 'kuzey 🌬️'); return L('حول القلعة 🌳', 'around the castle 🌳', 'kalenin etrafı 🌳'); };
+  const hints = [...new Set(left.map(area))].slice(0, 5);
   card.innerHTML = `<div class="bigstar">🧸</div><h2>${L('كنز الألعاب', 'Toy Treasure', 'Oyuncak Hazinesi')}</h2>
     <div class="stars" style="font-size:30px">${N(n)} / ${N(TOYS.length)}</div>
     ${left.length ? `<p>🔍 ${L('دوّر هون:', 'Look here:', 'Buraya bak:')} ${hints.join(' · ')}</p>` : `<p>👑 ${L('لقيت كل الكنز! إنت ملك القلعة', 'You found all the treasure! You rule the castle', 'Bütün hazineyi buldun! Kalenin kralı sensin')}</p>`}
@@ -1157,16 +1401,16 @@ function showResult(o){
   const s = STN[o.id];
   if(o.fail){
     card.innerHTML = `<div class="bigstar">${s.e}</div><h2>${L('قرّبت! جرّب كمان مرة 💪', 'So close! Try again 💪', 'Çok yaklaştın! Tekrar dene 💪')}</h2>
-      ${o.id === 'cake' ? `<p>🍰 ${N(o.score || 0)} / ${N(10)}</p>` : ''}
+      ${o.id === 'cake' ? `<p>🍰 ${N(o.score || 0)} / ${N(10)}</p>` : o.score != null ? `<p>${s.e} ${N(o.score)}</p>` : ''}
       <div class="row"><button class="big-btn" id="bAgain">🔄 ${L('كمان مرة', 'Again', 'Tekrar')}</button><button class="ghost-btn" id="bOk">▶️ ${L('كمّل', 'Resume', 'Devam')}</button></div>`;
   } else {
-    const val = o.id === 'cake' ? '🍰 ' + N(o.val) : o.id === 'treasure' ? '🧸 ' + N(o.val) : '⏱️ ' + fmtT(o.val);
+    const val = o.id === 'cake' ? '🍰 ' + N(o.val) : o.id === 'treasure' ? '🧸 ' + N(o.val) : (ZSTN[o.id] && ZSTN[o.id].hi) ? s.e + ' ' + N(o.val) : '⏱️ ' + fmtT(o.val);
     card.innerHTML = `<h2>🏆 ${L('برافو!', 'Bravo!', 'Bravo!')} ${s.name}</h2><div class="stars">${starsHtml(o.stars)}</div>
       <div class="tally"><span>${val}</span>${o.better && !o.first ? `<span>🆕 ${L('أحسن نتيجة!', 'New best!', 'Yeni rekor!')}</span>` : ''}${o.coins ? `<span>🪙 +${N(o.coins)}</span>` : ''}</div>
       ${o.unlocked && o.unlocked.length ? `<p>🎁 ${o.unlocked.map(d => DECO_NAME[d]).join(' · ')}</p>` : ''}
       <div class="row">${o.id === 'treasure' ? '' : `<button class="ghost-btn" id="bAgain">🔄 ${L('كمان مرة', 'Again', 'Tekrar')}</button>`}<button class="big-btn" id="bOk">▶️ ${L('كمّل', 'Resume', 'Devam')}</button></div>`;
   }
-  const ba = $('#bAgain'); if(ba) ba.onclick = () => { SFX.tap(); resume(); if(o.id === 'cake') startCake(); else startRun(o.id, { send:true, cd:mpOthers() > 0 ? 3 : 0 }); };
+  const ba = $('#bAgain'); if(ba) ba.onclick = () => { SFX.tap(); resume(); if(o.id === 'cake') startCake(); else startRun(o.id, runOpts(o.id)); };
   $('#bOk').onclick = () => { SFX.tap(); resume(); };
 }
 
@@ -1294,10 +1538,19 @@ function remoteFor(p){
   }
   return r;
 }
-function dropRemote(id){ const r = remotes.get(id); if(!r) return; dropHero(r.h); scene.remove(r.tag); scene.remove(r.boat); remotes.delete(id); }
+function dropRemote(id){ const r = remotes.get(id); if(!r) return; dropHero(r.h); scene.remove(r.tag); scene.remove(r.boat); if(r.vm) for(const k in r.vm) scene.remove(r.vm[k]); remotes.delete(id); }
+/* friends' vehicles in the zones: md 4 ship, 5 sled, 7 donut raft (made on first use) */
+const VEH_OF = { 4:['ship', 1.575 * 1.5, 1.5], 5:['sled', .38], 7:['donut', .55] };
+function remoteVeh(r, md){
+  const want = VEH_OF[md]; if(r.vm) for(const k in r.vm) r.vm[k].visible = false;
+  if(!want) return null;
+  r.vm = r.vm || {}; let m = r.vm[want[0]];
+  if(!m){ const col = new THREE.Color(MCOL[r.c] || '#fff').getHex(); m = r.vm[want[0]] = new THREE.Mesh(vehGeo(THREE, K, want[0], col), new THREE.MeshLambertMaterial({ vertexColors:true })); if(want[2]) m.scale.setScalar(want[2]); scene.add(m); }
+  m.visible = true; return [m, want[1]];
+}
 function animRemotes(dt){
   for(const r of remotes.values()){
-    if(!r.seen){ r.h.grp.visible = false; r.h.blob.visible = false; r.tag.visible = false; r.boat.visible = false; continue; }
+    if(!r.seen || zoneAt(r.x, r.z) !== ZN){ r.h.grp.visible = false; r.h.blob.visible = false; r.tag.visible = false; r.boat.visible = false; remoteVeh(r, 0); continue; }
     const k = 1 - Math.exp(-12 * dt);
     if(Math.hypot(r.x - r.rx, r.z - r.rz) > 8){ r.rx = r.x; r.ry = r.y; r.rz = r.z; }
     r.rx = lerp(r.rx, r.x, k); r.ry = lerp(r.ry, r.y, k); r.rz = lerp(r.rz, r.z, k); r.rf += angDiff(r.f, r.rf) * k; r.t += dt;
@@ -1305,7 +1558,10 @@ function animRemotes(dt){
     poseHero(r.h, { t:r.t, dt, run:r.md ? 0 : r.m, grounded:r.y - groundAt(r.rx, r.rz) < .3 || r.md === 1, vy:0, sq:0, flip:0 });
     dressUp(r.h, { crown:r.w & 1, cape:r.w & 2 });
     if(r.md === 1){ r.boat.visible = true; r.boat.position.set(r.rx, WATER_Y + .1, r.rz); r.boat.rotation.y = r.rf; r.h.legs.forEach(l => l.rotation.x = -1.3); } else r.boat.visible = false;
-    r.h.blob.visible = r.md !== 1; r.h.blob.position.set(r.rx, Math.max(groundAt(r.rx, r.rz), floorAt(r.rx, r.ry + .1, r.rz)) + .03, r.rz);
+    const vm = remoteVeh(r, r.md); if(vm){ vm[0].position.set(r.rx, r.ry - vm[1], r.rz); vm[0].rotation.y = r.rf; }
+    if(vm || r.md === 6 || r.md === 5) r.h.legs.forEach(l => l.rotation.x = -1.3);
+    if(r.md === 2 || r.md === 9) r.h.arms.forEach(a => { a.rotation.x = -3; a.rotation.z = 0; });
+    r.h.blob.visible = r.md === 0 || r.md === 3 || r.md === 8; r.h.blob.position.set(r.rx, Math.max(groundAt(r.rx, r.rz), floorAt(r.rx, r.ry + .1, r.rz)) + .03, r.rz);
     r.tag.visible = true; r.tag.position.set(r.rx, r.ry + 2.15, r.rz);
   }
 }
@@ -1374,10 +1630,11 @@ function mpPresence(list){
 function mpMsg(ev, p){
   if(ev === 'pos'){
     const r = remotes.get(p.id); if(!r) return;
-    r.x = clamp(+p.x || 0, -90, 90); r.y = clamp(+p.y || 0, -5, 60); r.z = clamp(+p.z || 0, -90, 90); r.f = +p.f || 0; r.m = clamp(+p.m || 0, 0, 1); r.md = p.md | 0; r.w = p.w | 0;
+    r.x = clamp(+p.x || 0, -900, 900); r.y = clamp(+p.y || 0, -10, 120); r.z = clamp(+p.z || 0, -900, 900); r.f = +p.f || 0; r.m = clamp(+p.m || 0, 0, 1); r.md = clamp(p.md | 0, 0, 9); r.w = p.w | 0;
+    r.rr = typeof p.rr === 'string' ? p.rr.slice(0, 20) : ''; r.rp = +p.rp || 0;
     if(!r.seen){ r.seen = true; r.rx = r.x; r.ry = r.y; r.rz = r.z; r.rf = r.f; }
   } else if(ev === 'race'){
-    if(p.k !== 'tower' && p.k !== 'boat' && p.k !== 'bounce') return; if(typeof p.rid !== 'string') return;
+    if(!RACE_KINDS.includes(p.k)) return; if(typeof p.rid !== 'string') return;
     MP.races[p.rid] = { k:p.k, from:p.id, t:performance.now(), winner:null };
     raceInvite(p.rid, p.k, p.id);
   } else if(ev === 'fin'){
@@ -1386,6 +1643,7 @@ function mpMsg(ev, p){
     if(!R.winner){ R.winner = p.id; showWinner(p.id, okHero(p.hero), p.c | 0); }
   }
 }
+const RACE_KINDS = ['tower', 'boat', 'bounce'].concat(ZSTN_IDS.filter(k => ZSTN[k].race));
 function mpFinish(rid, val){
   const R = MP.races[rid] || (MP.races[rid] = { winner:null });
   mpSend('fin', { rid, t:Math.round(val * 10) / 10, hero:heroId, c:MP.meta ? MP.meta.c : 0 });
@@ -1399,7 +1657,7 @@ function showWinner(id, hero, c){
   if(mine) SFX.win();
 }
 function raceInvite(rid, k, from){
-  if(state !== 'play' || run || P.mode !== 'walk') return;
+  if(state !== 'play' || run || P.mode !== 'walk' || STN[k].zone !== ZN) return;
   const who = MP.players.find(p => p.id === from), s = STN[k];
   const b = banner(`<img src="${charImg(okHero(who && who.hero))}" alt=""><span>🏁 ${s.name}!</span><button id="bJoinRace">✅ ${L('انضم', 'Join', 'Katıl')}</button>`, 'inv', 6000);
   const R = MP.races[rid];
@@ -1408,7 +1666,23 @@ function raceInvite(rid, k, from){
 function mpNet(){
   if(!MP.t || !MP.meta) return;
   const r2 = v => Math.round(v * 100) / 100;
-  mpSend('pos', { x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.face), m:r2(P.move), md:P.mode === 'boat' ? 1 : P.mode === 'zip' ? 2 : P.mode === 'cake' ? 3 : 0, w:wearBits() });
+  const md = P.mode === 'boat' ? 1 : P.mode === 'zip' ? 2 : P.mode === 'cake' ? 3 : P.mode === 'veh' && P.veh ? (P.veh.md || 8) : P.mode === 'ride' && P.ride ? (P.ride.md || 6) : 0;
+  mpSend('pos', { x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.face), m:r2(P.move), md, w:wearBits(), rr:run && run.rid ? run.rid : '', rp:r2(myProg()) });
+}
+/* live positions in zone races (sled, obby, coin rush): progress of everyone in the same race */
+function myProg(){ if(!run) return 0; const m = ZSTN[run.id] && Zc && Zc.modes[run.id]; return m && m.prog ? m.prog() : 0; }
+let raceT = 0;
+function raceHud(dt){
+  const el = $('#raceBar');
+  if(!run || !run.rid || !ZSTN[run.id] || !MP.meta){ if(!el.hidden) el.hidden = true; return; }
+  raceT -= dt; if(raceT > 0) return; raceT = .25;
+  const list = [{ me:true, c:MP.meta.c, hero:heroId, p:myProg(), nm:L('إنت', 'You', 'Sen') }];
+  for(const r of remotes.values()) if(r.seen && r.rr === run.rid) list.push({ c:r.c, hero:r.hero, p:r.rp, nm:BoboRT.whoH(r.id, mpLabel(r.c)) });
+  if(list.length < 2){ if(!el.hidden) el.hidden = true; return; }
+  list.sort((a, b) => b.p - a.p);
+  const medal = ['🥇', '🥈', '🥉', '4️⃣'], hiS = ZSTN[run.id].hi;
+  const html = list.map((p, i) => `<span class="chip${p.me ? ' me' : ''}" style="--c:${MCOL[p.c] || '#fff'}"><span>${medal[i] || ''}</span><img src="${charImg(okHero(p.hero))}" alt=""><span>${p.nm}${hiS ? ' ' + N(Math.round(p.p)) : ''}</span></span>`).join('');
+  el.hidden = false; if(el.innerHTML !== html) el.innerHTML = html;
 }
 function mpHud(){
   if(!MP.t || !MP.meta){ $('#mpBar').hidden = true; return; }
@@ -1518,11 +1792,18 @@ addEventListener('keydown', e => {
 function tick(dt){
   T += dt;
   readInput(dt);
+  P.slip = false;
+  if(Zc && Zc.preStep) Zc.preStep(dt, T);
   if(P.mode === 'walk') stepWalk(dt);
   else if(P.mode === 'boat') boatStep(dt);
   else if(P.mode === 'zip') zipStep(dt);
   else if(P.mode === 'cake'){ P.vx = P.vz = 0; P.move = 0; cakeStep(dt); }
+  else if(P.mode === 'ride') rideStep(dt);
+  else if(P.mode === 'veh' && P.veh) P.veh.step(dt);
   if(P.mode === 'walk'){ towerStep(); bounceStep(); }
+  if(run && ZSTN[run.id] && Zc && Zc.modes[run.id]) Zc.modes[run.id].step(dt);
+  if(Zc && Zc.tick) Zc.tick(dt, T);
+  portalStep();
   toyStep();
   previewTick(dt);
 }
@@ -1530,10 +1811,12 @@ function animMe(dt){
   me.grp.position.set(P.x, P.y, P.z); me.grp.rotation.y = P.face;
   P.sq += (0 - P.sq) * Math.min(1, 10 * dt);
   poseHero(me, { t:T, dt, run:P.mode === 'walk' ? P.move : 0, grounded:P.mode !== 'walk' || P.ground, vy:P.vy, sq:P.sq, flip:0 });
-  if(P.mode === 'boat') me.legs.forEach(l => l.rotation.x = -1.3);
-  if(P.mode === 'zip') me.arms.forEach(a => { a.rotation.x = -3; a.rotation.z = 0; });
+  const pose = P.mode === 'ride' && P.ride ? P.ride.pose : P.mode === 'veh' && P.veh ? P.veh.pose : null;
+  if(P.mode === 'boat' || pose === 'sit') me.legs.forEach(l => l.rotation.x = -1.3);
+  if(P.mode === 'zip' || pose === 'hang') me.arms.forEach(a => { a.rotation.x = -3; a.rotation.z = 0; });
+  if(pose === 'wave') me.arms.forEach((a, i) => { a.rotation.x = -2.6 + Math.sin(T * 6 + i) * .3; a.rotation.z = (i ? 1 : -1) * .3; });
   if(me.acc && me.acc.cape.visible) me.acc.cape.rotation.x = .18 + P.move * .6 + (P.ground ? 0 : .4);
-  me.blob.visible = P.mode === 'walk' || P.mode === 'cake'; const f = floorAt(P.x, P.y + .1, P.z); me.blob.position.set(P.x, f + .03, P.z); const bs = clamp(1 - (P.y - f) * .12, .35, 1); me.blob.scale.set(bs, 1, bs);
+  me.blob.visible = P.mode === 'walk' || P.mode === 'cake' || pose === 'stand'; const f = floorAt(P.x, P.y + .1, P.z); me.blob.position.set(P.x, f + .03, P.z); const bs = clamp(1 - (P.y - f) * .12, .35, 1); me.blob.scale.set(bs, 1, bs);
   poseHero(laila, { t:T + 1, dt, run:0, grounded:true, vy:0, sq:0, flip:0 });
 }
 let last = performance.now(), fpsN = 0, fpsT = 0, fps = 60, slowT = 0, fastT = 0, menuT = 0, miniT = 0;
@@ -1548,7 +1831,7 @@ function frame(now){
     else if(state === 'play' && fps > 58 && dpr < Math.min(window.devicePixelRatio || 1, 1.5)){ fastT++; slowT = 0; if(fastT >= 6){ dpr = Math.min(Math.min(window.devicePixelRatio || 1, 1.5), dpr + .25); renderer.setPixelRatio(dpr); renderer.setSize(SW, SH, false); fastT = 0; } }
     else { slowT = 0; }
   }
-  if(state === 'play'){ tick(dt); updateCamera(dt); hudFrame(); updateActBtn(); }
+  if(state === 'play'){ tick(dt); updateCamera(dt); hudFrame(); raceHud(dt); updateActBtn(); }
   else {
     T += dt;
     if(P.mode === 'boat' && state !== 'play') boatStep(0);
@@ -1558,10 +1841,12 @@ function frame(now){
     }
   }
   if(camOverride){ camera.position.set(camOverride[0], camOverride[1], camOverride[2]); camera.lookAt(camOverride[3], camOverride[4], camOverride[5]); }
-  cakeFallStep(dt); fireworks(dt);
+  cakeFallStep(dt); if(ZN === 'castle') fireworks(dt);
   animMe(dt); animRemotes(dt);
-  W.animate(T, camera.position); drawToys(T); drawMoat(T); drawDrops(T);
-  bStars.forEach((m, i) => { m.rotation.y = T * 2 + i; });
+  if(ZN === 'castle'){ W.animate(T, camera.position); drawMoat(T); drawDrops(T); bStars.forEach((m, i) => { m.rotation.y = T * 2 + i; }); for(const p of hubPortals) p.update(T); }
+  else if(Zc){ if(Zc.animate) Zc.animate(T, dt, camera.position); for(const p of Zc.portals) p.update(T); }
+  drawToys(T);
+  { const tile = 1600 / 140; water.position.x = Math.round(camera.position.x / tile) * tile; water.position.z = Math.round(camera.position.z / tile) * tile; }
   if(waterTex) waterTex.offset.set(T * .008, T * .005);
   updateParts(dt);
   miniT += dt; if(state === 'play' && miniT > .1){ miniT = 0; drawMini(); }
@@ -1576,7 +1861,7 @@ window.__castle = {
   get ctx(){ const c = context(); return c ? c.k + (c.id ? ':' + c.id : '') : null; }, act:() => doAction(), jump(){ jumpQ = .15; },
   save:() => JSON.parse(JSON.stringify(MapSave.load())), get run(){ return run ? { id:run.id, cp:run.cp, got:run.got.size, t:runTime(), rid:run.rid } : null; },
   get previewLeft(){ return Trial.left(MAP); }, skipPreview(sec){ Trial.use(MAP, sec); }, trialInfo:() => trialInfo,
-  tp(x, y, z){ tp(x, y, z); }, tpStation(id){ const s = STN[id]; tp(s.x, null, s.z); }, goStation:id => goStation(id), STN:Object.fromEntries(STN_IDS.map(k => [k, { x:STN[k].x, z:STN[k].z }])),
+  tp(x, y, z){ tp(x, y, z); }, tpStation(id){ const s = STN[id]; tp(s.x, s.zone === 'castle' ? null : floorAt(s.x, s.y + 1.2, s.z), s.z); }, goStation:id => goStation(id), STN:Object.fromEntries(STN_IDS.map(k => [k, { x:STN[k].x, z:STN[k].z }])),
   sim(sec, n = 30){ const k = Math.round(sec * n); for(let i = 0; i < k; i++){ tick(1 / n); } },
   walk(dirx, dirz, sec){ const l = Math.hypot(dirx, dirz) || 1; walkOverride = { x:dirx / l, z:dirz / l, t:sec }; },
   toys:TOYS.map(t => ({ x:t.x, y:t.y, z:t.z })), spiral:W.spiral.map(s => ({ x:s.x, y:s.y, z:s.z })), checkpoints:W.checkpoints, bounceStars:W.bounceStars, KEEP, SPOTS,
@@ -1589,6 +1874,10 @@ window.__castle = {
   remotes:() => [...remotes.values()].map(r => ({ id:r.id, hero:r.hero, c:r.c, x:r.x, z:r.z, seen:r.seen, md:r.md, visible:r.h.grp.visible })),
   mp:{ get screen(){ return MP.screen; }, get code(){ return MP.code; }, get id(){ return MP.id; }, get players(){ return MP.players.map(p => ({ id:p.id, hero:p.hero, c:p.c })); }, races:() => JSON.parse(JSON.stringify(MP.races)), menu:() => mpMenu() },
   get banner(){ const b = $('#banner'); return b.hidden ? null : b.textContent; },
+  travel:(id, spot) => travel(id, spot), get zone(){ return ZN; }, get Z(){ return Zc ? Zc.test : null; }, zones:() => showZones(), get toyN(){ return TOYS.length; }, get toysGot(){ return SAVE.toys.length; },
+  toysIn:id => TOYS.map((t, i) => ({ x:t.x, y:t.y, z:t.z, i, zone:t.zone })).filter(t => t.zone === id), STN_ALL:() => Object.fromEntries(ALL_IDS.map(k => [k, { x:STN[k].x, z:STN[k].z, y:STN[k].y, zone:STN[k].zone }])),
+  get raceBar(){ const b = $('#raceBar'); return b.hidden ? null : b.textContent; }, get ride(){ return P.ride ? { t:P.ride.t, md:P.ride.md } : null; }, get veh(){ return P.veh ? { md:P.veh.md } : null; }, endRide:() => endRide(),
+  get ctxLabel(){ return actBtn.hidden ? null : $('#actB').textContent; }, built:() => Object.keys(built), portals:() => (ZN === 'castle' ? hubPortals : Zc ? Zc.portals : []).map(p => ({ x:p.x, z:p.z, to:p.to })),
   tris(){ const out = []; scene.traverse(o => { if(!(o.isMesh || o.isInstancedMesh) || !o.visible) return; const g = o.geometry, n = (g.index ? g.index.count : g.attributes.position.count) / 3 * (o.isInstancedMesh ? o.count : 1); out.push([Math.round(n), o.isInstancedMesh ? "inst" + o.count : (o.parent === scene ? "mesh" : "child"), o.material.type]); }); return out.sort((a, b) => b[0] - a[0]).slice(0, 25); }
 };
 
