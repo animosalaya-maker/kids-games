@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <script src="../i18n.js"></script>
+<script src="../rt.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Tiny Bobo" data-tr="Minik Bobo">بوبو الصغير</title>
 <meta name="description" content="مغامرة قفز ثلاثية الأبعاد: بوبو الدبدوب صغير كتير ببيت عملاق! نط عالكنباية والطاولة والرفوف، لمّ العملات والأزرار الذهبية، ساعد أهل القرية، واركب المدفع اللعبة." data-en="A 3D jumping adventure: Bobo the bear cub is tiny in a giant house! Jump onto the sofa, the table and the shelves, collect coins and golden buttons, help the villagers and ride the toy cannon." data-tr="3D zıplama macerası: Ayı yavrusu Bobo dev bir evde minicik! Kanepeye, masaya ve raflara zıpla, jeton ve altın düğme topla, köylülere yardım et ve oyuncak topa bin.">
@@ -191,6 +192,29 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .menu .stars{display:flex;gap:10px;direction:ltr;flex-wrap:wrap;justify-content:center}
 .menu .stars span{background:var(--cream);border-radius:999px;padding:5px 14px;font-weight:800;font-family:var(--display);font-size:19px;box-shadow:0 3px 0 rgba(74,47,29,.2)}
 #nogl{position:absolute;inset:0;display:grid;place-items:center;font-family:var(--display);font-size:24px;padding:30px;text-align:center}
+.mp-cols{display:flex;gap:18px;width:100%;align-items:center;justify-content:center;flex-wrap:wrap}
+.mp-col{display:flex;flex-direction:column;align-items:center;gap:10px;flex:1 1 250px;min-width:0}
+.mp-code{display:flex;gap:8px;direction:ltr;justify-content:center;align-items:center}
+.mp-code b{width:54px;height:66px;border-radius:16px;background:#fff;display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:44px;line-height:1;color:var(--ink);box-shadow:inset 0 0 0 3px var(--cream-3),0 4px 0 rgba(30,50,70,.2)}
+.mp-code b.cur{box-shadow:inset 0 0 0 3px var(--gold),0 4px 0 rgba(30,50,70,.2)}
+.mp-msg{min-height:1.4em;font-weight:800;color:var(--red)!important}
+.keypad{display:grid;grid-template-columns:repeat(3,68px);gap:8px;direction:ltr;flex:none}
+.keypad button{height:56px;border:0;border-radius:16px;background:#fff;font-family:var(--display);font-weight:800;font-size:30px;line-height:1;box-shadow:0 4px 0 var(--cream-3)}
+.keypad .ok{background:var(--mint);color:#063d2a;box-shadow:0 4px 0 var(--mint-d)}
+.pslots{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;width:100%}
+.pslot{background:#fff;border-radius:18px;padding:6px;display:flex;flex-direction:column;align-items:center;gap:2px;box-shadow:0 0 0 3px var(--c,var(--cream-3)),0 4px 0 rgba(30,50,70,.2);font-family:var(--display);font-weight:800;font-size:15px;min-width:0}
+.pslot img{width:100%;max-width:84px;aspect-ratio:1;object-fit:cover;object-position:top;border-radius:14px;background:var(--cream-2)}
+.pslot .wt{width:100%;max-width:84px;aspect-ratio:1;border-radius:14px;background:var(--cream-2);display:grid;place-items:center;font-size:34px;opacity:.6}
+.pslot span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pslot.empty{box-shadow:0 0 0 3px var(--cream-3)}
+.spin{display:inline-block;animation:spinL 1.2s linear infinite}
+@keyframes spinL{to{transform:rotate(360deg)}}
+#stage.short .mp-code b{width:44px;height:52px;font-size:34px;border-radius:13px} #stage.short .keypad{grid-template-columns:repeat(3,62px);gap:6px} #stage.short .keypad button{height:46px;font-size:26px}
+#stage.short .pslot img,#stage.short .pslot .wt{max-width:60px}
+@keyframes spinL{to{transform:rotate(360deg)}}
+.mp-col{display:flex;flex-direction:column;align-items:center;gap:8px}
+.mp-msg{min-height:22px;color:#c8283c!important}
+#toast{position:absolute;z-index:9;left:50%;top:calc(var(--sh) * .24);transform:translateX(-50%);background:var(--cream);border-radius:18px;padding:8px 16px;font-family:var(--display);font-weight:800;font-size:18px;box-shadow:0 4px 0 rgba(74,47,29,.25);max-width:80%;text-align:center}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 .heroes.nine{grid-template-columns:repeat(9,minmax(0,1fr))!important}
 </style>
@@ -221,6 +245,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <div class="hint" id="hint" hidden></div>
 <div class="dlg" id="dlg" hidden><span class="who" id="dlgWho"></span><p id="dlgT"></p><div class="acts" id="dlgActs"></div><span class="nx" id="dlgNx">▼</span></div>
 <div id="pops"></div>
+<div id="toast" hidden></div>
 <div id="fade"></div>
 <div class="overlay" id="overlay"><div class="card" id="card"></div></div>
 <div id="nogl" hidden><span data-en="Sorry, this phone can't show 3D games 😢" data-tr="Üzgünüz, bu telefon 3D oyunları gösteremiyor 😢">عذراً، هالتلفون ما بيقدر يشغّل ألعاب ثلاثية الأبعاد 😢</span></div>
@@ -230,8 +255,8 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 <script type="module" src="./game.js"></script>
 <script src="../back.js"></script>
 <script>BoboBack.init({
-  visible: () => { const o = document.getElementById('overlay'); const h = window.__tiny; return !o.hidden && h && ['menu', 'select'].includes(h.state); },
-  onBack: () => { const h = window.__tiny; if(!h || h.state !== 'select') location.href = '../'; else h.menu(); },
+  visible: () => { const o = document.getElementById('overlay'); const h = window.__tiny; return !o.hidden && h && (['menu', 'select'].includes(h.state) || (h.state === 'mp' && ['menu', 'keypad', 'error'].includes(h.mpScreen))); },
+  onBack: () => { const h = window.__tiny; if(!h) location.href = '../'; else if(h.state === 'select' || h.state === 'mp') h.back(); else location.href = '../'; },
   mount: document.getElementById('stage')
 });</script>
 <script src="../friends.js"></script>

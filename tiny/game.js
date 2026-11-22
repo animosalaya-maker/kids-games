@@ -25,6 +25,7 @@ const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
 const lerp = (a, b, t) => a + (b - a) * t;
 const angDiff = (a, b) => { let d = a - b; while(d > Math.PI) d -= Math.PI * 2; while(d < -Math.PI) d += Math.PI * 2; return d; };
 const QS = new URLSearchParams(location.search);
+const MP_LOCAL = QS.get('mp') === 'local';
 const AU = makeAudio(), SFX = AU.SFX;
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
 const K = makeKit(THREE);
@@ -37,7 +38,7 @@ const heroCol = id => id === 'bear' ? '#f0a640' : HERO_COLOR[id];
 /* ======================================================================
    Save (this phone)
    ====================================================================== */
-const SAVE_KEY = 'tiny_save', SAVE_V = 1, COIN_CAP = 80;
+const SAVE_KEY = 'tiny_save' + (MP_LOCAL && /^[a-z]$/.test(QS.get('slot') || '') ? '_' + QS.get('slot') : ''), SAVE_V = 1, COIN_CAP = 80;
 function freshSave(){ return { v:SAVE_V, hero:'bear', coins:0, total:0, got:{}, btn:[], q:{}, pops:0, popsAt:0, fur:'honey', hat:'cap', owned:['fur:honey', 'hat:cap', 'hat:none'], drum:0, bells:[], seen:[], tut:0, cd:{ d:'', n:0 }, cp:null, area:'hub' }; }
 function loadSave(){
   try{
@@ -169,9 +170,9 @@ blob.renderOrder = 6; scene.add(blob);
    The hero (bear cub, or one of our characters wearing the star backpack)
    ====================================================================== */
 const myAv = () => { try{ return window.Avatar ? Avatar.load() : null; }catch(e){ return null; } };
-function makeHero(id){
-  if(id === 'bear') return MD.bear({ fur:SAVE.fur, hat:SAVE.hat });
-  let h; try{ h = HEROES[id](id === 'me' ? myAv() : undefined); }catch(e){ h = HEROES.sara(); }
+function makeHero(id, look, av){
+  if(id === 'bear') return MD.bear(look || { fur:SAVE.fur, hat:SAVE.hat });
+  let h; try{ h = HEROES[id](id === 'me' ? (av || myAv()) : undefined); }catch(e){ h = HEROES.sara(); }
   K.shadowHero(h);
   const root = new THREE.Group(), spin = new THREE.Group(), inner = new THREE.Group();
   spin.position.y = .6; inner.position.y = -.6; root.add(spin); spin.add(inner); inner.add(h.grp); h.grp.scale.setScalar(.95);
@@ -189,10 +190,11 @@ let hero = null;
 function setHero(id){
   heroId = ALL_HEROES.includes(id) ? id : 'bear';
   if(hero) scene.remove(hero.grp);
+  if(typeof mpTrack === 'function') try{ mpTrack(); }catch(e){}
   hero = makeHero(heroId); scene.add(hero.grp);
   if(P.ride && cannonObj) placeRider();
 }
-function refreshLook(){ if(heroId === 'bear') setHero('bear'); }
+function refreshLook(){ if(heroId === 'bear') setHero('bear'); mpTrack(); }
 
 /* ======================================================================
    Places and what is in them
@@ -927,6 +929,7 @@ function myHeroBtn(id = 'bMyHero'){ return `<button class="hero-btn" id="${id}" 
 function sndBtn(){ return `<button class="icon-btn sndbtn" id="bSnd" aria-label="${L('الصوت', 'Sound', 'Ses')}">${AU.muted ? '🔇' : '🔊'}</button>`; }
 function wireSnd(){ const b = $('#bSnd'); if(b) b.onclick = () => { AU.setMuted(!AU.muted); b.textContent = AU.muted ? '🔇' : '🔊'; if(!AU.muted) SFX.tap(); }; }
 function showTitle(){
+  if(MP.t) coStop();
   state = 'menu'; setPlayUI(false); AU.music(false); clearInput();
   if(!AR) loadArea('hub', 'start');
   placeAt(4, AR.ground ? AR.ground(4, -2) : 0, -2, -2.4); cam.yaw = .9; cam.pAdj = .05;
@@ -937,8 +940,10 @@ function showTitle(){
     <p class="sub">🏠 ${L('صغير كتير ببيت عملاق! نطّ، لمّ العملات والأزرار الذهبية، وساعد أهل القرية.', 'Tiny in a giant house! Jump, collect coins and golden buttons, and help the villagers.', 'Dev bir evde minicik! Zıpla, jeton ve altın düğme topla, köylülere yardım et.')}</p>
     ${myHeroBtn()}
     <div class="stars"><span>🪙 ${N(SAVE.coins)}</span><span>🔘 ${N(SAVE.btn.length)}/${N(TOTAL_BTNS)}</span><span>⭐ ${N(starsNow())}/${N(4)}</span></div>
-    <div class="row"><button class="big-btn" id="bPlay">▶️ ${SAVE.total ? L('كمّل', 'Continue', 'Devam') : L('العب', 'Play', 'Oyna')}</button></div></div>`;
+    <div class="row"><button class="big-btn" id="bPlay">▶️ ${SAVE.total ? L('كمّل', 'Continue', 'Devam') : L('العب', 'Play', 'Oyna')}</button>
+    <button class="big-btn pink" id="bMP">👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</button></div></div>`;
   wireSnd();
+  $('#bMP').onclick = () => { AU.ac(); SFX.tap(); mpMenu(); };
   $('#bMyHero').onclick = () => { SFX.tap(); showSelect('menu'); };
   $('#bPlay').onclick = () => { AU.ac(); SFX.tap(); beginGame(); };
 }
@@ -950,8 +955,9 @@ function showSelect(from){
     <div class="heroes nine">${ALL_HEROES.map(id => `<button class="hero${id === heroId ? ' on' : ''}" data-h="${id}" style="--c:${heroCol(id)}"><img src="${charImg(id)}" alt=""><b>${heroName(id)}</b></button>`).join('')}</div>
     <div class="row"><button class="big-btn" id="bOk">✅ ${L('تمام', 'OK', 'Tamam')}</button></div>`;
   card.querySelectorAll('.hero').forEach(b => b.onclick = () => { SAVE.hero = b.dataset.h; persist(); setHero(b.dataset.h); SFX.tap(); card.querySelectorAll('.hero').forEach(x => x.classList.toggle('on', x === b)); });
-  $('#bOk').onclick = () => { SFX.tap(); if(selFrom === 'pause') showPause(true); else showTitle(); };
+  $('#bOk').onclick = () => { SFX.tap(); backFromSelect(); };
 }
+function backFromSelect(){ if(selFrom === 'pause') showPause(true); else if(selFrom === 'mp'){ if(mpActive() && MP.screen === 'lobby') mpLobby(); else mpMenu(); } else showTitle(); }
 function progressHtml(){
   const rooms = ['hub', 'living', 'kitchen', 'kids', 'bath'], areaOf = { hub:'hub', living:'down', kitchen:'down', kids:'up', bath:'up' };
   return `<div class="prog">${rooms.map(r => {
@@ -966,9 +972,10 @@ function questsHtml(){
 }
 function showPause(force){
   if(state !== 'play' && !force) return;
-  state = 'pause'; clearInput(); AU.music(false);
+  state = 'pause'; clearInput(); AU.music(false); if(P.ride) dismount();
   showOverlay('dim'); card.className = 'card wide';
   card.innerHTML = `${sndBtn()}<h2>⏸️ ${L('استراحة', 'Paused', 'Mola')}</h2>
+    ${mpActive() ? `<p>👫 ${L('أصحابك لسّا عم يلعبوا · غرفة', 'Your friends keep playing · room', 'Arkadaşların oynuyor · oda')} <bdi dir="ltr">${MP.code}</bdi></p>` : ''}
     ${progressHtml()}
     <div class="row">${questsHtml()}<span class="tag" style="--rc:#ffe27a">⭐ ${N(starsNow())}/${N(4)}</span></div>
     <div class="row"><button class="big-btn mint" id="bResume">▶️ ${L('كمّل', 'Continue', 'Devam')}</button>${myHeroBtn()}</div>
@@ -979,7 +986,7 @@ function showPause(force){
   $('#bMyHero').onclick = () => { SFX.tap(); showSelect('pause'); };
   $('#bHome').onclick = () => { SFX.tap(); resume(); fadeTo(() => { loadArea('hub', 'start'); }); };
   $('#bMenu').onclick = () => { SFX.tap(); persist(true); showTitle(); };
-  $('#bExit').onclick = () => { persist(true); location.href = '../'; };
+  $('#bExit').onclick = () => { persist(true); try{ coStop(); }catch(e){} location.href = '../'; };
 }
 function resume(){ hideOverlay(); state = 'play'; setPlayUI(true); hudKey = ''; AU.music(true); last = performance.now(); }
 $('#btnPause').onclick = () => { SFX.tap(); showPause(); };
@@ -1026,13 +1033,369 @@ function frame(now){
   let dt = Math.min(.1, (now - last) / 1000); last = now;
   const t = now / 1000;
   if(state === 'play' && !fading){ stepHero(dt); updateWorld(t, dt); hudFrame(dt); }
+  mpFrame(dt); if(AR) stepRemotes(dt);
   else if(AR){ for(const f of AR.tick) f(t, dt); if(state === 'menu'){ cam.yaw += dt * .08; } }
-  if(AR){ drawHero(t, state === 'play' ? dt : 0); updateCamera(dt); updateParts(dt); if(state === 'play') placeLabels(); }
+  if(AR){ drawHero(t, state === 'play' ? dt : 0); updateCamera(dt); updateParts(dt); if(state === 'play') placeLabels(); placeRemoteLabels(); }
   renderer.render(scene, camera);
   // auto quality: drop a level when the phone struggles for a few seconds
   fpsT += dt; fpsN++;
   if(fpsT > 2){ const fps = fpsN / fpsT; fpsT = 0; fpsN = 0; if(fps < 42 && state === 'play' && quality > 0 && QS.get('q') == null){ lowT++; if(lowT >= 2){ quality--; lowT = 0; applyQuality(); } } else lowT = 0; }
 }
+
+/* ======================================================================
+   Online («👫 العب مع أصحابك»): up to 4 friends explore the village and the house together and see each other
+   (names over heads). Everyone keeps their own coins, buttons and quests; only positions travel (event 'pos' ~10×/s,
+   'hi' asks the others to send theirs now). Names never travel: only the friend code (presence 'fc'); every phone
+   asks the server for the name (../rt.js). Nothing is stored on a server.
+   ====================================================================== */
+const MP_URL = 'https://vgpwtrzplggvlsuvqsas.supabase.co', MP_KEY = 'sb_publishable_D9thEhZlZnfn0t06j8h1Rw_H-LVF786';
+const MP_EVENTS = ['pos', 'hi'];
+const MP_MAX = 4;
+function loadSupabase(){
+  if(window.supabase && window.supabase.createClient) return Promise.resolve();
+  if(loadSupabase.p) return loadSupabase.p;
+  return (loadSupabase.p = new Promise((res, rej) => {
+    const s = document.createElement('script'); s.src = '../supabase.js';
+    s.onload = () => (window.supabase && window.supabase.createClient) ? res() : rej(new Error('no client'));
+    s.onerror = () => { loadSupabase.p = null; s.remove(); rej(new Error('load')); };
+    document.head.appendChild(s);
+  }));
+}
+class SupabaseTransport{
+  async open(code, id, h){
+    if(navigator.onLine === false) throw new Error('offline');
+    await loadSupabase();
+    if(this.closed) throw new Error('cancelled');
+    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:'bobo-tiny-' + code, id, events:MP_EVENTS, eps:30, h });
+    await this.rt.ready;
+  }
+  track(meta){ if(this.rt) this.rt.track(meta); }
+  send(ev, payload){ if(this.rt) this.rt.send(ev, payload); }
+  close(){ this.closed = true; if(this.rt){ this.rt.close(); this.rt = null; } }
+}
+/* ?mp=local: tabs of the same browser talk through a BroadcastChannel (tests) */
+class LocalTransport{
+  open(code, id, h){
+    this.id = id; this.h = h; this.meta = null; this.peers = new Map(); this.ready = false;
+    const bc = this.bc = new BroadcastChannel('bobo-tiny-' + code);
+    bc.onmessage = e => {
+      const m = e.data || {};
+      if(m.k === 'hb'){ const old = this.peers.get(m.from), js = JSON.stringify(m.meta); this.peers.set(m.from, { meta:m.meta, js, last:Date.now() }); if(!old || old.js !== js) this.sync(); }
+      else if(m.k === 'hello'){ if(this.meta) this.beat(); }
+      else if(m.k === 'bye'){ if(this.peers.delete(m.from)) this.sync(); }
+      else if(m.k === 'b') h.msg(m.ev, m.p);
+    };
+    this.iv = setInterval(() => {
+      if(this.meta) this.beat();
+      const now = Date.now(); let ch = false;
+      for(const [k, p] of this.peers) if(now - p.last > 6000){ this.peers.delete(k); ch = true; }
+      if(ch) this.sync();
+    }, 1000);
+    bc.postMessage({ k:'hello', from:id });
+    return new Promise(res => setTimeout(() => { this.ready = true; res(); this.sync(); }, 400));
+  }
+  sync(){
+    if(!this.ready || !this.bc) return;
+    const list = [...this.peers].map(([k, p]) => Object.assign({}, p.meta, { id:k }));
+    if(this.meta) list.push(Object.assign({}, this.meta, { id:this.id }));
+    this.h.presence(list);
+  }
+  beat(){ if(this.bc) this.bc.postMessage({ k:'hb', from:this.id, meta:this.meta }); }
+  track(meta){ this.meta = Object.assign({}, meta); this.beat(); setTimeout(() => this.sync(), 0); }
+  send(ev, p){ if(this.bc) this.bc.postMessage({ k:'b', ev, p }); }
+  close(){ clearInterval(this.iv); if(this.bc){ if(this.meta) this.bc.postMessage({ k:'bye', from:this.id }); this.bc.close(); this.bc = null; } }
+}
+const MP = { t:null, id:null, code:null, list:[], players:[], meta:null, hostId:null, synced:false, screen:'off', tok:0, posT:0, typed:'', inviteFor:null, err:'' };
+window.__boboRoom = () => (MP.t && MP.meta && MP.code) ? MP.code : null;
+const mpActive = () => !!(MP.t && MP.meta);
+const mpNewId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+const mpSort = (a, b) => ((a.o || 0) - (b.o || 0)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+const okHero = h => ALL_HEROES.includes(h) ? h : 'bear';
+const okFur = f => MD.FURS[f] ? f : 'honey', okHat = h => MD.HATS[h] ? h : 'cap';
+const okAv = av => {
+  try{
+    if(!window.Avatar || !av || typeof av !== 'object') return null;
+    const o = {};
+    for(const k of Object.keys(av).slice(0, 30)){ const v = av[k]; if(v === null || typeof v === 'boolean' || (typeof v === 'number' && isFinite(v)) || (typeof v === 'string' && /^[A-Za-z][A-Za-z0-9]{0,15}$/.test(v) && !(v in Object.prototype))) o[k] = v; }
+    return Avatar.normalize(o);
+  }catch(e){ return null; }
+};
+const numIn = (v, a, b, d = 0) => { v = +v; return isFinite(v) ? clamp(v, a, b) : d; };
+const r2 = v => Math.round(v * 100) / 100;
+const avPic = new Map();
+function heroPic(hero, av){ if(hero !== 'me' || !av || !window.Avatar) return charImg(hero); const k = JSON.stringify(av); if(!avPic.has(k)){ try{ avPic.set(k, Avatar.portrait(av)); }catch(e){ avPic.set(k, charImg('sara')); } } return avPic.get(k); }
+let toastTO = 0;
+function toast(text, ms = 3500){ const el = $('#toast'); el.textContent = text; el.hidden = false; clearTimeout(toastTO); toastTO = setTimeout(() => { el.hidden = true; }, ms); }
+
+/* «أصحابي»: tell friends which room I'm in (every call is guarded). */
+const FR_GAME = 'tiny';
+let frRoomCode = null, frRoomIv = 0;
+function frRoom(code){
+  try{
+    if(!(window.Friends && Friends.has()) || code === frRoomCode) return;
+    clearInterval(frRoomIv); frRoomIv = 0; frRoomCode = code;
+    const safe = f => { try{ const p = f(); if(p && p.catch) p.catch(() => {}); }catch(e){} };
+    if(code){ const beat = () => safe(() => Friends.setRoom(code, FR_GAME)); beat(); frRoomIv = setInterval(beat, 60000); }
+    else safe(() => Friends.setRoom(null));
+  }catch(e){}
+}
+addEventListener('pagehide', () => { try{ if(frRoomCode && window.Friends){ clearInterval(frRoomIv); frRoomIv = 0; frRoomCode = null; Friends.setRoom(null, null, true); } }catch(e){} });
+addEventListener('pagehide', () => { try{ if(MP.t) mpClose(); }catch(e){} });
+
+function mpClose(){
+  frRoom(null);
+  if(MP.t){ try{ MP.t.close(); }catch(e){} }
+  MP.t = null; MP.meta = null; MP.list = []; MP.players = []; MP.hostId = null; MP.synced = false;
+  for(const id of [...RM.keys()]) dropRemote(id);
+}
+function myMeta(){ return { fc:BoboRT.fc(), hero:heroId, av:heroId === 'me' ? myAv() : null, fur:SAVE.fur, hat:SAVE.hat }; }
+async function mpOpen(code, how){
+  mpClose();
+  const t = MP_LOCAL ? new LocalTransport() : new SupabaseTransport(), tok = ++MP.tok;
+  MP.t = t; MP.code = code; MP.id = MP.id || mpNewId();
+  const live = () => MP.t === t && MP.tok === tok;
+  try{
+    await t.open(code, MP.id, {
+      presence:list => { if(live()) mpPresence(list); },
+      msg:(ev, p) => { if(live() && p && typeof p === 'object' && typeof p.id === 'string') mpMsg(ev, p); },
+      status:s => { if(live() && s === 'up') mpTrack(); }
+    });
+  }catch(e){ if(live()) mpClose(); throw e; }
+  if(!live()) throw new Error('cancelled');
+  const t0 = performance.now();
+  t.track({ ph:'probe' });
+  await new Promise(res => { const chk = () => (MP.synced || performance.now() - t0 > 6000 || !live()) ? res() : setTimeout(chk, 40); chk(); });
+  if(MP.synced) await new Promise(r => setTimeout(r, 300));
+  if(!live()) throw new Error('cancelled');
+  const others = MP.list.filter(p => p.id !== MP.id);
+  if(how === 'create' && others.length){ mpClose(); return 'busy'; }
+  if(how === 'join' && !others.length){ mpClose(); return 'nobody'; }
+  if(others.length >= MP_MAX){ mpClose(); return 'full'; }
+  MP.meta = Object.assign(myMeta(), { o:others.reduce((m, p) => Math.max(m, p.o || 0), 0) + 1, ph:'play' });
+  t.track(MP.meta);
+  MP.hostId = how === 'create' ? MP.id : others.slice().sort(mpSort)[0].id;
+  mpPresence(MP.list);
+  frRoom(code);
+  return 'ok';
+}
+function mpTrack(){ if(MP.t && MP.meta){ Object.assign(MP.meta, myMeta()); MP.meta.fc = MP.meta.fc || BoboRT.fc(); MP.t.track(MP.meta); } }
+function mpSend(ev, p){ if(MP.t && MP.meta) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
+function mpPresence(list){
+  list = (list || []).filter(p => p && p.ph !== 'probe');
+  BoboRT.see(list, () => { if(MP.screen === 'lobby') mpLobbyDraw(); });
+  MP.list = list; MP.synced = true;
+  if(!MP.meta) return;
+  const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
+  if(all.findIndex(p => p.id === MP.id) >= MP_MAX){ coStop(); showTitle(); toast(L('الغرفة مليانة 🙈', 'The room is full 🙈', 'Oda dolu 🙈')); return; }
+  const before = MP.players.map(p => p.id);
+  MP.players = all.slice(0, MP_MAX);
+  if(MP.hostId && !MP.players.some(p => p.id === MP.hostId)) MP.hostId = MP.players[0] && MP.players[0].id;
+  const joined = MP.players.filter(p => p.id !== MP.id && !before.includes(p.id));
+  if(joined.length && before.length){ SFX.check(); toast('👋 ' + joined.map(p => BoboRT.who(p.id, '') || heroName(okHero(p.hero))).join('، ') + ' ' + L('فات عاللعبة!', 'joined!', 'katıldı!')); }
+  remoteSync(MP.players);
+  MP.posT = 0;
+  if(MP.screen === 'lobby') mpLobbyDraw();
+}
+function mpMsg(ev, p){
+  if(ev === 'pos'){ onPos(p); return; }
+  if(ev === 'hi'){ MP.posT = 0; return; }
+}
+function mpFrame(dt){
+  if(!mpActive()) return;
+  MP.posT -= dt; MP.fcT = (MP.fcT || 0) - dt;
+  if(MP.meta && !MP.meta.fc && MP.fcT <= 0){
+    MP.fcT = 2; const c = BoboRT.fc();
+    if(c){ MP.meta.fc = c; MP.t.track(MP.meta); }
+    else if(!MP.fcAsked && window.Friends && Friends.has && Friends.has()){ MP.fcAsked = true; try{ const q = Friends.me(); if(q && q.catch) q.catch(() => {}); }catch(e){} }
+  }
+  if(MP.posT <= 0 && AR && (state === 'play' || state === 'pause' || state === 'shop')){
+    MP.posT = .1;
+    mpSend('pos', { a:AR.id, x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.f), m:r2(clamp(Math.hypot(P.vx, P.vz) / RUN, 0, 1)), air:P.gr || P.swim ? 0 : 1, fl:r2(P.flip), sp:r2(P.spin), rd:P.ride ? 1 : 0, vy:r2(P.vy) });
+  }
+}
+function coStop(){ MP.tok++; mpClose(); MP.screen = 'off'; }
+
+/* ---------- friends in the world ---------- */
+const RM = new Map();
+function labelEl(){ const d = document.createElement('div'); d.className = 'nm'; d.hidden = true; labelsEl.appendChild(d); return d; }
+function dropRemote(id){ const a = RM.get(id); if(!a) return; if(a.h) a.h.grp.parent && a.h.grp.parent.remove(a.h.grp); a.lbl.remove(); RM.delete(id); }
+function remoteSync(list){
+  const here = new Set();
+  for(const p of list){
+    if(p.id === MP.id) continue;
+    here.add(p.id);
+    let a = RM.get(p.id);
+    if(!a){ a = { id:p.id, key:'', h:null, lbl:labelEl(), buf:[], seen:false, t:Math.random() * 5, x:0, y:0, z:0, f:0, m:0, air:0, fl:0, sp:0, rd:0, vy:0, area:null }; RM.set(p.id, a); }
+    const hero = okHero(p.hero), av = hero === 'me' ? okAv(p.av) : null, look = { fur:okFur(p.fur), hat:okHat(p.hat) };
+    const key = hero + '|' + (av ? JSON.stringify(av) : '') + '|' + look.fur + '|' + look.hat;
+    if(a.key !== key){ if(a.h) a.h.grp.parent && a.h.grp.parent.remove(a.h.grp); a.key = key; a.hero = hero; a.h = makeHero(hero, look, av); a.h.grp.visible = false; scene.add(a.h.grp); }
+  }
+  for(const id of [...RM.keys()]) if(!here.has(id)) dropRemote(id);
+}
+function onPos(p){
+  const a = RM.get(p.id); if(!a) return;
+  const area = ['hub', 'down', 'up'].includes(p.a) ? p.a : null; if(!area) return;
+  if(area !== a.area){ a.buf.length = 0; a.seen = false; }
+  a.area = area;
+  a.buf.push({ t:performance.now(), x:numIn(p.x, -300, 300), y:numIn(p.y, -50, 100), z:numIn(p.z, -300, 300), f:numIn(p.f, -1e3, 1e3), m:numIn(p.m, 0, 1) });
+  if(a.buf.length > 12) a.buf.shift();
+  if(!a.seen){ const b = a.buf[0]; a.x = b.x; a.y = b.y; a.z = b.z; a.f = b.f; }
+  a.seen = true; a.air = p.air ? 1 : 0; a.fl = numIn(p.fl, 0, 1); a.sp = numIn(p.sp, 0, 1); a.rd = p.rd ? 1 : 0; a.vy = numIn(p.vy, -40, 40);
+}
+function stepRemotes(dt){
+  const now = performance.now(), rt = now - 200;
+  for(const a of RM.values()){
+    a.t += dt;
+    if(a.buf.length){
+      let i = a.buf.length - 1; while(i > 0 && a.buf[i - 1].t > rt) i--;
+      const q = a.buf[i], pr = i > 0 ? a.buf[i - 1] : null; let s = q;
+      if(pr && q.t > rt){ const k = clamp((rt - pr.t) / Math.max(1, q.t - pr.t), 0, 1); s = { x:lerp(pr.x, q.x, k), y:lerp(pr.y, q.y, k), z:lerp(pr.z, q.z, k), m:lerp(pr.m, q.m, k), f:pr.f + angDiff(q.f, pr.f) * k }; }
+      const k = 1 - Math.exp(-16 * dt);
+      a.x = lerp(a.x, s.x, k); a.y = lerp(a.y, s.y, k); a.z = lerp(a.z, s.z, k); a.f += angDiff(s.f, a.f) * k; a.m = lerp(a.m, s.m, k);
+    }
+    if(!a.h) continue;
+    const show = a.seen && AR && a.area === AR.id && state !== 'menu' && state !== 'mp';
+    a.h.grp.visible = show; if(!show) continue;
+    a.h.grp.position.set(a.x, a.y, a.z); a.h.grp.rotation.y = a.f;
+    poseAny(a.h, { t:a.t, dt, run:a.m, air:!!a.air, vy:a.vy, sq:0, flip:a.fl, spin:a.sp, pound:false, ride:!!a.rd });
+  }
+}
+function placeRemoteLabels(){
+  const w2 = SW / 2, h2 = SH / 2;
+  for(const a of RM.values()){
+    const show = (state === 'play' || state === 'pause') && a.h && a.h.grp.visible;
+    if(a.lbl.hidden !== !show) a.lbl.hidden = !show;
+    if(!show) continue;
+    const txt = BoboRT.who(a.id, '') || heroName(a.hero) || '';
+    if(a.lbl.textContent !== txt) a.lbl.textContent = txt;
+    a.h.grp.getWorldPosition(_v); _v.y += (a.h.top || 1.3) + .5;
+    _v.project(camera);
+    if(_v.z > 1){ a.lbl.hidden = true; continue; }
+    a.lbl.style.transform = `translate(${(_v.x * w2 + w2).toFixed(1)}px,${(-_v.y * h2 + h2).toFixed(1)}px) translate(-50%,-100%)`;
+  }
+}
+
+/* ---------- menu, lobby, keypad ---------- */
+function mpCard(wide){ state = 'mp'; setPlayUI(false); showOverlay('dim'); card.className = 'card' + (wide ? ' wide' : ''); }
+function mpMenu(){
+  MP.tok++; mpClose(); MP.screen = 'menu'; mpCard(false); AU.music(false);
+  card.innerHTML = `<h2>👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</h2>
+    <p>🏠 ${L('لحتى 4 أصحاب سوا بالقرية وبالبيت العملاق: شوفوا بعض ونطّوا سوا!', 'Up to 4 friends together in the village and the giant house: see each other and jump together!', 'Köyde ve dev evde 4 arkadaşa kadar birlikte: birbirinizi görün ve birlikte zıplayın!')}</p>
+    ${myHeroBtn()}
+    <div class="row"><button class="big-btn" id="bCreate">🏠 ${L('اعمل غرفة', 'Create room', 'Oda kur')}</button>
+    <button class="big-btn mint" id="bJoin">🔢 ${L('فوت على غرفة', 'Join room', 'Odaya katıl')}</button></div>
+    <div class="row"><button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>`;
+  $('#bMyHero').onclick = () => { SFX.tap(); showSelect('mp'); };
+  $('#bCreate').onclick = () => { SFX.tap(); mpCreate(); };
+  $('#bJoin').onclick = () => { SFX.tap(); mpKeypad(''); };
+  $('#bBack').onclick = () => { SFX.tap(); showTitle(); };
+}
+function mpBack(){ if(MP.screen === 'menu') showTitle(); else if(MP.screen === 'lobby'){ coStop(); mpMenu(); } else mpMenu(); }
+function mpConnecting(){
+  MP.screen = 'connecting'; mpCard(false);
+  card.innerHTML = `<div class="bigstar"><span class="spin">⏳</span></div><h2>${L('عم نتصل…', 'Connecting…', 'Bağlanıyor…')}</h2>
+    <button class="ghost-btn" id="bCancel">↩️ ${L('رجوع', 'Back', 'Geri')}</button>`;
+  $('#bCancel').onclick = () => { SFX.tap(); mpMenu(); };
+}
+function mpError(retry){
+  MP.screen = 'error'; mpCard(false);
+  card.innerHTML = `<div class="bigstar">📡</div><h2>${L('ما في إنترنت؟ جرّب كمان مرة', 'No internet? Try again', 'İnternet yok mu? Tekrar dene')}</h2>
+    <div class="row"><button class="big-btn" id="bRetry">🔄 ${L('جرّب كمان مرة', 'Try again', 'Tekrar dene')}</button><button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>`;
+  $('#bRetry').onclick = () => { SFX.tap(); retry(); };
+  $('#bBack').onclick = () => { SFX.tap(); mpMenu(); };
+}
+function mpLobby(){
+  if(!mpActive()){ mpMenu(); return; }
+  MP.screen = 'lobby'; mpCard(true); AU.music(false);
+  mpLobbyDraw();
+}
+function mpLobbyDraw(){
+  if(MP.screen !== 'lobby' || state !== 'mp') return;
+  const pl = MP.players, code = [...(MP.code || '')].map(N).join('');
+  const slots = [0, 1, 2, 3].map(i => { const p = pl[i]; if(!p) return `<div class="pslot empty"><div class="wt">⏳</div><small>${L('استنّى…', 'Waiting…', 'Bekle…')}</small></div>`;
+    const hero = okHero(p.hero), mine = p.id === MP.id;
+    return `<div class="pslot" style="--c:${heroCol(hero)}"><img src="${mine ? charImg(heroId) : heroPic(hero, okAv(p.av))}" alt=""><span dir="auto">${mine ? L('إنت', 'You', 'Sen') : ('👫 ' + BoboRT.whoH(p.id, '')).trim()}${p.id === MP.hostId ? ' 👑' : ''}</span></div>`; }).join('');
+  card.innerHTML = `<h2>🏠 ${L('غرفة رقم', 'Room number', 'Oda numarası')} <bdi dir="ltr">${code}</bdi></h2>
+    <div class="pslots">${slots}</div>
+    <p>${L('قلّ لأصحابك رقم الغرفة 👆 وكل واحد بيقدر يبلّش هلّق، والباقي بيلحقوه!', 'Tell your friends the room number 👆 Everyone can start now, the others catch up!', 'Arkadaşlarına oda numarasını söyle 👆 Herkes şimdi başlayabilir, diğerleri yetişir!')}</p>
+    <div class="row">${myHeroBtn()}<button class="big-btn" id="bGo">▶️ ${L('يلّا نلعب', "Let's play", 'Hadi oynayalım')}</button><button class="ghost-btn" id="bLeave">🚪 ${L('اطلع', 'Leave', 'Çık')}</button></div>`;
+  $('#bGo').onclick = () => { AU.ac(); SFX.tap(); MP.screen = 'in'; beginGame(); mpSend('hi', {}); };
+  $('#bMyHero').onclick = () => { SFX.tap(); showSelect('mp'); };
+  $('#bLeave').onclick = () => { SFX.tap(); coStop(); mpMenu(); };
+}
+async function mpOpenRetry(code, how, until){
+  for(;;){
+    try{ return await mpOpen(code, how); }
+    catch(e){ if(String(e && e.message) === 'cancelled' || MP.screen !== 'connecting' || performance.now() > until - 3000) throw e; await new Promise(r => setTimeout(r, 800)); if(MP.screen !== 'connecting') throw new Error('cancelled'); }
+  }
+}
+async function mpCreate(want){
+  mpConnecting();
+  const limit = performance.now() + 20000;
+  try{
+    for(let i = 0; i < 4; i++){
+      const code = i === 0 && /^\d{4}$/.test(want || '') ? String(want) : String(1000 + Math.floor(Math.random() * 9000));
+      const r = await mpOpenRetry(code, 'create', limit);
+      if(MP.screen !== 'connecting'){ if(r === 'ok') coStop(); return; }
+      if(r === 'ok'){ mpLobby(); mpSendInvite(); return; }
+    }
+    throw new Error('busy');
+  }catch(e){ MP.err = String(e && (e.stack || e.message)).slice(0, 400); if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpCreate(want)); }
+}
+async function mpJoin(code, until){
+  mpConnecting();
+  const limit = until || performance.now() + 20000;
+  try{
+    let r = await mpOpenRetry(code, 'join', limit);
+    if(MP.screen !== 'connecting'){ if(r === 'ok') coStop(); return; }
+    while(r === 'nobody' && until && performance.now() < until){
+      await new Promise(res => setTimeout(res, 700)); if(MP.screen !== 'connecting') return;
+      r = await mpOpenRetry(code, 'join', limit); if(MP.screen !== 'connecting'){ if(r === 'ok') coStop(); return; }
+    }
+    if(r === 'ok'){ mpLobby(); mpSend('hi', {}); }
+    else if(r === 'full') mpKeypad(L('الغرفة مليانة', 'The room is full', 'Oda dolu') + ' 🙈');
+    else mpKeypad(L('ما لقينا هالغرفة، تأكّد من الرقم', "We couldn't find that room — check the number", 'Bu oda bulunamadı, numarayı kontrol et'));
+  }catch(e){ MP.err = String(e && (e.stack || e.message)).slice(0, 400); if(MP.screen === 'connecting' && String(e && e.message) !== 'cancelled') mpError(() => mpJoin(code)); }
+}
+function mpSendInvite(){
+  const who = MP.inviteFor; if(!who || !MP.code || !window.Friends) return;
+  MP.inviteFor = null;
+  const no = () => toast(L('ما قدرنا نبعت الدعوة 🙈 قلّو رقم الغرفة', "Couldn't send the invite 🙈 tell them the room number", 'Davet gönderilemedi 🙈 oda numarasını söyle'));
+  try{
+    Friends.invite(who, MP.code, FR_GAME).then(r => {
+      if(r && r.status === 'sent') toast(L('✉️ بعتنا دعوة لصاحبك! استنّاه يفوت', '✉️ Invite sent! Wait for your friend to join', '✉️ Davet gönderildi! Arkadaşının gelmesini bekle'));
+      else no();
+    }, no);
+  }catch(e){ no(); }
+}
+function mpKeypad(msg){
+  MP.tok++; mpClose();
+  MP.screen = 'keypad'; MP.typed = ''; mpCard(true);
+  const keys9 = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-k="${d}">${N(d)}</button>`).join('');
+  card.innerHTML = `<h2>🔢 ${L('اكتب رقم الغرفة', 'Type the room number', 'Oda numarasını yaz')}</h2>
+    <div class="mp-cols"><div class="mp-col"><div class="mp-code" id="kpCode"></div><p class="mp-msg" id="kpMsg"></p>
+      <button class="ghost-btn" id="bBack">↩️ ${L('رجوع', 'Back', 'Geri')}</button></div>
+    <div class="keypad" id="keypad">${keys9}<button data-k="del" aria-label="${L('امسح', 'Delete', 'Sil')}">⌫</button><button data-k="0">${N(0)}</button><button class="ok" data-k="ok" aria-label="${L('تمام', 'OK', 'Tamam')}">✅</button></div></div>`;
+  $('#kpMsg').textContent = msg || '';
+  card.querySelectorAll('#keypad button').forEach(b => b.onclick = () => mpKey(b.dataset.k));
+  $('#bBack').onclick = () => { SFX.tap(); mpMenu(); };
+  mpKeyDraw();
+}
+function mpKeyDraw(){ const el = $('#kpCode'); if(!el) return; el.innerHTML = [0, 1, 2, 3].map(i => `<b class="${i === MP.typed.length ? 'cur' : ''}">${MP.typed[i] != null ? N(MP.typed[i]) : ''}</b>`).join(''); }
+function mpKey(k){
+  if(MP.screen !== 'keypad') return;
+  if(k === 'del'){ MP.typed = MP.typed.slice(0, -1); SFX.tap(); }
+  else if(k === 'ok'){ if(MP.typed.length === 4) mpJoin(MP.typed); else SFX.nope(); return; }
+  else if(/^\d$/.test(k) && MP.typed.length < 4){ MP.typed += k; SFX.tap(); }
+  const m = $('#kpMsg'); if(m) m.textContent = '';
+  mpKeyDraw();
+  if(MP.typed.length === 4){ const code = MP.typed; setTimeout(() => { if(MP.screen === 'keypad' && MP.typed === code) mpJoin(code); }, 300); }
+}
+addEventListener('keydown', e => {
+  if(state !== 'mp' || MP.screen !== 'keypad') return;
+  if(/^\d$/.test(e.key)) mpKey(e.key); else if(e.key === 'Backspace') mpKey('del'); else if(e.key === 'Enter') mpKey('ok');
+});
+document.addEventListener('visibilitychange', () => { if(document.hidden){ persist(true); if(state === 'play' && !mpActive()) showPause(); } });
 
 /* ======================================================================
    Test hooks (used by the automated tests only)
@@ -1049,7 +1412,10 @@ window.__tiny = {
   A(){ pressA(); }, relA(){ releaseA(); }, B(){ pressB(); }, act(){ doAction(); }, next(){ nextDlg(); }, talk(id){ const n = RT.npcs.find(x => x.d.id === id); if(n){ placeAt(n.d.x + Math.sin(n.d.f) * 2, n.d.y, n.d.z + Math.cos(n.d.f) * 2, n.d.f + Math.PI); talkTo(n); return true; } return false; },
   yaw(a){ cam.yaw = a; cam.lookT = performance.now(); }, face(x, z){ P.f = Math.atan2(x - P.x, z - P.z); cam.yaw = P.f + Math.PI; cam.snap = true; cam.lookT = performance.now(); },
   setCoins(n){ SAVE.coins = n; hudKey = ''; }, padV(i){ const p = RT.pads[i]; return p && p.v; }, quests(){ return JSON.parse(JSON.stringify(SAVE.q)); }, freeze(v){ frozen = !!v; },
-  reset(){ SAVE = freshSave(); persist(true); }, cam(){ return { x:camera.position.x, y:camera.position.y, z:camera.position.z, d:cam.dist }; }, mount(){ mount(); }, dismount(){ dismount(); }, setQuality(q){ quality = q; applyQuality(); }, info(){ const i = renderer.info.render; return { calls:i.calls, tris:i.triangles, geos:renderer.info.memory.geometries, tex:renderer.info.memory.textures }; }, still(v){ enemySpeed = v ? 0 : 1; }, camD(d){ camOverride = d || 0; }, revive(){ for(const e of RT.enemies){ e.alive = true; e.m.grp.visible = true; } }, pitch(a){ cam.pAdj = a; cam.lookT = performance.now(); }
+  reset(){ SAVE = freshSave(); persist(true); }, back(){ if(state === 'mp') mpBack(); else if(state === 'select') backFromSelect(); else showTitle(); },
+  get mpScreen(){ return MP.screen; }, get mp(){ return { code:MP.code, active:mpActive(), hostId:MP.hostId, screen:MP.screen, id:MP.id, players:MP.players.map(p => ({ id:p.id, hero:p.hero, fur:p.fur })) }; }, get mpErr(){ return MP.err || ''; },
+  get remotes(){ return [...RM.values()].map(a => ({ id:a.id, area:a.area, seen:a.seen, x:r2(a.x), y:r2(a.y), z:r2(a.z), vis:!!(a.h && a.h.grp.visible), name:a.lbl.hidden ? null : a.lbl.textContent })); },
+  mpMenu(){ mpMenu(); }, mpCreate(c){ return mpCreate(c); }, mpJoin(c){ return mpJoin(c); }, mpGo(){ const b = document.querySelector('#bGo'); if(b) b.click(); }, mpLeave(){ coStop(); showTitle(); }, cam(){ return { x:camera.position.x, y:camera.position.y, z:camera.position.z, d:cam.dist }; }, mount(){ mount(); }, dismount(){ dismount(); }, setQuality(q){ quality = q; applyQuality(); }, info(){ const i = renderer.info.render; return { calls:i.calls, tris:i.triangles, geos:renderer.info.memory.geometries, tex:renderer.info.memory.textures }; }, still(v){ enemySpeed = v ? 0 : 1; }, camD(d){ camOverride = d || 0; }, setLives(n){ lives = n; hudKey = ''; }, revive(){ for(const e of RT.enemies){ e.alive = true; e.m.grp.visible = true; } }, pitch(a){ cam.pAdj = a; cam.lookT = performance.now(); }
 };
 
 /* ---------- boot ---------- */
@@ -1057,3 +1423,13 @@ applyQuality();
 setHero(heroId);
 showTitle();
 requestAnimationFrame(t => { last = t; frame(t); });
+/* ?host=1 (&room=<4 digits>, &invite=<friendCode>, &accept=<id> for invitepop.js) makes a room; ?join=<room> joins one
+   (it keeps trying for 20 s while nobody is there yet) */
+(function(){
+  const join = QS.get('join'), host = QS.get('host') === '1', inv = QS.get('invite'), room = QS.get('room');
+  if(!/^\d{4}$/.test(join || '') && !host) return;
+  const q = new URLSearchParams(location.search); ['join', 'host', 'invite', 'room'].forEach(k => q.delete(k));
+  try{ history.replaceState(history.state, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
+  if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 20000);
+  else { MP.inviteFor = /^[A-Z2-9]{6}$/.test(inv || '') ? inv : null; mpCreate(/^\d{4}$/.test(room || '') ? room : null); }
+})();
