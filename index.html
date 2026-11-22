@@ -396,7 +396,7 @@ tile($id('advTiles'), 'adventure3d/', { title:L('مغامرة بوبو 3D',"Bobo
 tile($id('advTiles'), 'adventure/', { title:L('مغامرة بوبو',"Bobo's Adventure","Bobo'nun Macerası"), emoji:'🏔️', bg:'#2fb36d' }, L('12 مرحلة','12 levels','12 bölüm'));
 ['letters','math','colors','shapes','memory','puzzle'].forEach(id => SOLO_BY[id] && tile($id('learnTiles'), 'solo/#' + id, SOLO_BY[id]));
 ['jumper','runner','stack','fishing','catch','peek'].forEach(id => SOLO_BY[id] && tile($id('quickTiles'), 'solo/#' + id, SOLO_BY[id]));
-tile($id('partyTiles'), 'party/', { title:L('حفلة الأصحاب','Friends Party','Arkadaş Partisi'), emoji:'🎉', bg:'#e8494e' }, L('12 لعبة','12 games','12 oyun'));
+tile($id('partyTiles'), 'party/', { title:L('حفلة الأصحاب','Friends Party','Arkadaş Partisi'), emoji:'🎉', bg:'#e8494e' }, L('16 لعبة','16 games','16 oyun'));
 DUEL.forEach(g => tile($id('duelTiles'), 'duel/#' + g.id, g, AR(2)));
 
 addEventListener('bobo-coins', () => refresh());
