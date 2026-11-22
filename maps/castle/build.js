@@ -310,6 +310,7 @@ export function buildCastle(THREE, K, scene, L){
     if(Math.hypot(x + 54, z) < 13 || Math.hypot(x - 40, z + 40) < 15 || Math.hypot(x - PARK.x, z - PARK.z) < 17 || Math.hypot(x - SPOTS.boat.x, z - SPOTS.boat.z) < 6) continue;
     if(DIRS.some(([dx, dz]) => { const al = x * dx + z * dz, lat = Math.abs(x * dz - z * dx); return al > 0 && lat < 5; })) continue;
     if(Math.hypot(x, z - 50) < 7 || Math.hypot(x - 5, z - 52) < 6 || Math.hypot(x, z + 56) < 8) continue;
+    if(z > 30 && Math.abs(Math.atan2(x, z)) < .68 && Math.abs(Math.hypot(x, z) - 62) < 6.5) continue;     // the portal hub
     if(treeSpots.some(t => Math.hypot(t[0] - x, t[1] - z) < 3.6)) continue;
     treeSpots.push([x, z, .8 + rnd() * .55, rnd() < .3 ? 1 : 0]);
   }
