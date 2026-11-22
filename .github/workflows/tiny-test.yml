@@ -1,0 +1,19 @@
+name: tiny-live-test
+on:
+  push:
+    branches: [claude/mp-test]
+    paths: ['scripts/tiny-live.js', '.github/workflows/tiny-test.yml']
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with: { ref: claude/tiny, path: site }
+      - run: (cd site && python3 -m http.server 8765 &) && sleep 2
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm i playwright@1.47.2 && npx playwright install --with-deps chromium
+      - run: node scripts/tiny-live.js
+        env: { SITE: 'http://localhost:8765/' }
