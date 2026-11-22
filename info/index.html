@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<script src="../i18n.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title data-en="Warnings & Questions – Bobo Land" data-tr="Uyarılar ve Sorular – Bobo Land">تحذيرات وأسئلة – بوبو لاند</title>
+<meta name="theme-color" content="#1c1838">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icon-192.png">
+<style>
+:root{--bg:#1c1838;--card:#2a2452;--ink:#fff7e8;--muted:#cfc6f2;--gold:#ffcd4d;--warn:#ff8a3d;--q:#4dc3ff;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal",system-ui,sans-serif;line-height:1.7;-webkit-tap-highlight-color:transparent}
+main{max-width:680px;margin:0 auto;padding:78px 16px 40px}
+h1{color:var(--gold);font-size:28px;margin:0 0 14px;text-align:center}
+.tabs{display:flex;gap:10px;margin-bottom:16px}
+.tab{flex:1;height:56px;border-radius:18px;border:3px solid transparent;background:var(--card);color:var(--ink);font:inherit;font-weight:800;font-size:19px;cursor:pointer}
+.tab.on.w{border-color:var(--warn);background:#4a2a24}.tab.on.q{border-color:var(--q);background:#1f3550}
+.panel[hidden]{display:none}
+.item{background:var(--card);border-radius:18px;padding:14px 18px;margin-bottom:12px}
+.item b{display:block;font-size:18px;margin-bottom:4px}.item p{margin:0;color:var(--muted)}
+.empty{text-align:center;color:var(--muted);background:var(--card);border-radius:18px;padding:30px 18px;font-size:18px}
+.empty .big{font-size:52px;display:block;margin-bottom:6px}
+</style>
+</head>
+<body>
+<main>
+  <h1 data-en="⚠️ Warnings & Questions ❓" data-tr="⚠️ Uyarılar ve Sorular ❓">⚠️ تحذيرات وأسئلة ❓</h1>
+  <div class="tabs">
+    <button class="tab w on" id="tW" type="button" data-en="⚠️ Warnings" data-tr="⚠️ Uyarılar">⚠️ تحذيرات</button>
+    <button class="tab q" id="tQ" type="button" data-en="❓ Questions" data-tr="❓ Sorular">❓ أسئلة</button>
+  </div>
+  <section class="panel" id="pW">
+    <!-- WARNINGS: add <div class="item"><b>…</b><p>…</p></div> entries here -->
+    <div class="empty" id="eW"><span class="big">⚠️</span><span data-en="Coming soon…" data-tr="Yakında…">قريباً…</span></div>
+  </section>
+  <section class="panel" id="pQ" hidden>
+    <!-- QUESTIONS: add <div class="item"><b>…</b><p>…</p></div> entries here -->
+    <div class="empty" id="eQ"><span class="big">❓</span><span data-en="Coming soon…" data-tr="Yakında…">قريباً…</span></div>
+  </section>
+</main>
+<script src="../back.js"></script>
+<script>
+BoboBack.init({});
+const tW=document.getElementById('tW'),tQ=document.getElementById('tQ'),pW=document.getElementById('pW'),pQ=document.getElementById('pQ');
+function show(q){tW.classList.toggle('on',!q);tQ.classList.toggle('on',q);pW.hidden=q;pQ.hidden=!q;try{history.replaceState(null,'',q?'#q':'#w')}catch(e){}}
+tW.onclick=()=>show(false);tQ.onclick=()=>show(true);if(location.hash==='#q')show(true);
+document.querySelectorAll('.panel').forEach(p=>{if(p.querySelector('.item'))p.querySelector('.empty').remove()});
+</script>
+</body>
+</html>
