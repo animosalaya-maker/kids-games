@@ -61,7 +61,8 @@ const GAMES = {
   prank3d:{ path:'prank3d/', emoji:'🎭', color:'#7bc47f', dark:'#3f8a4a', name:['بيت عمّو زعلان 🎭', "Uncle Grumpy's House 🎭", "Somurtkan Amca'nın Evi 🎭"], game:['بيت عمّو زعلان', "Uncle Grumpy's House", "Somurtkan Amca'nın Evi"] },
   kart:   { path:'kart/', emoji:'🏎️', color:'#f06a92', dark:'#b23f6c', name:['سباق بوبو 🏎️', 'Bobo Kart 🏎️', 'Bobo Kart Yarışı 🏎️'], game:['سباق بوبو', 'Bobo Kart', 'Bobo Kart Yarışı'] },
   survive:{ path:'survive/', emoji:'🪓', color:'#2fb7c9', dark:'#1b7f8f', name:['الجزيرة المهجورة 🪓', 'Deserted Island 🪓', 'Issız Ada 🪓'], game:['البقاء بالجزيرة المهجورة', 'Deserted Island Survival', "Issız Ada'da Hayatta Kalma"] },
-  tiny:   { path:'tiny/', emoji:'🧸', color:'#f0a640', dark:'#b8741a', name:['بوبو الصغير 🧸', 'Tiny Bobo 🧸', 'Minik Bobo 🧸'], game:['بوبو الصغير', 'Tiny Bobo', 'Minik Bobo'] }
+  tiny:   { path:'tiny/', emoji:'🧸', color:'#f0a640', dark:'#b8741a', name:['بوبو الصغير 🧸', 'Tiny Bobo 🧸', 'Minik Bobo 🧸'], game:['بوبو الصغير', 'Tiny Bobo', 'Minik Bobo'] },
+  hara:   { path:'hara/', emoji:'🛝', color:'#8a63e8', dark:'#4b37b8', name:['حديقة الحارة 🛝', 'Neighbourhood Park 🛝', 'Mahalle Parkı 🛝'], game:['حديقة الحارة', 'Neighbourhood Park', 'Mahalle Parkı'] }
 };
 const gameOf = g => GAMES[g] ? g : '3d';
 const gameName = (g, inGame) => { const x = GAMES[gameOf(g)][inGame ? 'game' : 'name']; return T(x[0], x[1], x[2]); };
