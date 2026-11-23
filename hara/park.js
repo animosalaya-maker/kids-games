@@ -21,7 +21,7 @@ export function makePark(THREE, K, TX){
   const vcMat2 = lam({ vertexColors:true, side:THREE.DoubleSide });
   const _v = new THREE.Vector3(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _up = new THREE.Vector3(0, 1, 0);
   const C = { x:4, z:1 };                 // playground centre
-  const R_RUB = 10, R_RING = 14.5;
+  const R_RUB = 10, R_RING = 16;
   const hs = x => -.8 - .018 * (x + 46);  // street level falls to the east
 
   /* ---------- tiny geometry builder with uvs ---------- */
@@ -92,10 +92,10 @@ export function makePark(THREE, K, TX){
   const pavMat = lam({ map:TX.pavers, side:THREE.DoubleSide, polygonOffset:true, polygonOffsetFactor:-2, polygonOffsetUnits:-2 });
   const PATHS = [
     { w:2.8, pts:[[-39.5, -4.6], [24.3, -27.2]] },
-    { w:2.4, pts:[[2.6, -13.2], [1.6, -15.8], [.8, -18.4]] },
-    { w:2.4, pts:[[18.3, .4], [26, -.2], [36.4, -.7]] },
-    { w:2.4, pts:[[-1.5, 13.4], [-3.8, 17.2], [-5.5, 20.8]] },
-    { w:2.2, pts:[[-10.3, 2.4], [-18, 1.6], [-26, -1.6], [-32.5, -6.3]] }
+    { w:2.4, pts:[[2.2, -14.6], [1.4, -16.6], [.8, -18.4]] },
+    { w:2.4, pts:[[19.6, .4], [27, -.2], [36.4, -.7]] },
+    { w:2.4, pts:[[-2.2, 14.6], [-4, 17.6], [-5.5, 20.8]] },
+    { w:2.2, pts:[[-11.6, 2.4], [-18, 1.6], [-26, -1.6], [-32.5, -6.3]] }
   ];
   const pathSamples = [];
   { const gb = new GB(), M = new Merge();
@@ -390,10 +390,10 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
   swingSet(6.9, -.6, Math.PI / 2, [-.75, .75]);
   swingSet(3.4, 6.6, .45, [-.75, .75]);
 
-  // activity panels on purple posts with yellow frames, along the south-west edge
+  // activity panels on purple posts with yellow frames, along the north-west edge
   const PANELS = [];
   { const g = TX.activity.map(() => new GB());
-    [115, 126, 137, 148, 159].forEach((deg, k) => {
+    [196, 207, 218, 229, 240].forEach((deg, k) => {
       const a = deg * Math.PI / 180, x = C.x + Math.cos(a) * 9.1, z = C.z + Math.sin(a) * 9.1, yaw = Math.atan2(C.x - x, C.z - z), c = Math.cos(yaw), s = Math.sin(yaw);
       const P = (lx, y) => [x + lx * c, y, z - lx * s];
       g[k].quad(P(-.48, .55), P(.48, .55), P(.48, 1.5), P(-.48, 1.5), [0, 0], [1, 0], [1, 1], [0, 1]);
@@ -411,7 +411,7 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
   const BENCHES = [];
   { const M = new Merge();
     for(const deg of [62, 100, 168, 205, 300, 335]){
-      const a = deg * Math.PI / 180, x = C.x + Math.cos(a) * 15.3, z = C.z + Math.sin(a) * 15.3, f = Math.atan2(C.x - x, C.z - z);
+      const a = deg * Math.PI / 180, x = C.x + Math.cos(a) * 16.8, z = C.z + Math.sin(a) * 16.8, f = Math.atan2(C.x - x, C.z - z);
       const c = Math.cos(f), s = Math.sin(f), P = (lx, lz) => [x + lx * c + lz * s, z - lx * s + lz * c];
       for(const e of [-.7, .7]){ const p = P(e, 0); M.add(G.box, p[0], .2, p[1], .18, .4, .5, 0, f, 0, 0xa8a49b); }
       for(const k of [-.15, 0, .15]){ const p = P(0, k); M.add(G.box, p[0], .43, p[1], 1.8, .05, .12, 0, f, 0, 0x8a5634); }
@@ -425,7 +425,7 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
   const PITS = [];
   { const gb = new GB(), sg = new GB();
     for(const deg of [92, 35, 145, 215, 262, 320]){
-      const a = deg * Math.PI / 180, x = C.x + Math.cos(a) * 12.6, z = C.z + Math.sin(a) * 12.6, yaw = (deg % 2) * .2;
+      const a = deg * Math.PI / 180, x = C.x + Math.cos(a) * 13.2, z = C.z + Math.sin(a) * 13.2, yaw = (deg % 2) * .2;
       for(const [lx, lz, sx, sz] of [[0, .72, 1.6, .16], [0, -.72, 1.6, .16], [.72, 0, .16, 1.3], [-.72, 0, .16, 1.3]]){ const c = Math.cos(yaw), s = Math.sin(yaw); gb.box(x + lx * c + lz * s, 0, z - lx * s + lz * c, sx, .26, sz, yaw, .5); }
       sg.box(x, 0, z, 1.3, .12, 1.3, yaw, 1);
       PITS.push({ x, z });
@@ -441,7 +441,7 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
   function bareTree(M, x, z, sc, yaw){
     const grow = (a, dir, len, r, depth) => {
       const b = [a[0] + dir[0] * len, a[1] + dir[1] * len, a[2] + dir[2] * len];
-      rod(M, a, b, r, trunkCol, depth > 1 ? G.cyl8 : TWIG);
+      rod(M, a, b, r, trunkCol, depth > 2 ? BR6 : TWIG);
       if(depth <= 0) return;
       const n = depth > 3 ? 3 : depth > 1 ? 3 : 2 + (rnd() < .5 ? 1 : 0);
       for(let k = 0; k < n; k++){
@@ -452,7 +452,7 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
     };
     grow([x, 0, z], [0, 1, 0], 2.0 * sc, .13 * sc, 4);
   }
-  const TWIG = new THREE.CylinderGeometry(.6, 1, 1, 4, 1, true);
+  const TWIG = new THREE.CylinderGeometry(.6, 1, 1, 4, 1, true), BR6 = new THREE.CylinderGeometry(.75, 1, 1, 6, 1, true);
   { const M = new Merge(), F = new Merge();
     // tree in each pit (the big bare one in front of the playground first)
     PITS.forEach((p, i) => { bareTree(M, p.x, p.z, i === 0 ? 1.15 : .9 + rnd() * .25, rnd() * 6); TREES.push({ x:p.x, z:p.z, r:.25, kind:'bare' }); });
@@ -465,7 +465,7 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
         k++; TREES.push({ x, z, r:kind === 'cypress' ? .5 : .25, kind });
         if(kind === 'bare') bareTree(M, x, z, .85 + rnd() * .45, rnd() * 6);
         else if(kind === 'leafy'){ M.add(G.cyl8, x, 1.4, z, .17, 2.8, .17, 0, 0, 0, trunkCol);
-          const tint = rnd(); for(let j = 0; j < 9; j++){ const a = rnd() * 6.28, r = rnd() * 1.4; const col = tint < .6 ? [0x3f6a2a, 0x4f7a30, 0x5a8434, 0x6a8a3a, 0x8a9a3a][(rnd() * 5) | 0] : [0x6a8a2a, 0xa8a038, 0xc9a032, 0x8a9a3a, 0xb8782a][(rnd() * 5) | 0]; F.add(G.ico1, x + Math.cos(a) * r, 3.3 + rnd() * 1.8, z + Math.sin(a) * r, 1.1 + rnd() * .6, .95 + rnd() * .5, 1.1 + rnd() * .6, rnd(), rnd(), 0, col); } rod(M, [x, 2.4, z], [x + .8, 3.6, z + .3], .09, trunkCol); rod(M, [x, 2.4, z], [x - .6, 3.8, z - .4], .09, trunkCol); }
+          const tint = rnd(); for(let j = 0; j < 9; j++){ const a = rnd() * 6.28, r = rnd() * 1.4; const col = tint < .7 ? [0x2f5a24, 0x3a6a2a, 0x46722c, 0x2a4f22, 0x557a32][(rnd() * 5) | 0] : [0x4f7a30, 0x7a8a36, 0x9a9238, 0x5a8434, 0xa8823a][(rnd() * 5) | 0]; F.add(G.ico1, x + Math.cos(a) * r * 1.2, 3.6 + rnd() * 2.4, z + Math.sin(a) * r * 1.2, 1.3 + rnd() * .7, 1.1 + rnd() * .6, 1.3 + rnd() * .7, rnd(), rnd(), 0, col); } rod(M, [x, 2.4, z], [x + .8, 3.6, z + .3], .09, trunkCol); rod(M, [x, 2.4, z], [x - .6, 3.8, z - .4], .09, trunkCol); }
         else { M.add(G.cyl8, x, .4, z, .14, .8, .14, 0, 0, 0, trunkCol); F.add(G.cone, x, 3.4, z, 1.0 + rnd() * .3, 6 + rnd() * 2, 1.0 + rnd() * .3, 0, 0, 0, 0x1f3a24); F.add(G.cone, x, 2.2, z, 1.25, 3.2, 1.25, 0, 1, 0, 0x234228); }
       }
     }
@@ -500,10 +500,10 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
       M.add(G.box, hx, h - .12, hz, .3, .12, .45, 0, yaw, 0, 0x2e3034); heads.add(G.box, hx, h - .19, hz, .24, .03, .38, 0, yaw, 0, 0xffffff);
       LAMPS.push({ x:hx, y:h - .25, z:hz, big:false }); circles.push({ x, z, r:.14, top:h });
     };
-    for(const deg of [-58, 58, 180, 245]){ const a = deg * Math.PI / 180; lamp(C.x + Math.cos(a) * 15.6, C.z + Math.sin(a) * 15.6); }
+    for(const deg of [-58, 58, 180, 245]){ const a = deg * Math.PI / 180; lamp(C.x + Math.cos(a) * 17.1, C.z + Math.sin(a) * 17.1); }
     lamp(-27, -6.6); lamp(9.5, -21.2); lamp(-20, 3.4); lamp(-2.6, 17.2); lamp(28, 1.3);
     // floodlight: tall pole, a bar with four boxy lamps
-    const fx = -6, fz = -12.6, fh = 9;
+    const fx = -7, fz = -13.6, fh = 9;
     M.add(G.cyl8, fx, fh / 2, fz, .1, fh, .1, 0, 0, 0, 0x6c7076); M.add(G.cyl8, fx, .3, fz, .18, .6, .18, 0, 0, 0, 0x6c7076);
     M.add(G.box, fx, fh, fz, 1.3, .08, .08, 0, .4, 0, 0x6c7076);
     for(const [ox, oz] of [[-.5, .15], [.5, -.15], [-.2, .35], [.2, -.35]]){ const x = fx + ox, z = fz + oz; M.add(G.box, x, fh + .2, z, .34, .26, .14, -.5, .4, 0, 0x2a2c30); heads.add(G.box, x + Math.sin(.4) * .08, fh + .17, z + Math.cos(.4) * .08, .28, .2, .02, -.5, .4, 0, 0xffffff); }
@@ -565,7 +565,7 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
     for(const p of PANELS) if(p.spin > 0) p.spin = Math.max(0, p.spin - dt);
     void poolOn;
   }
-  const spawn = { x:C.x + 2.2, z:C.z + 14.6, f:Math.PI };
+  const spawn = { x:C.x + 2.2, z:C.z + 15.4, f:Math.PI };
   return { group:root, C, R_RUB, R_RING, BP, ENT, groundAt, collide, inPark, SLIDES, SWINGS, SEESAW, SPRINGS, BENCHES, PANELS, PITS, TREES, BUSHES, HIDES, LAMPS, KIOSK, climb, circles,
     setNight, tick, spawn, playMesh, hs, distPath };
 }

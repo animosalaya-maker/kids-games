@@ -258,7 +258,7 @@ const swingStar = (() => { const sw = PK.SWINGS[0]; const c = Math.cos(sw.yaw), 
 const STAR_SPOTS = [
   [C.x - 2.5, 1.95, C.z - 4.0], [C.x + 1.0, 1.7, C.z - 4.6], [C.x - .75, 2.25, C.z - 4.3], [C.x - 6.5, .75, C.z + 1.5],
   at(S0, .55), at(S1, .5), swingStar, [PK.KIOSK.x - 1.2, .7, PK.KIOSK.z - 1.6],
-  [PK.PITS[0].x, 1.0, PK.PITS[0].z], [-6, .8, -11.6], (() => { const e = PK.ENT[2], dx = C.x - e.x, dz = C.z - e.z, l = Math.hypot(dx, dz); return [e.x + dx / l * 1.2, .8, e.z + dz / l * 1.2]; })(),
+  [PK.PITS[0].x, 1.0, PK.PITS[0].z], [-7, .8, -12.6], (() => { const e = PK.ENT[2], dx = C.x - e.x, dz = C.z - e.z, l = Math.hypot(dx, dz); return [e.x + dx / l * 1.2, .8, e.z + dz / l * 1.2]; })(),
   (() => { const p = PK.PANELS[2]; return [p.x + Math.sin(p.yaw) * .9, .8, p.z + Math.cos(p.yaw) * .9]; })(),
   (() => { const b = PK.BENCHES[1]; return [b.x - Math.sin(b.f) * .9, .7, b.z - Math.cos(b.f) * .9]; })(),
   (() => { const h = PK.HIDES[3] || PK.HIDES[0]; return [h.x, .7, h.z]; })()
@@ -425,11 +425,15 @@ function updateCamera(dt){
   const moving = inp.m > .2 && !P.act;
   if(moving && performance.now() - cam.lookT > 1200){ cam.yaw += angDiff(P.f + Math.PI, cam.yaw) * Math.min(1, dt * 1.6 * inp.m); }
   if(P.act && (P.act.k === 'slide') && performance.now() - cam.lookT > 900) cam.yaw += angDiff(P.f + Math.PI, cam.yaw) * Math.min(1, dt * 2.5);
-  const pitch = .34 + cam.pAdj, dist = P.act && P.act.k === 'swing' ? 6.4 : cam.dist;
+  const pitch = .34 + cam.pAdj; let dist = P.act && P.act.k === 'swing' ? 6.4 : cam.dist;
   const tx = P.x, ty = P.y + 1.0, tz = P.z;
   const k = cam.snap ? 1 : 1 - Math.exp(-10 * dt);
   cam.tx = lerp(cam.tx, tx, k); cam.ty = lerp(cam.ty, ty, k); cam.tz = lerp(cam.tz, tz, k);
-  let cx = cam.tx + Math.sin(cam.yaw) * Math.cos(pitch) * dist, cy = cam.ty + Math.sin(pitch) * dist, cz = cam.tz + Math.cos(cam.yaw) * Math.cos(pitch) * dist;
+  if(state === 'menu' || state === 'mp' || state === 'select'){ const a = cam.yaw; camera.position.set(C.x + Math.sin(a) * 24, 9.5, C.z + Math.cos(a) * 24); camera.lookAt(C.x, 1.2, C.z); cam.snap = true; return; }
+  // keep tree trunks from hiding the hero: pull the camera in front of them
+  const sx = Math.sin(cam.yaw) * Math.cos(pitch), sz = Math.cos(cam.yaw) * Math.cos(pitch);
+  for(const c of PK.circles){ if(c.top < 5) continue; const ox = c.x - cam.tx, oz = c.z - cam.tz, t = (ox * sx + oz * sz) / (sx * sx + sz * sz); if(t <= .6 || t > dist) continue; const d = Math.hypot(ox - sx * t, oz - sz * t); if(d < c.r + .35) dist = Math.max(1.6, t - c.r - .4); }
+  let cx = cam.tx + sx * dist, cy = cam.ty + Math.sin(pitch) * dist, cz = cam.tz + sz * dist;
   cy = Math.max(cy, PK.groundAt(cx, cz) + .4);
   const k2 = cam.snap ? 1 : 1 - Math.exp(-12 * dt);
   cam.x = lerp(cam.x, cx, k2); cam.y = lerp(cam.y, cy, k2); cam.z = lerp(cam.z, cz, k2); cam.snap = false;
