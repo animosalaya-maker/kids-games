@@ -5,9 +5,13 @@
    the round shrubs, feed the pigeons and pet the cats. Collect the hidden stars and the golden autumn leaves.
    Small games: «لقّيطة» (tag: catch the bots, and friends) and «غمّيضة» (hide-and-seek: the bots hide behind bushes).
    Day / dusk / night toggle: soft lavender evening by default, lamps light up warm at dusk and night.
-   Online («👫 العب مع أصحابك»): up to 4 friends in the same park, names over heads, everyone sees the others walk,
-   slide, swing, bounce and ride the seesaw together. Progress is saved on this phone; stars and leaves give a few
-   Bobo Land coins (capped per day). */
+   Online, by default «🌍 حديقة الكل»: opening the game puts every kid into the same PUBLIC park (shards of up to 16:
+   Realtime channels `bobo-hara-pub-<n>`, like the big island), each one with their own server-checked name (asked once,
+   «شو اسمك؟») and their own hero / 'me' avatar. Everyone sees the others walk, slide, swing, bounce, ride the seesaw and
+   send fixed emotes (😊: 👋 ❤️ 👍 😂 😠 🎉 💃 🙋 — only the emote id travels, never text). No chat, no free text, no private
+   messages. The bots play only while you are alone in the park.
+   «👫 العب مع أصحابك» (?host / ?join / ?room / ?invite / accept): a private room for up to 4 friends.
+   Progress is saved on this phone; stars and leaves give a few Bobo Land coins (capped per day). */
 import * as THREE from '../adventure3d/three.module.min.js';
 import { makeKit } from '../worlds/kit.js';
 import { makeTextures } from './tex.js';
@@ -24,6 +28,8 @@ const lerp = (a, b, t) => a + (b - a) * t;
 const angDiff = (a, b) => { let d = a - b; while(d > Math.PI) d -= Math.PI * 2; while(d < -Math.PI) d += Math.PI * 2; return d; };
 const QS = new URLSearchParams(location.search);
 const MP_LOCAL = QS.get('mp') === 'local';
+const CAP = clamp(parseInt(QS.get('cap'), 10) || 16, 1, 16), SHARDS = 20;   // public park: up to 16 kids per shard (as on the island)
+const cleanName = s => String(s || '').replace(/[^\p{L} ]/gu, '').replace(/\s+/g, ' ').slice(0, 14);
 const AU = makeAudio(), SFX = AU.SFX;
 const today = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
 const K = makeKit(THREE);
@@ -220,6 +226,58 @@ function poseAny(h, s){
   if(s.feed){ k.arms.forEach((a, i) => { a.rotation.x = -1.2 + (i ? Math.sin(s.t * 10) * .3 : 0); }); }
   h.inner.scale.y = s.crouch ? .62 : 1;
   h.inner.position.y = s.sit ? -.42 : 0;
+  h.inner.rotation.set(0, 0, 0);
+  if(s.emo) emoPose(h, s.emo, !!s.sit);
+}
+/* ---------- emotes: a fixed list (only the id travels online; the words are ours, in the kid's language) ---------- */
+const EMOTES = [
+  { k:'wave', e:'👋', n:() => L('مرحبا', 'Hi', 'Merhaba'), say:() => L('مرحبا!', 'Hi!', 'Merhaba!') },
+  { k:'heart', e:'❤️', n:() => L('قلب حب', 'Love', 'Sevgi') },
+  { k:'ok', e:'👍', n:() => L('تمام', 'OK', 'Tamam') },
+  { k:'laugh', e:'😂', n:() => L('ضحك', 'Laugh', 'Gülmek') },
+  { k:'angry', e:'😠', n:() => L('معصّب', 'Grumpy', 'Kızgın') },
+  { k:'party', e:'🎉', n:() => L('احتفال', 'Party', 'Kutlama') },
+  { k:'dance', e:'💃', n:() => L('رقصة', 'Dance', 'Dans') },
+  { k:'come', e:'🙋', n:() => L('تعا العب', 'Come play', 'Gel oyna'), say:() => L('تعا العب!', 'Come play!', 'Gel oyna!') }
+];
+const EMO = Object.fromEntries(EMOTES.map(x => [x.k, x]));
+const EMO_SEC = 2.5, EMO_GAP = 1500, EMO_GAP_RX = 1200;
+const emoText = k => EMO[k].e + (EMO[k].say ? ' ' + EMO[k].say() : '');
+/* emo = { k, t0 }: the pose on top of the normal one, for EMO_SEC seconds */
+function emoPose(h, emo, sit){
+  const k = h.kit, e = (performance.now() - emo.t0) / 1000, A = k.arms, side = a => a.userData.side;
+  const arm = (a, x, z) => { if(a){ a.rotation.x = x; a.rotation.z = -side(a) * z; } };
+  const hop = v => { if(!sit) h.inner.position.y += v; };
+  switch(emo.k){
+    case 'wave': arm(A[1], 0, 2.6 + Math.sin(e * 14) * .35); break;
+    case 'heart': A.forEach(a => arm(a, -1.3, .6)); k.head.rotation.z = Math.sin(e * 4) * .15; break;
+    case 'ok': arm(A[1], -1.9, .15); k.head.rotation.x = Math.abs(Math.sin(e * 6)) * .15; break;
+    case 'laugh': k.body.rotation.x = -.22 + Math.sin(e * 22) * .07; A.forEach(a => arm(a, -.7, .35)); hop(Math.abs(Math.sin(e * 22)) * .04); break;
+    case 'angry': A.forEach(a => arm(a, .25, .65)); h.inner.rotation.z = Math.sin(e * 30) * .05; hop(Math.max(0, Math.sin(e * 9)) * .14); break;
+    case 'party': A.forEach((a, i) => arm(a, -.3, 2.5 + Math.sin(e * 12 + i) * .3)); hop(Math.abs(Math.sin(e * 7)) * .3); break;
+    case 'dance': h.inner.rotation.y = Math.sin(e * 6) * .7; A.forEach((a, i) => arm(a, -.2, 1.3 + Math.sin(e * 9 + i * 3) * .6)); hop(Math.abs(Math.sin(e * 9)) * .12); break;
+    case 'come': arm(A[1], -1.5 + Math.sin(e * 10) * .45, .1); arm(A[0], -.3, .3); break;
+  }
+}
+/* the little effects of an emote at a character (x, y = feet, z) */
+function emoFx(k, x, y, z, near){
+  if(k === 'heart') burst(x, y + 1.6, z, 10, HEART, 1.2, 1, -1, .6, 1.4);
+  else if(k === 'party') burst(x, y + 1.7, z, 22, [0xffc23d, 0xff8fb1, 0x5ed6a0, 0x6cc4ff, 0xffffff], 3.2, 1, 6, 2.4, 1);
+  else if(k === 'angry') burst(x, y + 1.9, z, 8, [0xffffff, 0xe0e0e0, 0xcfcfd8], .7, 1.6, -2.5, .4, 1);
+  else if(k === 'laugh') burst(x, y + 1.7, z, 6, STARC, 1, .8, -1, .4, .8);
+  if(!near) return;
+  if(k === 'heart') SFX.bell(); else if(k === 'party') SFX.found(); else if(k === 'angry') SFX.thump(); else if(k === 'dance') SFX.spin(); else if(k === 'laugh') SFX.boing(); else SFX.sit();
+}
+const emoOn = c => c && c.emo && performance.now() - c.emo.t0 < EMO_SEC * 1000;
+function bubbleEl(){ const d = document.createElement('div'); d.className = 'emo'; d.hidden = true; d.dir = 'auto'; labelsEl.appendChild(d); return d; }
+function showBubble(el, k){ el.textContent = emoText(k); el.hidden = false; el.style.animation = 'none'; void el.offsetWidth; el.style.animation = ''; el._t = performance.now(); }
+const bubOn = el => !!el._t && performance.now() - el._t < EMO_SEC * 1000;
+/* put a label / bubble over a point (or hide it); returns false when it is off screen */
+function project(el, x, y, z, on){
+  if(on){ _v.set(x, y, z).project(camera); if(_v.z > 1 || Math.abs(_v.x) > 1.15 || Math.abs(_v.y) > 1.15) on = false; }
+  if(el.hidden !== !on) el.hidden = !on;
+  if(on) el.style.transform = `translate(${(_v.x * SW / 2 + SW / 2).toFixed(1)}px,${(-_v.y * SH / 2 + SH / 2).toFixed(1)}px) translate(-50%,-100%)`;
+  return on;
 }
 
 const P = { x:0, y:0, z:0, vx:0, vz:0, vy:0, f:0, gr:true, act:null, jumpT:-9, climb:false, stepT:0 };
@@ -237,16 +295,29 @@ function placeAt(x, z, f = 0){ const y = PK.groundAt(x, z, 2); Object.assign(P, 
 const BOT_N = 3;
 const bots = [];
 function makeBots(){
-  for(const b of bots){ scene.remove(b.h.grp); b.lbl.remove(); }
+  for(const b of bots){ scene.remove(b.h.grp); b.lbl.remove(); b.bub.remove(); }
   bots.length = 0;
   const pool = HERO_IDS.filter(id => id !== 'me' && id !== heroId && id !== 'laila');
   for(let i = 0; i < BOT_N; i++){
     const id = pool[(i * 2 + 1) % pool.length], h = makeHero(id); scene.add(h.grp);
     const lbl = document.createElement('div'); lbl.className = 'dname'; lbl.hidden = true; lbl.textContent = heroName(id); labelsEl.appendChild(lbl);
     const a = i / BOT_N * 6.28 + .4;
-    bots.push({ id, h, lbl, x:PK.C.x + Math.cos(a) * 12, z:PK.C.z + Math.sin(a) * 12, y:0, f:a, vx:0, vz:0, vy:0, run:0, t:Math.random() * 9, task:null, wp:[], act:null, wait:1 + i, mode:'free' });
+    bots.push({ id, h, lbl, x:PK.C.x + Math.cos(a) * 12, z:PK.C.z + Math.sin(a) * 12, y:0, f:a, vx:0, vz:0, vy:0, run:0, t:Math.random() * 9, task:null, wp:[], act:null, wait:1 + i, mode:'free', bub:bubbleEl(), emo:null });
   }
 }
+/* public park: the bots are only on this phone, so they play only while no other real kid is in the park
+   (otherwise every phone would show its own bots on the same swings) */
+let BOTS_ON = true;
+function setBotsOn(on){
+  if(on === BOTS_ON) return;
+  BOTS_ON = on; hudKey = '';
+  if(!on){
+    if(mode){ mode = null; timerEl.hidden = true; }
+    for(const b of bots){ botLeave(b); b.mode = 'free'; b.hide = null; b.wait = 1; b.h.grp.visible = false; b.lbl.hidden = true; b.bub.hidden = true; }
+    if(state === 'games') resume();
+  }
+}
+function botEmote(b, k){ if(!BOTS_ON || !EMO[k]) return; b.emo = { k, t0:performance.now() }; showBubble(b.bub, k); emoFx(k, b.x, b.y, b.z, false); }
 
 /* ======================================================================
    Collectibles: hidden stars and golden autumn leaves
@@ -355,6 +426,7 @@ function placeJoyHome(){ joyHome = [Math.max(90, SAL + 84), SH - Math.max(96, SH
 function setJoy(x, y){ joyEl.style.left = x + 'px'; joyEl.style.top = y + 'px'; }
 touch.addEventListener('pointerdown', e => {
   e.preventDefault(); AU.ac();
+  if(!emosEl.hidden) emosEl.hidden = true;
   const p = toLayer(e.clientX, e.clientY);
   if(state !== 'play') return;
   if(p.x < SW * .42 && joy.id == null){
@@ -740,15 +812,17 @@ function stepMode(dt){
 const hudEl = $('#hud'), labelsEl = $('#labels');
 let hudKey = '', state = 'menu', coinBump = 0;
 function setPlayUI(on){
-  hudEl.hidden = !on; joyEl.hidden = !on; aBtn.hidden = !on; useBtn.hidden = !on;
-  if(!on){ exitBtn.hidden = true; $('#hint').hidden = true; timerEl.hidden = true; for(const b of bots) b.lbl.hidden = true; }
+  hudEl.hidden = !on; joyEl.hidden = !on; aBtn.hidden = !on; useBtn.hidden = !on; emoBtn.hidden = !on; chipEl.hidden = !on; hudKey = '';
+  if(!on){ emosEl.hidden = true; plistEl.hidden = true; exitBtn.hidden = true; $('#hint').hidden = true; timerEl.hidden = true; for(const b of bots) b.lbl.hidden = true; }
 }
 function hudFrame(dt){
   coinBump = Math.max(0, coinBump - dt);
   const n = nearestUse(), ak = P.act ? P.act.k : '';
-  const tk = [SAVE.coins, SAVE.stars.length, SAVE.leaves, n ? n.k : '', ak, todT].join('|');
+  const tk = [SAVE.coins, SAVE.stars.length, SAVE.leaves, n ? n.k : '', ak, todT, BOTS_ON, modeText()].join('|');
   if(tk !== hudKey){
     hudKey = tk;
+    $('#btnGames').hidden = !BOTS_ON;
+    chipEl.textContent = modeText(); chipEl.hidden = false;
     $('#hudCoins').textContent = N(SAVE.coins); $('#hudStars').textContent = '⭐ ' + N(SAVE.stars.length) + '/' + N(TOTAL_STARS); $('#hudLeaves').textContent = '🍂 ' + N(SAVE.leaves);
     useBtn.hidden = !!P.act; useBtn.classList.toggle('ready', !!n); useBtn.textContent = n ? ACT_ICON[n.k] : '👋';
     exitBtn.hidden = !P.act || ak === 'slide';
@@ -759,16 +833,53 @@ function hudFrame(dt){
   }
   const bc = $('#bigcoin'); if(coinBump > .25 && !bc.classList.contains('bump')){ bc.classList.add('bump'); setTimeout(() => bc.classList.remove('bump'), 300); }
 }
+/* ---------- which park am I in: «🌍 حديقة الكل · 7 أولاد» or «👫 غرفة 1234» (tap it: who is here, names only) ---------- */
+const chipEl = $('#roomChip'), plistEl = $('#plist'), emoBtn = $('#btnEmo'), emosEl = $('#emos');
+function kidsHere(){ return 1 + [...RM.values()].filter(a => a.seen && !a.away).length; }
+function modeText(){
+  if(MP.pub){
+    if(mpActive()) return '🌍 ' + L('حديقة الكل', "Everyone's park", 'Herkesin parkı') + ' · ' + N(kidsHere()) + ' ' + (kidsHere() === 1 ? L('ولد', 'kid', 'çocuk') : L('أولاد', 'kids', 'çocuk'));
+    return '🌍 ' + L('حديقة الكل', "Everyone's park", 'Herkesin parkı') + ' · ' + (MP.status === 'connecting' ? '⏳' : '📡');
+  }
+  if(mpActive() && MP.code) return '👫 ' + L('غرفة', 'Room', 'Oda') + ' ' + MP.code;
+  return '🌳 ' + L('لحالك', 'On your own', 'Tek başına') + ' · 📡';
+}
+function drawPlist(){
+  plistEl.textContent = '';
+  const row = (img, name) => { const d = document.createElement('div'); const i = document.createElement('img'); i.src = img; i.alt = ''; const sp = document.createElement('span'); sp.dir = 'auto'; sp.textContent = name; d.append(i, sp); plistEl.appendChild(d); };
+  const h = document.createElement('b'); h.textContent = modeText(); plistEl.appendChild(h);
+  row(charImg(heroId), L('إنت', 'You', 'Sen') + ((ME && ME.name) ? ' · ' + ME.name : ''));
+  [...RM.values()].filter(a => a.seen && !a.away).sort((p, q) => (p.d || 0) - (q.d || 0)).slice(0, 15).forEach(a => row(heroPic(a.hero, a.av), nameOf(a)));
+}
+chipEl.onclick = () => { if(state !== 'play') return; SFX.tap(); plistEl.hidden = !plistEl.hidden; if(!plistEl.hidden){ drawPlist(); clearTimeout(plistEl._t); plistEl._t = setTimeout(() => { plistEl.hidden = true; }, 7000); } };
+/* ---------- emote button 😊 → the fixed reactions ---------- */
+emosEl.innerHTML = EMOTES.map(x => `<button data-k="${x.k}" aria-label="${x.n()}"><i>${x.e}</i><small>${x.n()}</small></button>`).join('');
+emosEl.querySelectorAll('button').forEach(b => b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); emote(b.dataset.k); emosEl.hidden = true; }));
+emoBtn.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); if(state !== 'play') return; SFX.tap(); emosEl.hidden = !emosEl.hidden; });
+let lastEmo = -1e9;
+function emote(k, quiet){
+  if(!EMO[k] || state !== 'play') return false;
+  const now = performance.now(); if(now - lastEmo < EMO_GAP) return false;   // one emote per 1.5 s
+  lastEmo = now;
+  P.emo = { k, t0:now };
+  if(!myBubble) myBubble = bubbleEl();
+  showBubble(myBubble, k); emoFx(k, P.x, P.y, P.z, true);
+  if(k === 'party' && P.gr && !P.act){ P.vy = JUMP * .8; P.gr = false; }
+  if(!quiet) mpSend('emo', { k });
+  return true;
+}
 function popText(text){ const box = $('#pops'); while(box.children.length > 2) box.firstChild.remove(); const d = document.createElement('div'); d.className = 'pop'; d.textContent = text; box.appendChild(d); setTimeout(() => d.remove(), 1700); }
 function placeBotLabels(){
-  const w2 = SW / 2, h2 = SH / 2;
+  const play = state === 'play';
   for(const b of bots){
-    const show = state === 'play' && b.mode !== 'hidden' && Math.hypot(b.x - P.x, b.z - P.z) < 13;
-    if(!show){ b.lbl.hidden = true; continue; }
-    _v.set(b.x, b.y + 1.75, b.z).project(camera); if(_v.z > 1){ b.lbl.hidden = true; continue; }
-    b.lbl.hidden = false; b.lbl.style.transform = `translate(${(_v.x * w2 + w2).toFixed(1)}px,${(-_v.y * h2 + h2).toFixed(1)}px) translate(-50%,-100%)`;
+    const d = Math.hypot(b.x - P.x, b.z - P.z);
+    const nm = project(b.lbl, b.x, b.y + 1.75, b.z, play && BOTS_ON && b.mode !== 'hidden' && d < 13);
+    project(b.bub, b.x, b.y + (nm ? 2.3 : 1.9), b.z, play && BOTS_ON && bubOn(b.bub) && d < 30);
   }
+  if(!myBubble) myBubble = bubbleEl();
+  project(myBubble, P.x, P.y + 1.95, P.z, play && bubOn(myBubble));
 }
+let myBubble = null;
 
 /* ======================================================================
    Cards: title, hero picker, pause, games
@@ -782,7 +893,7 @@ function sndBtn(){ return `<button class="icon-btn sndbtn" id="bSnd" aria-label=
 function wireSnd(){ const b = $('#bSnd'); if(b) b.onclick = () => { AU.setMuted(!AU.muted); b.textContent = AU.muted ? '🔇' : '🔊'; if(!AU.muted) SFX.tap(); applyTod(); }; }
 function menuView(){ cam.yaw = 2.6; cam.pAdj = .12; P.x = C.x - 2; P.z = C.z + 4; P.y = .12; P.act = null; cam.snap = true; }
 function showTitle(){
-  if(MP.t) coStop();
+  if(!MP.pub && (MP.t || MP.screen !== 'off')) coStop();
   if(mode) endMode(false);
   state = 'menu'; setPlayUI(false); AU.music(false); clearInput(); ambWanted = false; AU.ambience(false);
   menuView();
@@ -793,13 +904,26 @@ function showTitle(){
     <p class="sub">🌳 ${L('حديقتنا بالحارة! تزحلق، تمرجح، العب عالميزان، لمّ النجوم وورق الخريف.', 'Our neighbourhood park! Slide, swing, ride the seesaw, collect stars and autumn leaves.', 'Mahallemizin parkı! Kay, sallan, tahterevalliye bin, yıldız ve yaprak topla.')}</p>
     ${myHeroBtn()}
     <div class="stars"><span>🪙 ${N(SAVE.coins)}</span><span>⭐ ${N(SAVE.stars.length)}/${N(TOTAL_STARS)}</span><span>🍂 ${N(SAVE.leaves)}</span></div>
+    <p class="sub publine" id="pubLine"></p>
     <div class="row"><button class="big-btn" id="bPlay">▶️ ${SAVE.total ? L('كمّل', 'Continue', 'Devam') : L('العب', 'Play', 'Oyna')}</button>
     <button class="big-btn pink" id="bMP">👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</button></div></div>`;
   wireSnd();
   $('#bMP').onclick = () => { AU.ac(); SFX.tap(); mpMenu(); };
   $('#bMyHero').onclick = () => { SFX.tap(); showSelect('menu'); };
   $('#bPlay').onclick = () => { AU.ac(); SFX.tap(); beginGame(); };
+  pubLine(); pubEnsure();
 }
+/* on the title: «🌍 حديقة الكل · 3 أولاد عم يلعبوا هلّق» */
+function pubLine(){
+  const el = $('#pubLine'); if(!el) return;
+  const n = kidsHere() - 1;
+  const t = !MP.pub ? '' : !mpActive() ? '🌍 ' + L('عم نفتح حديقة الكل…', "Opening everyone's park…", 'Herkesin parkı açılıyor…') + (MP.status === 'connecting' ? ' ⏳' : ' 📡')
+    : n > 0 ? '🌍 ' + L('حديقة الكل', "Everyone's park", 'Herkesin parkı') + ': ' + N(n) + ' ' + L('أولاد عم يلعبوا هلّق', 'kids playing now', 'çocuk şu an oynuyor')
+    : '🌍 ' + L('حديقة الكل: إنت أول واحد هون!', "Everyone's park: you're the first one here!", 'Herkesin parkı: ilk gelen sensin!');
+  if(el.textContent !== t) el.textContent = t;
+  el.hidden = !t;
+}
+setInterval(() => { if(state === 'menu') pubLine(); }, 700);
 let selFrom = 'menu';
 function showSelect(from){
   selFrom = from || 'menu'; state = 'select';
@@ -816,7 +940,7 @@ function showPause(force){
   state = 'pause'; clearInput(); AU.music(false);
   showOverlay('dim'); card.className = 'card wide';
   card.innerHTML = `${sndBtn()}<h2>⏸️ ${L('استراحة', 'Paused', 'Mola')}</h2>
-    ${mpActive() ? `<p>👫 ${L('أصحابك لسّا عم يلعبوا · غرفة', 'Your friends keep playing · room', 'Arkadaşların oynuyor · oda')} <bdi dir="ltr">${MP.code}</bdi></p>` : ''}
+    ${mpActive() && !MP.pub ? `<p>👫 ${L('أصحابك لسّا عم يلعبوا · غرفة', 'Your friends keep playing · room', 'Arkadaşların oynuyor · oda')} <bdi dir="ltr">${MP.code}</bdi></p>` : MP.pub ? `<p>${modeText()}</p>` : ''}
     <div class="row"><span class="tag" style="--rc:#ffe27a">⭐ ${N(SAVE.stars.length)}/${N(TOTAL_STARS)}</span><span class="tag" style="--rc:#ffd2a0">🍂 ${N(SAVE.leaves)}</span><span class="tag" style="--rc:#c8f0d8">🏃 ${N(SAVE.wins.tag | 0)} · 🙈 ${N(SAVE.wins.seek | 0)}</span></div>
     <div class="row"><button class="big-btn mint" id="bResume">▶️ ${L('كمّل', 'Continue', 'Devam')}</button>${myHeroBtn()}</div>
     <div class="row"><button class="ghost-btn" id="bTod2">${TOD_ICON[todT]} ${L('نهار / مسا / ليل', 'Day / evening / night', 'Gündüz / akşam / gece')}</button><button class="ghost-btn" id="bMenu">🏠 ${L('القائمة', 'Menu', 'Menü')}</button></div>
@@ -855,6 +979,18 @@ function beginGame(){
   if(!started){ started = true; placeAt(PK.spawn.x, PK.spawn.z, PK.spawn.f); }
   cam.snap = true;
   AU.music(true); ambWanted = true; applyTod();
+  welcome();
+}
+/* «أهلا وسهلا 👋»: a welcome toast; I wave to the others (online), or a bot nearby waves to me */
+function welcome(){
+  toast(L('أهلا وسهلا 👋', 'Welcome 👋', 'Hoş geldin 👋') + (ME && ME.name ? ' ' + ME.name : ''), 2600);
+  clearTimeout(welcome.t);
+  welcome.t = setTimeout(() => {
+    if(state !== 'play') return;
+    if(mpActive() && kidsHere() > 1){ emote('wave'); return; }
+    const b = bots.filter(b => !b.act && b.mode === 'free').sort((p, q) => Math.hypot(p.x - P.x, p.z - P.z) - Math.hypot(q.x - P.x, q.z - P.z))[0];
+    if(b && Math.hypot(b.x - P.x, b.z - P.z) < 18){ b.f = Math.atan2(P.x - b.x, P.z - b.z); botEmote(b, 'wave'); }
+  }, 1200);
 }
 let last = performance.now(), fpsT = 0, fpsN = 0, lowT = 0, frozen = false;
 function frame(now){
@@ -863,19 +999,20 @@ function frame(now){
   const rdt = Math.min(.5, Math.max(0, (now - last) / 1000)); let dt = Math.min(.05, rdt); last = now;
   const t = now / 1000;
   if(Math.abs(tod - todT) > .001){ tod += clamp(todT - tod, -rdt * .8, rdt * .8); applyTod(); }
-  const live = state !== 'menu' && state !== 'select' && state !== 'mp';
+  const live = state !== 'menu' && state !== 'select' && state !== 'mp' && state !== 'name';
   if(state === 'play') stepHero(dt);
-  if(live){ for(const b of bots) stepBot(b, dt); stepMode(state === 'play' ? rdt : 0); }
+  setBotsOn(!(MP.pub && mpActive() && [...RM.values()].some(a => a.seen && !a.away)));
+  if(live && BOTS_ON){ for(const b of bots) stepBot(b, dt); stepMode(state === 'play' ? rdt : 0); }
   stepSwings(dt); stepSeesaw(dt); stepSprings(dt); stepPigeons(t, dt); stepCats(t, dt); PK.tick(t, dt);
   if(state === 'play') hudFrame(dt);
   mpFrame(dt); stepRemotes(dt);
-  if(state === 'menu' || state === 'mp' || state === 'select'){ cam.yaw += dt * .07; }
+  if(state === 'menu' || state === 'mp' || state === 'select' || state === 'name'){ cam.yaw += dt * .07; }
   // draw the hero and bots
   const a = P.act;
-  drawChar(hero, { t, dt, run:clamp(Math.hypot(P.vx, P.vz) / RUN, 0, 1), air:!P.gr && !a, vy:P.vy, sit:a && a.k !== 'hide' ? 1 : 0, slide:a && a.k === 'slide', climb:P.climb, crouch:a && a.k === 'hide', kick:a && a.k === 'swing' }, P.x, P.y, P.z, P.f, a ? (a.k === 'slide' ? a.pitch * .6 : a.pitch) : 0);
+  drawChar(hero, { t, dt, run:clamp(Math.hypot(P.vx, P.vz) / RUN, 0, 1), air:!P.gr && !a, vy:P.vy, sit:a && a.k !== 'hide' ? 1 : 0, slide:a && a.k === 'slide', climb:P.climb, crouch:a && a.k === 'hide', kick:a && a.k === 'swing', emo:emoOn(P) ? P.emo : null }, P.x, P.y, P.z, P.f, a ? (a.k === 'slide' ? a.pitch * .6 : a.pitch) : 0);
   hero.grp.visible = state !== 'menu' || true;
   blob.position.set(P.x, PK.groundAt(P.x, P.z, P.y) + .02, P.z); const bs = clamp(1 - (P.y - PK.groundAt(P.x, P.z, P.y)) * .3, .4, 1); blob.scale.set(bs, 1, bs);
-  for(const b of bots){ const ba = b.act; b.h.grp.visible = live || state === 'menu'; drawChar(b.h, { t:b.t, dt, run:b.run, air:false, vy:0, sit:ba ? 1 : 0, slide:ba && ba.k === 'slide', crouch:b.mode === 'hidden', cheer:b.mode === 'caught' && b.t % 3 < 1.5, kick:ba && ba.k === 'swing' }, b.x, b.y, b.z, b.f, ba ? (ba.k === 'slide' ? (ba.pitch || 0) * .6 : (ba.pitch || 0)) : 0); }
+  for(const b of bots){ const ba = b.act; b.h.grp.visible = BOTS_ON && (live || state === 'menu'); if(!b.h.grp.visible) continue; drawChar(b.h, { t:b.t, dt, run:b.run, air:false, vy:0, sit:ba ? 1 : 0, slide:ba && ba.k === 'slide', crouch:b.mode === 'hidden', cheer:b.mode === 'caught' && b.t % 3 < 1.5, kick:ba && ba.k === 'swing', emo:emoOn(b) ? b.emo : null }, b.x, b.y, b.z, b.f, ba ? (ba.k === 'slide' ? (ba.pitch || 0) * .6 : (ba.pitch || 0)) : 0); }
   drawLeaves(t);
   for(const s of stars) if(s.on){ s.m.rotation.y = t * 2 + s.i; s.m.position.y = s.y + Math.sin(t * 2.4 + s.i) * .08; }
   PK.PANELS.forEach(() => {});
@@ -899,7 +1036,7 @@ let lastFps = 0;
    Nothing is stored on a server.
    ====================================================================== */
 const MP_URL = 'https://vgpwtrzplggvlsuvqsas.supabase.co', MP_KEY = 'sb_publishable_D9thEhZlZnfn0t06j8h1Rw_H-LVF786';
-const MP_EVENTS = ['pos', 'hi', 'ss', 'tag'];
+const MP_EVENTS = ['pos', 'hi', 'ss', 'tag', 'emo'];
 const MP_MAX = 4;
 function loadSupabase(){
   if(window.supabase && window.supabase.createClient) return Promise.resolve();
@@ -955,8 +1092,11 @@ class LocalTransport{
   send(ev, p){ if(this.bc) this.bc.postMessage({ k:'b', ev, p }); }
   close(){ clearInterval(this.iv); if(this.bc){ if(this.meta) this.bc.postMessage({ k:'bye', from:this.id }); this.bc.close(); this.bc = null; } }
 }
-const MP = { t:null, id:null, code:null, list:[], players:[], meta:null, hostId:null, synced:false, screen:'off', tok:0, posT:0, typed:'', inviteFor:null, err:'' };
-window.__boboRoom = () => (MP.t && MP.meta && MP.code) ? MP.code : null;
+const MP = { t:null, id:null, code:null, list:[], players:[], meta:null, hostId:null, synced:false, screen:'off', tok:0, posT:0, typed:'', inviteFor:null, err:'',
+  pub:false, shard:0, status:'off', joining:0, back:0, reT:0, sig:'', wasMoving:false, away:false, joinToastT:0 };
+window.__boboRoom = () => (MP.t && MP.meta && MP.code && !MP.pub) ? MP.code : null;
+let ME = null;          // Friends.me(): { code, name, ... } (my own name is shown only to me)
+let BOOTED = false;     // the public park opens after the «شو اسمك؟» question at start
 const mpActive = () => !!(MP.t && MP.meta);
 const mpNewId = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 const mpSort = (a, b) => ((a.o || 0) - (b.o || 0)) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -999,7 +1139,7 @@ function mpClose(){
 }
 function myMeta(){ return { fc:BoboRT.fc(), hero:heroId, av:heroId === 'me' ? myAv() : null }; }
 async function mpOpen(code, how){
-  mpClose();
+  mpClose(); MP.pub = false; clearTimeout(MP.reT); MP.reT = 0;
   const t = MP_LOCAL ? new LocalTransport() : new SupabaseTransport(), tok = ++MP.tok;
   MP.t = t; MP.code = code; MP.id = MP.id || mpNewId();
   const live = () => MP.t === t && MP.tok === tok;
@@ -1027,31 +1167,102 @@ async function mpOpen(code, how){
   frRoom(code);
   return 'ok';
 }
+/* ---------- «🌍 حديقة الكل»: the public park. Join the first shard `bobo-hara-pub-<n>` with room (< CAP kids) ---------- */
+function mpHandlers(t, live){
+  return {
+    presence:list => { if(live()) mpPresence(list); },
+    msg:(ev, p) => { if(live() && p && typeof p === 'object' && typeof p.id === 'string') mpMsg(ev, p); },
+    status:s => { if(!live()) return; if(s === 'up'){ mpTrack(); MP.sig = ''; mpSend('hi', {}); } hudKey = ''; }
+  };
+}
+async function pubJoin(from = 1){
+  if(!BOOTED || MP.joining || (MP.screen !== 'off' && MP.screen !== 'pub')) return;
+  const tok = ++MP.tok; MP.joining = tok;
+  MP.pub = true; MP.screen = 'pub'; MP.status = 'connecting'; hudKey = '';
+  clearTimeout(MP.reT); MP.reT = 0;
+  try{
+    for(let n = Math.max(1, from); n <= SHARDS; n++){
+      if(MP.tok !== tok) return;
+      mpClose(); MP.pub = true;
+      const t = MP_LOCAL ? new LocalTransport() : new SupabaseTransport();
+      MP.t = t; MP.code = 'pub-' + n; MP.id = MP.id || mpNewId();
+      const live = () => MP.t === t && MP.tok === tok;
+      try{ await t.open(MP.code, MP.id, mpHandlers(t, live)); }catch(e){ if(live()) mpClose(); throw e; }
+      if(!live()) return;
+      // the server sends the member list only after we track something: a short 'probe' first, then wait for the list
+      const t0 = performance.now(); t.track({ ph:'probe' });
+      await new Promise(res => { const chk = () => (MP.synced || performance.now() - t0 > 6000 || !live()) ? res() : setTimeout(chk, 40); chk(); });
+      if(MP.synced) await new Promise(r => setTimeout(r, 250));
+      if(!live()) return;
+      const others = MP.list.filter(p => p.id !== MP.id);
+      if(others.length >= CAP) continue;
+      const used = new Set(others.map(p => p.c | 0)); let c = 0; while(used.has(c)) c++;
+      MP.shard = n; MP.back = 0;
+      MP.meta = Object.assign(myMeta(), { ph:'play', c, o:others.reduce((m, p) => Math.max(m, +p.o || 0), 0) + 1 });
+      t.track(MP.meta); MP.status = 'on'; hudKey = '';
+      mpPresence(MP.list);
+      MP.sig = ''; MP.posT = 0; mpSend('hi', {});
+      return;
+    }
+    mpClose(); MP.status = 'full'; pubRetry(30000);
+  }catch(e){ if(MP.tok === tok){ mpClose(); MP.status = 'down'; MP.joining = 0; pubRetry(); } }
+  finally{ if(MP.joining === tok) MP.joining = 0; hudKey = ''; }
+}
+/* could not open the channel (no internet…): try again with backoff. A channel that drops later is re-joined by ../rt.js */
+function pubRetry(ms){
+  if(MP.reT || MP.screen !== 'pub') return;
+  MP.back = Math.min(30000, MP.back ? MP.back * 2 : 2000);
+  MP.reT = setTimeout(() => { MP.reT = 0; if(MP.screen === 'pub' && !MP.joining && !mpActive()) pubJoin(MP.shard || 1); }, ms || MP.back);
+}
+function pubEnsure(){ if(BOOTED && (MP.screen === 'off' || (MP.screen === 'pub' && !mpActive() && !MP.joining && !MP.reT))){ MP.screen = 'off'; pubJoin(MP.shard || 1); } }
+addEventListener('online', () => { if(MP.screen === 'pub' && !mpActive()){ clearTimeout(MP.reT); MP.reT = 0; MP.back = 0; pubEnsure(); } });
 function mpTrack(){ if(MP.t && MP.meta){ Object.assign(MP.meta, myMeta()); MP.meta.fc = MP.meta.fc || BoboRT.fc(); MP.t.track(MP.meta); } }
 function mpSend(ev, p){ if(MP.t && MP.meta) MP.t.send(ev, Object.assign({ id:MP.id }, p)); }
 function mpPresence(list){
   list = (list || []).filter(p => p && p.ph !== 'probe');
-  BoboRT.see(list, () => { if(MP.screen === 'lobby') mpLobbyDraw(); });
+  BoboRT.see(list, () => { if(MP.screen === 'lobby') mpLobbyDraw(); if(!plistEl.hidden) drawPlist(); });
   MP.list = list; MP.synced = true;
   if(!MP.meta) return;
   const all = list.filter(p => p.id !== MP.id).concat([Object.assign({}, MP.meta, { id:MP.id })]).sort(mpSort);
-  if(all.findIndex(p => p.id === MP.id) >= MP_MAX){ coStop(); showTitle(); toast(L('الغرفة مليانة 🙈', 'The room is full 🙈', 'Oda dolu 🙈')); return; }
+  const max = MP.pub ? CAP : MP_MAX, mine = all.findIndex(p => p.id === MP.id);
+  if(mine >= max){
+    // two kids came in at the same moment and the public park went over the cap: the later one moves to the next shard
+    if(MP.pub){ if(!MP.joining){ const n = MP.shard + 1; MP.tok++; mpClose(); MP.screen = 'pub'; setTimeout(() => pubJoin(n), 50); } return; }
+    coStop(); showTitle(); toast(L('الغرفة مليانة 🙈', 'The room is full 🙈', 'Oda dolu 🙈')); return;
+  }
   const before = MP.players.map(p => p.id);
-  MP.players = all.slice(0, MP_MAX);
+  MP.players = all.slice(0, max);
   if(MP.hostId && !MP.players.some(p => p.id === MP.hostId)) MP.hostId = MP.players[0] && MP.players[0].id;
-  const joined = MP.players.filter(p => p.id !== MP.id && !before.includes(p.id));
-  if(joined.length && before.length){ SFX.check(); toast('👋 ' + joined.map(p => BoboRT.who(p.id, '') || heroName(okHero(p.hero))).join('، ') + ' ' + L('فات عالحديقة!', 'came to the park!', 'parka geldi!')); }
   remoteSync(MP.players);
-  MP.posT = 0;
+  const joined = MP.players.filter(p => p.id !== MP.id && !before.includes(p.id));
+  const now = performance.now();
+  if(joined.length && before.length && state === 'play' && now - MP.joinToastT > 4000){
+    MP.joinToastT = now; SFX.check();
+    toast('👋 ' + joined.slice(0, 3).map(p => nameOf(RM.get(p.id))).join('، ') + ' ' + L('فات عالحديقة!', 'came to the park!', 'parka geldi!'), 2600);
+  }
+  MP.posT = 0; MP.sig = '';
   if(MP.screen === 'lobby') mpLobbyDraw();
+  hudKey = '';
 }
 const ACT_CODE = ['', 'slide', 'swing', 'seesaw', 'spring', 'bench', 'hide'];
 function mpMsg(ev, p){
   if(ev === 'pos'){ onPos(p); return; }
-  if(ev === 'hi'){ MP.posT = 0; return; }
+  if(ev === 'hi'){ MP.posT = 0; MP.sig = ''; return; }
   if(ev === 'ss'){ const a = RM.get(p.id); if(a && (p.s === 0 || p.s === 1) && P.act && P.act.k === 'seesaw') seesawPush(p.s, false); return; }
-  if(ev === 'tag'){ if(p.to === MP.id && state === 'play'){ const a = RM.get(p.id); SFX.tag(); toast('🙌 ' + ((a && BoboRT.who(a.id, '')) || heroName(a ? a.hero : 'sara')) + ' ' + L('لقطك! إلحقه إنت هلّق', 'tagged you! Now you chase', 'seni yakaladı! Şimdi sen kovala'), 2600); } return; }
+  if(ev === 'emo'){
+    // only the emote id travels; a kid who sends too fast is ignored
+    const a = RM.get(p.id), k = typeof p.k === 'string' && EMO[p.k] ? p.k : null, now = performance.now();
+    if(!a || !k || now - (a.emoAt || -1e9) < EMO_GAP_RX) return;
+    a.emoAt = now; a.emo = { k, t0:now };
+    if(a.bub) showBubble(a.bub, k);
+    if(a.drawn) emoFx(k, a.dx, a.dy, a.dz, Math.hypot(a.dx - P.x, a.dz - P.z) < 12 && state === 'play');
+    return;
+  }
+  if(ev === 'tag'){ if(!MP.pub && p.to === MP.id && state === 'play'){ const a = RM.get(p.id); SFX.tag(); toast('🙌 ' + (a ? nameOf(a) : heroName('sara')) + ' ' + L('لقطك! إلحقه إنت هلّق', 'tagged you! Now you chase', 'seni yakaladı! Şimdi sen kovala'), 2600); } return; }
 }
+/* position: ~7×/s while moving or riding, one last update when stopping, then a small keep-alive every ~3 s;
+   'away' = back on the title screen (the others hide me) */
+const POS_HZ = 7;
 function mpFrame(dt){
   if(!mpActive()) return;
   MP.posT -= dt; MP.fcT = (MP.fcT || 0) - dt;
@@ -1060,83 +1271,115 @@ function mpFrame(dt){
     if(c){ MP.meta.fc = c; MP.t.track(MP.meta); }
     else if(!MP.fcAsked && window.Friends && Friends.has && Friends.has()){ MP.fcAsked = true; try{ const q = Friends.me(); if(q && q.catch) q.catch(() => {}); }catch(e){} }
   }
-  if(MP.posT <= 0 && (state === 'play' || state === 'pause' || state === 'games')){
-    MP.posT = .1;
-    const a = P.act, k = a ? ACT_CODE.indexOf(a.k) : 0;
-    let av = 0, bv = 0;
-    if(a && a.k === 'swing') av = PK.SWINGS[a.i].ang; else if(a && a.k === 'seesaw') av = PK.SEESAW.ang; else if(a && a.k === 'spring'){ av = PK.SPRINGS[a.i].ax; bv = PK.SPRINGS[a.i].az; } else if(a && a.k === 'slide') av = a.pitch || 0;
-    mpSend('pos', { x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.f), m:r2(clamp(Math.hypot(P.vx, P.vz) / RUN, 0, 1)), air:P.gr ? 0 : 1, vy:r2(P.vy), k, i:a ? (a.i | 0) : 0, a:r2(av), b:r2(bv) });
+  const inPark = state === 'play' || state === 'pause' || state === 'games';
+  if(!inPark){
+    if(!MP.away && MP.posT <= 0){ MP.away = true; MP.posT = 3; mpSend('pos', { away:1 }); }
+    else if(MP.away && MP.posT <= 0){ MP.posT = 3; mpSend('pos', { away:1 }); }
+    return;
   }
+  const a = P.act, k = a ? ACT_CODE.indexOf(a.k) : 0;
+  const moving = Math.hypot(P.vx, P.vz) > .05 || !P.gr || (a && a.k !== 'bench' && a.k !== 'hide');
+  const sig = k + ':' + (a ? a.i : 0) + ':' + (MP.away ? 1 : 0);
+  const due = moving ? MP.posT <= 0 : (MP.wasMoving || sig !== MP.sig || MP.posT <= -2.8);
+  MP.wasMoving = moving;
+  if(!due) return;
+  MP.posT = 1 / POS_HZ; MP.sig = sig; MP.away = false;
+  let av = 0, bv = 0;
+  if(a && a.k === 'swing') av = PK.SWINGS[a.i].ang; else if(a && a.k === 'seesaw') av = PK.SEESAW.ang; else if(a && a.k === 'spring'){ av = PK.SPRINGS[a.i].ax; bv = PK.SPRINGS[a.i].az; } else if(a && a.k === 'slide') av = a.pitch || 0;
+  mpSend('pos', { x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.f), m:r2(clamp(Math.hypot(P.vx, P.vz) / RUN, 0, 1)), air:P.gr ? 0 : 1, vy:r2(P.vy), k, i:a ? (a.i | 0) : 0, a:r2(av), b:r2(bv) });
 }
-function coStop(){ MP.tok++; mpClose(); MP.screen = 'off'; }
+function coStop(){ MP.tok++; mpClose(); MP.pub = false; MP.joining = 0; clearTimeout(MP.reT); MP.reT = 0; MP.screen = 'off'; }
 
-/* ---------- friends in the park ---------- */
+/* ---------- the other kids in the park ---------- */
 const RM = new Map();
-function labelEl(){ const d = document.createElement('div'); d.className = 'nm'; d.hidden = true; labelsEl.appendChild(d); return d; }
-function dropRemote(id){ const a = RM.get(id); if(!a) return; if(a.h) a.h.grp.parent && a.h.grp.parent.remove(a.h.grp); a.lbl.remove(); RM.delete(id); }
+function labelEl(){ const d = document.createElement('div'); d.className = 'nm'; d.hidden = true; d.dir = 'auto'; labelsEl.appendChild(d); return d; }
+function dropRemote(id){ const a = RM.get(id); if(!a) return; if(a.h) a.h.grp.parent && a.h.grp.parent.remove(a.h.grp); a.lbl.remove(); a.bub.remove(); RM.delete(id); }
+/* the name over a head: only the server's name for the kid's friend code (../rt.js → Friends.names); a kid without one
+   (or before it arrives) is «<hero> <number>» — nothing a kid typed ever travels between phones */
+function nameOf(a){
+  if(!a) return '';
+  const n = BoboRT.who(a.id, '');
+  if(n) return n;
+  return (a.hero === 'me' ? L('صاحب', 'Buddy', 'Arkadaş') : heroName(a.hero)) + (MP.pub ? ' ' + N((a.c | 0) + 1) : '');
+}
 function remoteSync(list){
   const here = new Set();
   for(const p of list){
     if(p.id === MP.id) continue;
     here.add(p.id);
     let a = RM.get(p.id);
-    if(!a){ a = { id:p.id, key:'', h:null, lbl:labelEl(), buf:[], seen:false, t:Math.random() * 5, x:0, y:0, z:0, f:0, m:0, air:0, vy:0, k:'', i:0, a:0, b:0, vis:false }; RM.set(p.id, a); }
+    if(!a){ a = { id:p.id, key:'', h:null, lbl:labelEl(), bub:bubbleEl(), buf:[], seen:false, away:false, t:Math.random() * 5, x:0, y:0, z:0, f:0, m:0, air:0, vy:0, k:'', i:0, a:0, b:0, c:0, vis:false, emo:null }; RM.set(p.id, a); }
+    a.c = numIn(p.c, 0, 99) | 0;
     const hero = okHero(p.hero), av = hero === 'me' ? okAv(p.av) : null;
     const key = hero + '|' + (av ? JSON.stringify(av) : '');
-    if(a.key !== key){ if(a.h) a.h.grp.parent && a.h.grp.parent.remove(a.h.grp); a.key = key; a.hero = hero; a.h = makeHero(hero, av); a.h.grp.visible = false; scene.add(a.h.grp); }
+    if(a.key !== key){ if(a.h) a.h.grp.parent && a.h.grp.parent.remove(a.h.grp); a.key = key; a.hero = hero; a.av = av; a.h = null; }
   }
   for(const id of [...RM.keys()]) if(!here.has(id)) dropRemote(id);
 }
 function onPos(p){
   const a = RM.get(p.id); if(!a) return;
-  a.buf.push({ t:performance.now(), x:numIn(p.x, -200, 200), y:numIn(p.y, -10, 30), z:numIn(p.z, -200, 200), f:numIn(p.f, -1e3, 1e3), m:numIn(p.m, 0, 1) });
+  if(p.away){ a.away = true; a.buf.length = 0; return; }
+  const now = performance.now();
+  a.buf.push({ t:now, x:numIn(p.x, -200, 200), y:numIn(p.y, -10, 30), z:numIn(p.z, -200, 200), f:numIn(p.f, -1e3, 1e3), m:numIn(p.m, 0, 1) });
   if(a.buf.length > 12) a.buf.shift();
-  if(!a.seen){ const b = a.buf[0]; a.x = b.x; a.y = b.y; a.z = b.z; a.f = b.f; }
-  a.seen = true; a.air = p.air ? 1 : 0; a.vy = numIn(p.vy, -40, 40);
+  if(!a.seen || a.away){ const b = a.buf[a.buf.length - 1]; a.x = b.x; a.y = b.y; a.z = b.z; a.f = b.f; }
+  a.seen = true; a.away = false; a.air = p.air ? 1 : 0; a.vy = numIn(p.vy, -40, 40);
   const k = ACT_CODE[numIn(p.k, 0, ACT_CODE.length - 1) | 0] || '';
   const maxI = k === 'swing' ? PK.SWINGS.length - 1 : k === 'spring' ? PK.SPRINGS.length - 1 : k === 'seesaw' ? 1 : k === 'bench' ? PK.BENCHES.length - 1 : k === 'hide' ? PK.HIDES.length - 1 : k === 'slide' ? PK.SLIDES.length - 1 : 0;
   a.k = k; a.i = numIn(p.i, 0, maxI) | 0; a.a = numIn(p.a, -1.5, 1.5); a.b = numIn(p.b, -1, 1);
 }
+/* drawing: positions are interpolated ~250 ms behind; only the nearest FULL_MAX kids are drawn (mid phones),
+   names only for the nearest LABEL_MAX */
+const INTERP = 250, FULL_MAX = 12, LABEL_MAX = 8, LABEL_DIST = 26;
+const rBlobs = new THREE.InstancedMesh(blob.geometry, blob.material, FULL_MAX); rBlobs.count = 0; rBlobs.frustumCulled = false; rBlobs.renderOrder = 6; scene.add(rBlobs);
 function stepRemotes(dt){
-  const now = performance.now(), rt = now - 200;
+  const now = performance.now(), rt = now - INTERP, inPark = state !== 'menu' && state !== 'mp' && state !== 'select' && state !== 'name';
   for(const a of RM.values()){
     a.t += dt;
     if(a.buf.length){
       let i = a.buf.length - 1; while(i > 0 && a.buf[i - 1].t > rt) i--;
       const q = a.buf[i], pr = i > 0 ? a.buf[i - 1] : null; let s = q;
       if(pr && q.t > rt){ const k = clamp((rt - pr.t) / Math.max(1, q.t - pr.t), 0, 1); s = { x:lerp(pr.x, q.x, k), y:lerp(pr.y, q.y, k), z:lerp(pr.z, q.z, k), m:lerp(pr.m, q.m, k), f:pr.f + angDiff(q.f, pr.f) * k }; }
+      else if(now - q.t > 900) s = { x:q.x, y:q.y, z:q.z, f:q.f, m:0 };            // no news for a while: standing still
       const k = 1 - Math.exp(-16 * dt);
       a.x = lerp(a.x, s.x, k); a.y = lerp(a.y, s.y, k); a.z = lerp(a.z, s.z, k); a.f += angDiff(s.f, a.f) * k; a.m = lerp(a.m, s.m, k);
     }
+    a.vis = a.seen && !a.away && inPark;
+    a.d = Math.hypot(a.x - P.x, a.z - P.z);
+  }
+  const near = [...RM.values()].filter(a => a.vis && a.k !== 'hide').sort((p, q) => p.d - q.d);
+  let nb = 0;
+  const full = new Set(near.slice(0, FULL_MAX)), named = new Set(near.slice(0, LABEL_MAX).filter(a => a.d < LABEL_DIST));
+  for(const a of RM.values()){
+    a.named = named.has(a);
+    const show = full.has(a);
+    a.drawn = show;
+    if(show && !a.h){ a.h = makeHero(a.hero, a.av); if(MP.pub) a.h.grp.traverse(o => { if(o.isMesh) o.castShadow = false; }); scene.add(a.h.grp); }      // built only when it first comes near; no real shadow in the big park (a soft blob instead)
     if(!a.h) continue;
-    const show = a.seen && state !== 'menu' && state !== 'mp' && state !== 'select' && a.k !== 'hide';
-    a.vis = a.seen && state !== 'menu' && state !== 'mp' && state !== 'select';
     a.h.grp.visible = show; if(!show) continue;
     let x = a.x, y = a.y, z = a.z, f = a.f, pitch = 0;
     if(a.k === 'swing' || a.k === 'seesaw' || a.k === 'spring' || a.k === 'bench'){ const r = seatOf(a.k, a.i, _v2); x = _v2.x; y = _v2.y; z = _v2.z; f = r.f; pitch = r.pitch || 0; }
     else if(a.k === 'slide') pitch = a.a * .6;
-    drawChar(a.h, { t:a.t, dt, run:a.m, air:!!a.air, vy:a.vy, sit:a.k && a.k !== 'hide' ? 1 : 0, slide:a.k === 'slide', kick:a.k === 'swing' }, x, y, z, f, pitch);
+    drawChar(a.h, { t:a.t, dt, run:a.m, air:!!a.air, vy:a.vy, sit:a.k && a.k !== 'hide' ? 1 : 0, slide:a.k === 'slide', kick:a.k === 'swing', emo:emoOn(a) ? a.emo : null }, x, y, z, f, pitch);
     a.dx = x; a.dy = y; a.dz = z;
+    if(nb < FULL_MAX){ const g = PK.groundAt(x, z, y), bs = clamp(1 - (y - g) * .3, .4, 1); rBlobs.setMatrixAt(nb++, _m.compose(_v.set(x, g + .02, z), _q.identity(), _s.set(bs, 1, bs))); }
   }
+  rBlobs.count = nb; rBlobs.instanceMatrix.needsUpdate = true;
 }
 function placeRemoteLabels(){
-  const w2 = SW / 2, h2 = SH / 2;
+  const play = state === 'play' || state === 'pause' || state === 'games';
   for(const a of RM.values()){
-    const show = (state === 'play' || state === 'pause' || state === 'games') && a.h && a.h.grp.visible;
-    if(a.lbl.hidden !== !show) a.lbl.hidden = !show;
-    if(!show) continue;
-    const txt = BoboRT.who(a.id, '') || heroName(a.hero) || '';
-    if(a.lbl.textContent !== txt) a.lbl.textContent = txt;
-    _v.set(a.dx, a.dy + 1.75, a.dz).project(camera);
-    if(_v.z > 1){ a.lbl.hidden = true; continue; }
-    a.lbl.style.transform = `translate(${(_v.x * w2 + w2).toFixed(1)}px,${(-_v.y * h2 + h2).toFixed(1)}px) translate(-50%,-100%)`;
+    const on = play && a.drawn && a.named;
+    if(on){ const txt = nameOf(a); if(a.lbl.textContent !== txt) a.lbl.textContent = txt; }
+    const nm = project(a.lbl, a.dx, a.dy + 1.75, a.dz, on);
+    project(a.bub, a.dx, a.dy + (nm ? 2.3 : 1.9), a.dz, play && a.drawn && bubOn(a.bub) && a.d < 34);
   }
 }
 
 /* ---------- menu, lobby, keypad ---------- */
 function mpCard(wide){ state = 'mp'; setPlayUI(false); showOverlay('dim'); card.className = 'card' + (wide ? ' wide' : ''); }
 function mpMenu(){
-  MP.tok++; mpClose(); MP.screen = 'menu'; mpCard(false); AU.music(false);
+  MP.tok++; mpClose(); MP.pub = false; clearTimeout(MP.reT); MP.reT = 0; MP.joining = 0; MP.screen = 'menu'; mpCard(false); AU.music(false);
   card.innerHTML = `<h2>👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</h2>
     <p>🛝 ${L('لحتى 4 أصحاب سوا بحديقة الحارة: تزحلقوا وتمرجحوا والعبوا عالميزان سوا!', 'Up to 4 friends together in the Neighbourhood Park: slide, swing and ride the seesaw together!', "Mahalle Parkı'nda 4 arkadaşa kadar: birlikte kayın, sallanın, tahterevalliye binin!")}</p>
     ${myHeroBtn()}
@@ -1227,7 +1470,7 @@ function mpSendInvite(){
   }catch(e){ no(); }
 }
 function mpKeypad(msg){
-  MP.tok++; mpClose();
+  MP.tok++; mpClose(); MP.pub = false; MP.joining = 0;
   MP.screen = 'keypad'; MP.typed = ''; mpCard(true);
   const keys9 = [1, 2, 3, 4, 5, 6, 7, 8, 9].map(d => `<button data-k="${d}">${N(d)}</button>`).join('');
   card.innerHTML = `<h2>🔢 ${L('اكتب رقم الغرفة', 'Type the room number', 'Oda numarasını yaz')}</h2>
@@ -1274,7 +1517,11 @@ window.__hara = {
   setQuality(q){ quality = q; applyQuality(); }, info(){ const i = renderer.info.render; return { calls:i.calls, tris:i.triangles, geos:renderer.info.memory.geometries, tex:renderer.info.memory.textures }; },
   back(){ if(state === 'mp') mpBack(); else if(state === 'select') backFromSelect(); else showTitle(); },
   get mpScreen(){ return MP.screen; }, get mp(){ return { code:MP.code, active:mpActive(), hostId:MP.hostId, screen:MP.screen, id:MP.id, players:MP.players.map(p => ({ id:p.id, hero:p.hero })) }; }, get mpErr(){ return MP.err || ''; },
-  get remotes(){ return [...RM.values()].map(a => ({ id:a.id, seen:a.seen, x:r2(a.x), y:r2(a.y), z:r2(a.z), k:a.k, i:a.i, a:a.a, vis:!!(a.h && a.h.grp.visible), name:a.lbl.hidden ? null : a.lbl.textContent })); },
+  get remotes(){ return [...RM.values()].map(a => ({ id:a.id, seen:a.seen, away:a.away, hero:a.hero, x:r2(a.x), y:r2(a.y), z:r2(a.z), k:a.k, i:a.i, a:a.a, vis:!!(a.h && a.h.grp.visible), name:a.lbl.hidden ? null : a.lbl.textContent, who:nameOf(a), emo:emoOn(a) ? a.emo.k : null, bub:a.bub.hidden ? null : a.bub.textContent })); },
+  get pub(){ return { on:MP.pub, active:mpActive(), shard:MP.shard, code:MP.code, status:MP.status, kids:kidsHere(), chip:modeText(), botsOn:BOTS_ON, c:MP.meta ? MP.meta.c : null }; },
+  get me(){ return ME; }, get booted(){ return BOOTED; }, submitName(n, raw){ return submitName(n, showName.done || (() => {}), raw); }, skipName(){ const b = $('#bSkip'); if(b) b.click(); },
+  emote(k){ return emote(k); }, get myEmo(){ return emoOn(P) ? P.emo.k : null; }, get myBubble(){ return myBubble && !myBubble.hidden ? myBubble.textContent : null; }, emotes:EMOTES.map(x => x.k),
+  get botBubbles(){ return bots.map(b => b.bub.hidden ? null : b.bub.textContent); }, pubJoin(n){ return pubJoin(n); },
   mpMenu(){ mpMenu(); }, mpCreate(c){ return mpCreate(c); }, mpJoin(c){ return mpJoin(c); }, mpGo(){ const b = document.querySelector('#bGo'); if(b) b.click(); }, mpLeave(){ coStop(); showTitle(); }
 };
 
@@ -1285,11 +1532,63 @@ makeBots();
 applyQuality();
 showTitle();
 requestAnimationFrame(t => { last = t; frame(t); });
+/* «شو اسمك؟» once, before the public park: the name is checked and kept by the server (Friends.setName → bobo_fr_set_name:
+   letters only, ≤ 14, bad words refused). Skipped or refused: the others see «<hero> <number>». Asked only once on this phone. */
+const NAME_ASKED = 'hara_name_asked' + (MP_LOCAL && /^[a-z]$/.test(QS.get('slot') || '') ? '_' + QS.get('slot') : '');
+function showName(msg, done){
+  state = 'name'; setPlayUI(false); clearInput(); showOverlay('dim'); card.className = 'card namecard';
+  card.innerHTML = `<div class="bigq">👋</div><h1>${L('شو اسمك؟', "What's your name?", 'Adın ne?')}</h1>
+    <p>${L('هيك الأولاد بحديقة الكل بيعرفوك 🛝', 'So the kids in the park know you 🛝', 'Parktaki çocuklar seni böyle tanır 🛝')}</p>
+    <input id="nameIn" maxlength="14" autocomplete="off" autocapitalize="words" spellcheck="false" dir="auto" aria-label="${L('اسمك', 'Your name', 'Adın')}">
+    <p class="mp-msg" id="nameMsg"></p>
+    <div class="row"><button class="big-btn" id="bName">✅ ${L('تمام', 'OK', 'Tamam')}</button><button class="ghost-btn" id="bSkip">⏭️ ${L('بعدين', 'Later', 'Sonra')}</button></div>`;
+  $('#nameMsg').textContent = msg || '';
+  const inp = $('#nameIn');
+  inp.addEventListener('input', () => { const v = cleanName(inp.value); if(v !== inp.value) inp.value = v; $('#nameMsg').textContent = ''; });
+  inp.addEventListener('keydown', e => { if(e.key === 'Enter') submitName(inp.value, done); });
+  $('#bName').onclick = () => { SFX.tap(); submitName(inp.value, done); };
+  $('#bSkip').onclick = () => { SFX.tap(); done(); };
+  showName.done = done;
+  setTimeout(() => { try{ inp.focus(); }catch(e){} }, 300);
+}
+let nameBusy = false;
+async function submitName(raw, done, noClean){
+  const n = noClean ? String(raw || '') : cleanName(raw).trim();
+  if(!n){ SFX.nope(); const m = $('#nameMsg'); if(m) m.textContent = L('اكتب اسمك 🙂', 'Type your name 🙂', 'Adını yaz 🙂'); return false; }
+  if(nameBusy || state !== 'name') return false; nameBusy = true;
+  const b = $('#bName'); if(b) b.disabled = true;
+  try{
+    const c = await Friends.setName(n); ME = Object.assign({}, ME, c);
+    if(!ME.name) throw Object.assign(new Error('bad_name'), { code:'22023' });
+    nameBusy = false; SFX.star(); toast('👋 ' + ME.name, 2000); done(); return true;
+  }catch(e){
+    nameBusy = false;
+    showName(e && e.offline ? Friends.errText(e) : L('هالاسم ما بيصير، جرّب اسم تاني 🙈', "That name isn't allowed, try another 🙈", 'Bu isim olmaz, başka dene 🙈'), done);
+    const inp = $('#nameIn'); if(inp) inp.value = cleanName(raw); SFX.nope(); return false;
+  }
+}
+const withTimeout = (p, ms) => Promise.race([p, new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms))]);
+async function bootPublic(){
+  if(window.Friends){
+    try{
+      ME = await withTimeout(Friends.me(), 10000);
+      if(ME && !ME.name && !rawGet(NAME_ASKED) && state === 'menu'){
+        rawSet(NAME_ASKED, '1');
+        await new Promise(res => showName('', res));
+        if(state === 'name') showTitle();
+      }
+    }catch(e){ /* no internet: the park still opens (names come later); rt.js keeps trying */ }
+  }
+  BOOTED = true;
+  if(state === 'menu') showTitle(); else pubEnsure();
+}
 /* ?host=1 (&room=<4 digits>, &invite=<friendCode>, &accept=<id> for invitepop.js) makes a room; ?join=<room> joins one
    (it keeps trying for 20 s while nobody is there yet) */
 (function(){
   const join = QS.get('join'), host = QS.get('host') === '1', inv = QS.get('invite'), room = QS.get('room');
-  if(!/^\d{4}$/.test(join || '') && !host) return;
+  if(!/^\d{4}$/.test(join || '') && !host){ bootPublic(); return; }
+  if(window.Friends) withTimeout(Friends.me(), 10000).then(m => { ME = m; }, () => {});
+  BOOTED = true;     // the public park opens when the kid leaves the private room
   const q = new URLSearchParams(location.search); ['join', 'host', 'invite', 'room'].forEach(k => q.delete(k));
   try{ history.replaceState(history.state, '', location.pathname + (q.toString() ? '?' + q : '') + location.hash); }catch(e){}
   if(/^\d{4}$/.test(join || '')) mpJoin(join, performance.now() + 20000);
