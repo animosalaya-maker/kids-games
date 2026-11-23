@@ -1093,7 +1093,7 @@ class LocalTransport{
   close(){ clearInterval(this.iv); if(this.bc){ if(this.meta) this.bc.postMessage({ k:'bye', from:this.id }); this.bc.close(); this.bc = null; } }
 }
 const MP = { t:null, id:null, code:null, list:[], players:[], meta:null, hostId:null, synced:false, screen:'off', tok:0, posT:0, typed:'', inviteFor:null, err:'',
-  pub:false, shard:0, status:'off', joining:0, back:0, reT:0, sig:'', wasMoving:false, away:false, joinToastT:0 };
+  pub:false, lx:0, lz:0, ly:0, sentAt:0, shard:0, status:'off', joining:0, back:0, reT:0, sig:'', wasMoving:false, away:false, joinToastT:0 };
 window.__boboRoom = () => (MP.t && MP.meta && MP.code && !MP.pub) ? MP.code : null;
 let ME = null;          // Friends.me(): { code, name, ... } (my own name is shown only to me)
 let BOOTED = false;     // the public park opens after the «شو اسمك؟» question at start
@@ -1277,13 +1277,15 @@ function mpFrame(dt){
     else if(MP.away && MP.posT <= 0){ MP.posT = 3; mpSend('pos', { away:1 }); }
     return;
   }
-  const a = P.act, k = a ? ACT_CODE.indexOf(a.k) : 0;
-  const moving = Math.hypot(P.vx, P.vz) > .05 || !P.gr || (a && a.k !== 'bench' && a.k !== 'hide');
-  const sig = k + ':' + (a ? a.i : 0) + ':' + (MP.away ? 1 : 0);
-  const due = moving ? MP.posT <= 0 : (MP.wasMoving || sig !== MP.sig || MP.posT <= -2.8);
+  const a = P.act, k = a ? ACT_CODE.indexOf(a.k) : 0, now = performance.now();
+  const moved = Math.abs(P.x - MP.lx) + Math.abs(P.z - MP.lz) + Math.abs(P.y - MP.ly) > .03;
+  const moving = Math.hypot(P.vx, P.vz) > .05 || !P.gr || moved || (a && a.k !== 'bench' && a.k !== 'hide');
+  const sig = k + ':' + (a ? a.i : 0) + ':' + (MP.away ? 1 : 0), since = now - (MP.sentAt || 0);
+  // real time (not the frame clock): a slow phone still sends ~7×/s while moving and a keep-alive every ~3 s
+  const due = sig !== MP.sig || (moving ? since >= 1000 / POS_HZ : (MP.wasMoving || since > 3000));
   MP.wasMoving = moving;
   if(!due) return;
-  MP.posT = 1 / POS_HZ; MP.sig = sig; MP.away = false;
+  MP.posT = 1 / POS_HZ; MP.sig = sig; MP.away = false; MP.sentAt = now; MP.lx = P.x; MP.lz = P.z; MP.ly = P.y;
   let av = 0, bv = 0;
   if(a && a.k === 'swing') av = PK.SWINGS[a.i].ang; else if(a && a.k === 'seesaw') av = PK.SEESAW.ang; else if(a && a.k === 'spring'){ av = PK.SPRINGS[a.i].ax; bv = PK.SPRINGS[a.i].az; } else if(a && a.k === 'slide') av = a.pitch || 0;
   mpSend('pos', { x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.f), m:r2(clamp(Math.hypot(P.vx, P.vz) / RUN, 0, 1)), air:P.gr ? 0 : 1, vy:r2(P.vy), k, i:a ? (a.i | 0) : 0, a:r2(av), b:r2(bv) });
@@ -1517,7 +1519,7 @@ window.__hara = {
   setQuality(q){ quality = q; applyQuality(); }, info(){ const i = renderer.info.render; return { calls:i.calls, tris:i.triangles, geos:renderer.info.memory.geometries, tex:renderer.info.memory.textures }; },
   back(){ if(state === 'mp') mpBack(); else if(state === 'select') backFromSelect(); else showTitle(); },
   get mpScreen(){ return MP.screen; }, get mp(){ return { code:MP.code, active:mpActive(), hostId:MP.hostId, screen:MP.screen, id:MP.id, players:MP.players.map(p => ({ id:p.id, hero:p.hero })) }; }, get mpErr(){ return MP.err || ''; },
-  get remotes(){ return [...RM.values()].map(a => ({ id:a.id, seen:a.seen, away:a.away, hero:a.hero, x:r2(a.x), y:r2(a.y), z:r2(a.z), k:a.k, i:a.i, a:a.a, vis:!!(a.h && a.h.grp.visible), name:a.lbl.hidden ? null : a.lbl.textContent, who:nameOf(a), emo:emoOn(a) ? a.emo.k : null, bub:a.bub.hidden ? null : a.bub.textContent })); },
+  get remotes(){ return [...RM.values()].map(a => ({ id:a.id, seen:a.seen, away:a.away, hero:a.hero, x:r2(a.x), y:r2(a.y), z:r2(a.z), k:a.k, i:a.i, a:a.a, vis:!!(a.h && a.h.grp.visible), name:a.lbl.hidden ? null : a.lbl.textContent, who:nameOf(a), emo:emoOn(a) ? a.emo.k : null, last:a.emo ? a.emo.k : null, bub:a.bub.hidden ? null : a.bub.textContent, bubText:a.bub.textContent })); },
   get pub(){ return { on:MP.pub, active:mpActive(), shard:MP.shard, code:MP.code, status:MP.status, kids:kidsHere(), chip:modeText(), botsOn:BOTS_ON, c:MP.meta ? MP.meta.c : null }; },
   get me(){ return ME; }, get booted(){ return BOOTED; }, submitName(n, raw){ return submitName(n, showName.done || (() => {}), raw); }, skipName(){ const b = $('#bSkip'); if(b) b.click(); },
   emote(k){ return emote(k); }, get myEmo(){ return emoOn(P) ? P.emo.k : null; }, get myBubble(){ return myBubble && !myBubble.hidden ? myBubble.textContent : null; }, emotes:EMOTES.map(x => x.k),
