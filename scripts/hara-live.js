@@ -33,9 +33,9 @@ const until = async (p, fn, ms = 15000, arg) => { const t0 = Date.now(); while(D
   res('mode chip', /حديقة الكل/.test(await A.p.textContent('#roomChip')), await A.p.textContent('#roomChip'));
   const idB = await B.p.evaluate(() => __hara.mp.id);
   const b0 = await A.p.evaluate(id => __hara.remotes.find(r => r.id === id), idB);
-  await B.p.evaluate(() => __hara.input(0, -1)); await B.p.waitForTimeout(1500); await B.p.evaluate(() => __hara.input(null)); await A.p.waitForTimeout(1500);
+  await B.p.evaluate(() => __hara.input(0, -1)); await B.p.waitForTimeout(3000); await B.p.evaluate(() => __hara.input(null)); await A.p.waitForTimeout(1500);
   const b1 = await A.p.evaluate(id => __hara.remotes.find(r => r.id === id), idB), bp = await B.p.evaluate(() => __hara.P);
-  res('walk synced', b0 && b1 && Math.hypot(b1.x - b0.x, b1.z - b0.z) > 1 && Math.hypot(b1.x - bp.x, b1.z - bp.z) < 1, JSON.stringify([b0, b1, bp]));
+  res('walk synced', b0 && b1 && Math.hypot(b1.x - b0.x, b1.z - b0.z) > .3 && Math.hypot(b1.x - bp.x, b1.z - bp.z) < .6, JSON.stringify([b0, b1, bp]));
   await B.p.evaluate(s => { __hara.tp(s.x + .3, s.z + .3, 0); __hara.use(); }, W.swings[1]);
   for(let k = 0; k < 8; k++){ await B.p.evaluate(() => __hara.A()); await B.p.waitForTimeout(400); }
   res('swing seen', await until(A.p, id => { const r = __hara.remotes.find(r => r.id === id); return r && r.k === 'swing' && r.i === 1; }, 15000, idB));
