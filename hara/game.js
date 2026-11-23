@@ -1,7 +1,7 @@
 /* «حديقة الحارة» (Neighbourhood Park / Mahalle Parkı) — our own neighbourhood park in 3D, for kids.
    The hero is one of our 7 characters or the kid's own 'me' avatar. Real playground play: walk the paver paths, climb the
    black stair or the teal climbing wall, slide down the purple WAVY slide and the YELLOW slide, swing (tap A to pump
-   higher), ride the purple seesaw with a friend or a bot, bounce on the spring riders, sit on the benches, hide behind
+   higher), ride the purple seesaw with a friend, bounce on the spring riders, sit on the benches, hide behind
    the round shrubs, feed the pigeons and pet the cats. Collect the hidden stars and the golden autumn leaves.
    Small games: «لقّيطة» (tag: catch the bots, and friends) and «غمّيضة» (hide-and-seek: the bots hide behind bushes).
    Day / dusk / night toggle: soft lavender evening by default, lamps light up warm at dusk and night.
@@ -9,7 +9,7 @@
    Realtime channels `bobo-hara-pub-<n>`, like the big island), each one with their own server-checked name (asked once,
    «شو اسمك؟») and their own hero / 'me' avatar. Everyone sees the others walk, slide, swing, bounce, ride the seesaw and
    send fixed emotes (😊: 👋 ❤️ 👍 😂 😠 🎉 💃 🙋 — only the emote id travels, never text). No chat, no free text, no private
-   messages. The bots play only while you are alone in the park.
+   messages. There are no bots: only real kids.
    «👫 العب مع أصحابك» (?host / ?join / ?room / ?invite / accept): a private room for up to 4 friends.
    Progress is saved on this phone; stars and leaves give a few Bobo Land coins (capped per day). */
 import * as THREE from '../adventure3d/three.module.min.js';
@@ -292,7 +292,7 @@ function setHero(id){
 function placeAt(x, z, f = 0){ const y = PK.groundAt(x, z, 2); Object.assign(P, { x, y, z, vx:0, vz:0, vy:0, f, gr:true, act:null }); cam.yaw = f + Math.PI; cam.snap = true; }
 
 /* ---------- bots: other kids playing in the park ---------- */
-const BOT_N = 3;
+const BOT_N = 0; // owner: no bots in the park, only real kids
 const bots = [];
 function makeBots(){
   for(const b of bots){ scene.remove(b.h.grp); b.lbl.remove(); b.bub.remove(); }
@@ -821,7 +821,7 @@ function hudFrame(dt){
   const tk = [SAVE.coins, SAVE.stars.length, SAVE.leaves, n ? n.k : '', ak, todT, BOTS_ON, modeText()].join('|');
   if(tk !== hudKey){
     hudKey = tk;
-    $('#btnGames').hidden = !BOTS_ON;
+    $('#btnGames').hidden = true; // tag / hide-and-seek need bots, which are off
     chipEl.textContent = modeText(); chipEl.hidden = false;
     $('#hudCoins').textContent = N(SAVE.coins); $('#hudStars').textContent = '⭐ ' + N(SAVE.stars.length) + '/' + N(TOTAL_STARS); $('#hudLeaves').textContent = '🍂 ' + N(SAVE.leaves);
     useBtn.hidden = !!P.act; useBtn.classList.toggle('ready', !!n); useBtn.textContent = n ? ACT_ICON[n.k] : '👋';
