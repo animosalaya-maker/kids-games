@@ -6,7 +6,7 @@
 <script src="../rt.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Neighbourhood Park" data-tr="Mahalle Parkı">حديقة الحارة</title>
-<meta name="description" content="حديقة الحارة ثلاثية الأبعاد: تزحلق عالزحليطة البنفسجية المموّجة والصفرا، تمرجح، العب عالميزان والنطّاط، لمّ النجوم وورق الخريف، العب لقّيطة وغمّيضة، وطعمي الحمام، لحالك أو مع أصحابك." data-en="The Neighbourhood Park in 3D: slide down the wavy purple slide and the yellow one, swing, ride the seesaw and the spring rider, collect stars and autumn leaves, play tag and hide-and-seek and feed the pigeons, alone or with friends." data-tr="3D Mahalle Parkı: dalgalı mor kaydıraktan ve sarı kaydıraktan kay, salıncakta sallan, tahterevalliye ve yaylı ata bin, yıldız ve sonbahar yaprakları topla, kovalamaca ve saklambaç oyna, güvercinleri besle; tek başına ya da arkadaşlarınla.">
+<meta name="description" content="حديقة الحارة ثلاثية الأبعاد: تزحلق عالزحليطة البنفسجية المموّجة والصفرا، تمرجح، العب عالميزان والنطّاط، لمّ النجوم وورق الخريف، العب لقّيطة وغمّيضة، وطعمي الحمام، ومن بوابة الحديقة روح على حديقة الشجر الكبيرة، لحالك أو مع أصحابك." data-en="The Neighbourhood Park in 3D: slide down the wavy purple slide and the yellow one, swing, ride the seesaw and the spring rider, collect stars and autumn leaves, play tag and hide-and-seek and feed the pigeons, then walk through the park gate to the Big Tree Park, alone or with friends." data-tr="3D Mahalle Parkı: dalgalı mor kaydıraktan ve sarı kaydıraktan kay, salıncakta sallan, tahterevalliye ve yaylı ata bin, yıldız ve sonbahar yaprakları topla, kovalamaca ve saklambaç oyna, güvercinleri besle, park kapısından Büyük Ağaç Parkı'na geç; tek başına ya da arkadaşlarınla.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -156,6 +156,13 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 .namecard .bigq{font-size:60px;line-height:1;animation:wob 2.4s ease-in-out infinite}
 #stage.short .namecard .bigq{font-size:40px} #stage.short .namecard h1{font-size:32px} #stage.short .namecard input{font-size:24px;padding:6px 12px}
 .menu .publine{font-size:16px;background:rgba(255,248,236,.92)}
+/* the two places on the title: the neighbourhood park and Big Tree Park */
+.menu .places{gap:8px}
+.menu .place{border:3px solid #fff;border-radius:999px;background:rgba(255,248,236,.9);color:var(--ink);font-family:var(--display);font-weight:800;font-size:17px;padding:4px 14px;box-shadow:0 3px 0 rgba(74,47,29,.2)}
+.menu .place.on{background:var(--mint);color:#063d2a;border-color:#063d2a33}
+#stage.short .menu .place{font-size:15px;padding:3px 11px}
+#stage.short .menu .sub:not(.publine){display:none}
+.dname.gatelbl{background:rgba(47,107,58,.85);font-size:18px;padding:3px 14px;border:2px solid #fff}
 .joy{position:absolute;z-index:4;width:124px;height:124px;margin:-62px 0 0 -62px;border-radius:50%;background:rgba(255,248,236,.3);border:3px solid rgba(255,255,255,.75);pointer-events:none;box-shadow:0 5px 0 rgba(74,47,29,.18)}
 .joy.on{background:rgba(255,248,236,.45)}
 .knob{position:absolute;left:50%;top:50%;width:58px;height:58px;margin:-29px 0 0 -29px;border-radius:50%;background:rgba(255,255,255,.92);box-shadow:0 4px 0 rgba(74,47,29,.25)}
@@ -265,6 +272,7 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
     <div class="starchip" id="hudLeaves"></div>
   </div>
   <div class="hr">
+    <button class="icon-btn" id="btnPlace" aria-label="حديقة الشجر الكبيرة" data-en-aria="Big Tree Park" data-tr-aria="Büyük Ağaç Parkı">🌳</button>
     <button class="icon-btn" id="btnTod" aria-label="النهار والليل" data-en-aria="Day and night" data-tr-aria="Gece ve gündüz">🌆</button>
     <button class="icon-btn" id="btnGames" aria-label="ألعاب" data-en-aria="Games" data-tr-aria="Oyunlar">🏃</button>
     <button class="icon-btn" id="btnPause" aria-label="استراحة" data-en-aria="Pause" data-tr-aria="Mola">⏸️</button>
