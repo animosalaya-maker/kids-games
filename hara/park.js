@@ -566,6 +566,9 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
     void poolOn;
   }
   const spawn = { x:C.x + 2.2, z:C.z + 15.4, f:Math.PI };
+  /* the gate to Big Tree Park stands just inside the north-east entrance (end of the long diagonal path) (game.js builds it with gate.js); you arrive in front of it */
+  const GATE = (() => { const e = ENT[1], n = vN(e.i); return { x:e.x - n[0] * 1.5, z:e.z - n[1] * 1.5, yaw:Math.atan2(n[0], n[1]) }; })();
+  const ARRIVE = (() => { const e = ENT[1], n = vN(e.i); return { x:e.x - n[0] * 5, z:e.z - n[1] * 5, f:Math.atan2(-n[0], -n[1]) }; })();
   return { group:root, C, R_RUB, R_RING, BP, ENT, groundAt, collide, inPark, SLIDES, SWINGS, SEESAW, SPRINGS, BENCHES, PANELS, PITS, TREES, BUSHES, HIDES, LAMPS, KIOSK, climb, circles,
-    setNight, tick, spawn, playMesh, hs, distPath };
+    setNight, tick, spawn, playMesh, hs, distPath, GATE, ARRIVE, id:1 };
 }

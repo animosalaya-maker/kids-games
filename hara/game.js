@@ -11,11 +11,17 @@
    send fixed emotes (😊: 👋 ❤️ 👍 😂 😠 🎉 💃 🙋 — only the emote id travels, never text). No chat, no free text, no private
    messages. There are no bots: only real kids.
    «👫 العب مع أصحابك» (?host / ?join / ?room / ?invite / accept): a private room for up to 4 friends.
+   Two places in the same game: the neighbourhood park (default) and «🌳 حديقة الشجر الكبيرة» (Big Tree Park, ./park2.js), a
+   big wooded park by the highway. Walk through the park gate (./gate.js) or tap 🌳 / 🛝 to go between them. Each park has
+   its own public shards (`bobo-hara-pub-<n>` / `bobo-hara2-pub-<n>`), its own hidden stars and leaves; a private room keeps
+   one room for both parks and everyone follows the host's place (the place travels as `pl` in presence and positions).
    Progress is saved on this phone; stars and leaves give a few Bobo Land coins (capped per day). */
 import * as THREE from '../adventure3d/three.module.min.js';
 import { makeKit } from '../worlds/kit.js';
 import { makeTextures } from './tex.js';
 import { makePark } from './park.js';
+import { makePark2 } from './park2.js';
+import { makeGate } from './gate.js';
 import { makeAudio } from './audio.js';
 
 const $ = s => document.querySelector(s);
@@ -38,12 +44,13 @@ const ALL_HEROES = HERO_IDS.slice();
 const heroName = id => HERO_NAME[id] || HERO_NAME.sara;
 const heroCol = id => HERO_COLOR[id] || '#9c7be3';
 const PLACE = L('حديقة الحارة', 'Neighbourhood Park', 'Mahalle Parkı');
+const PLACE_NAME = { 1:PLACE, 2:L('حديقة الشجر الكبيرة', 'Big Tree Park', 'Büyük Ağaç Parkı') }, PLACE_ICON = { 1:'🛝', 2:'🌳' };
 
 /* ======================================================================
    Save (this phone)
    ====================================================================== */
 const SAVE_KEY = 'hara_save' + (MP_LOCAL && /^[a-z]$/.test(QS.get('slot') || '') ? '_' + QS.get('slot') : ''), SAVE_V = 1, COIN_CAP = 40;
-function freshSave(){ return { v:SAVE_V, hero:'sara', coins:0, total:0, stars:[], leaves:0, wins:{ tag:0, seek:0 }, tod:1, cd:{ d:'', n:0 }, fed:'', pet:[] }; }
+function freshSave(){ return { v:SAVE_V, hero:'sara', coins:0, total:0, stars:[], leaves:0, stars2:[], leaves2:0, wins:{ tag:0, seek:0 }, tod:1, cd:{ d:'', n:0 }, fed:'', pet:[] }; }
 function loadSave(){
   try{
     const v = JSON.parse(rawGet(SAVE_KEY));
@@ -51,6 +58,7 @@ function loadSave(){
       const s = Object.assign(freshSave(), v);
       s.coins = clamp(s.coins | 0, 0, 999999); s.total = clamp(s.total | 0, 0, 9999999); s.leaves = clamp(s.leaves | 0, 0, 999999);
       if(!Array.isArray(s.stars)) s.stars = []; s.stars = s.stars.filter(n => Number.isInteger(n) && n >= 0 && n < 40);
+      if(!Array.isArray(s.stars2)) s.stars2 = []; s.stars2 = s.stars2.filter(n => Number.isInteger(n) && n >= 0 && n < 40); s.leaves2 = clamp(s.leaves2 | 0, 0, 999999);
       if(!Array.isArray(s.pet)) s.pet = [];
       if(!s.wins || typeof s.wins !== 'object') s.wins = { tag:0, seek:0 };
       if(!s.cd || typeof s.cd !== 'object') s.cd = { d:'', n:0 };
@@ -143,14 +151,24 @@ scene.fog = new THREE.Fog(0xcfc4dc, 60, 240);
    The park
    ====================================================================== */
 const TX = makeTextures(THREE, Math.min(8, renderer.capabilities.getMaxAnisotropy()));
-const PK = makePark(THREE, K, TX);
+/* the two places: built when first needed (the neighbourhood park now, Big Tree Park on the first visit) */
+const PARKS = {}, PL = {};
+let PLACE_ID = 1;
+let PK = PARKS[1] = makePark(THREE, K, TX);
 scene.add(PK.group);
+const SK = () => PLACE_ID === 2 ? 'stars2' : 'stars', LK = () => PLACE_ID === 2 ? 'leaves2' : 'leaves';
+const myStars = () => SAVE[SK()];
 const moon = new THREE.Sprite(new THREE.SpriteMaterial({ map:TX.glow, color:0xdfe8ff, transparent:true, opacity:0, fog:false, depthWrite:false })); moon.scale.setScalar(26); moon.position.set(-120, 140, -260); scene.add(moon);
 /* warm point lights near the playground (night only; off on the lowest quality) */
 const ptLights = [];
-for(const l of PK.LAMPS.filter(l => l.big).concat(PK.LAMPS.filter(l => !l.big).slice(0, 2))){
-  const p = new THREE.PointLight(0xffc98a, 0, l.big ? 36 : 18, 1.4); p.position.set(l.x, l.y - .3, l.z); scene.add(p); ptLights.push(p);
+function placeLights(){
+  for(const p of ptLights) scene.remove(p);
+  ptLights.length = 0;
+  for(const l of PK.LAMPS.filter(l => l.big).concat(PK.LAMPS.filter(l => !l.big).slice(0, 2))){
+    const p = new THREE.PointLight(0xffc98a, 0, l.big ? 36 : 18, 1.4); p.position.set(l.x, l.y - .3, l.z); p.visible = quality > 0; scene.add(p); ptLights.push(p);
+  }
 }
+placeLights();
 /* ---------- day / dusk / night ---------- */
 const TODS = [
   { top:0x6fa6e0, hor:0xdfe6ee, low:0x8c8f96, fog:0xd6dde6, sun:0xfff2dc, si:2.0, hs:0xeaf2ff, hg:0x6a6050, hi:1.15, dusk:0, night:0, exp:1.0, sy:60 },
@@ -222,11 +240,14 @@ function poseAny(h, s){
     k.body.rotation.x = s.slide ? -.25 : 0;
   }
   if(s.climb){ k.arms.forEach((a, i) => { a.rotation.x = -2.6 + Math.sin(s.t * 9 + i * Math.PI) * .5; a.rotation.z = -a.userData.side * .2; }); k.body.rotation.x = -.15; }
+  if(s.fit === 'bar'){ k.arms.forEach((a, i) => { a.rotation.x = -3.05 + (s.fa || 0) * .5; a.rotation.z = -a.userData.side * .25; }); k.legs.forEach((l, i) => { l.rotation.x = -.25 + Math.sin(s.t * 3 + i * Math.PI) * .12; }); }
+  else if(s.fit === 'walker'){ k.arms.forEach((a, i) => { a.rotation.x = -1.3; a.rotation.z = -a.userData.side * .2; }); k.legs.forEach((l, i) => { l.rotation.x = Math.sin(s.t * (5 + (s.fa || 0) * 4) + i * Math.PI) * .7; }); }
+  else if(s.fit === 'twist'){ k.arms.forEach(a => { a.rotation.x = -1.4; a.rotation.z = -a.userData.side * .1; }); }
   if(s.cheer){ k.arms.forEach((a, i) => { a.rotation.x = -.3; a.rotation.z = -a.userData.side * (2.4 + Math.sin(s.t * 12 + i) * .3); }); }
   if(s.feed){ k.arms.forEach((a, i) => { a.rotation.x = -1.2 + (i ? Math.sin(s.t * 10) * .3 : 0); }); }
   h.inner.scale.y = s.crouch ? .62 : 1;
   h.inner.position.y = s.sit ? -.42 : 0;
-  h.inner.rotation.set(0, 0, 0);
+  h.inner.rotation.set(0, s.fit === 'twist' ? Math.sin(s.t * (3 + (s.fa || 0) * 4)) * .7 : 0, 0);
   if(s.emo) emoPose(h, s.emo, !!s.sit);
 }
 /* ---------- emotes: a fixed list (only the id travels online; the words are ours, in the kid's language) ---------- */
@@ -322,59 +343,71 @@ function botEmote(b, k){ if(!BOTS_ON || !EMO[k]) return; b.emo = { k, t0:perform
 /* ======================================================================
    Collectibles: hidden stars and golden autumn leaves
    ====================================================================== */
-const C = PK.C;
-const S0 = PK.SLIDES[0], S1 = PK.SLIDES[1];
-const at = (s, k) => { const p = s.sample(s.len * k); return [p.x, p.y + .55, p.z]; };
-const swingStar = (() => { const sw = PK.SWINGS[0]; const c = Math.cos(sw.yaw), s = Math.sin(sw.yaw); return [sw.x + s * 1.5, 1.95, sw.z + c * 1.5]; })();
-const STAR_SPOTS = [
-  [C.x - 2.5, 1.95, C.z - 4.0], [C.x + 1.0, 1.7, C.z - 4.6], [C.x - .75, 2.25, C.z - 4.3], [C.x - 6.5, .75, C.z + 1.5],
-  at(S0, .55), at(S1, .5), swingStar, [PK.KIOSK.x - 1.2, .7, PK.KIOSK.z - 1.6],
-  [PK.PITS[0].x, 1.0, PK.PITS[0].z], [-7, .8, -12.6], (() => { const e = PK.ENT[2], dx = C.x - e.x, dz = C.z - e.z, l = Math.hypot(dx, dz); return [e.x + dx / l * 1.2, .8, e.z + dz / l * 1.2]; })(),
-  (() => { const p = PK.PANELS[2]; return [p.x + Math.sin(p.yaw) * .9, .8, p.z + Math.cos(p.yaw) * .9]; })(),
-  (() => { const b = PK.BENCHES[1]; return [b.x - Math.sin(b.f) * .9, .7, b.z - Math.cos(b.f) * .9]; })(),
-  (() => { const h = PK.HIDES[3] || PK.HIDES[0]; return [h.x, .7, h.z]; })()
-];
-const TOTAL_STARS = STAR_SPOTS.length;
+let C = PK.C;
+/* the neighbourhood park's star spots (unchanged); Big Tree Park brings its own (park2.js STAR_SPOTS) */
+function starSpots1(pk){
+  const C = pk.C, S0 = pk.SLIDES[0], S1 = pk.SLIDES[1];
+  const at = (s, k) => { const p = s.sample(s.len * k); return [p.x, p.y + .55, p.z]; };
+  const swingStar = (() => { const sw = pk.SWINGS[0]; const c = Math.cos(sw.yaw), s = Math.sin(sw.yaw); return [sw.x + s * 1.5, 1.95, sw.z + c * 1.5]; })();
+  return [
+    [C.x - 2.5, 1.95, C.z - 4.0], [C.x + 1.0, 1.7, C.z - 4.6], [C.x - .75, 2.25, C.z - 4.3], [C.x - 6.5, .75, C.z + 1.5],
+    at(S0, .55), at(S1, .5), swingStar, [pk.KIOSK.x - 1.2, .7, pk.KIOSK.z - 1.6],
+    [pk.PITS[0].x, 1.0, pk.PITS[0].z], [-7, .8, -12.6], (() => { const e = pk.ENT[2], dx = C.x - e.x, dz = C.z - e.z, l = Math.hypot(dx, dz); return [e.x + dx / l * 1.2, .8, e.z + dz / l * 1.2]; })(),
+    (() => { const p = pk.PANELS[2]; return [p.x + Math.sin(p.yaw) * .9, .8, p.z + Math.cos(p.yaw) * .9]; })(),
+    (() => { const b = pk.BENCHES[1]; return [b.x - Math.sin(b.f) * .9, .7, b.z - Math.cos(b.f) * .9]; })(),
+    (() => { const h = pk.HIDES[3] || pk.HIDES[0]; return [h.x, .7, h.z]; })()
+  ];
+}
 const starGeo = (() => { const g = new THREE.ExtrudeGeometry(K.starShape(.32, .14), { depth:.1, bevelEnabled:true, bevelThickness:.04, bevelSize:.03, bevelSegments:1 }); g.translate(0, 0, -.05); return g; })();
 const starMat = new THREE.MeshLambertMaterial({ color:0xffd23f, emissive:0x8a6a00 });
-const stars = STAR_SPOTS.map((p, i) => { const m = new THREE.Mesh(starGeo, starMat); m.position.set(p[0], p[1], p[2]); m.castShadow = true; scene.add(m); return { i, x:p[0], y:p[1], z:p[2], m, on:!SAVE.stars.includes(i) }; });
-stars.forEach(s => { s.m.visible = s.on; });
+function makeStars(pk, spots, saved){
+  const list = spots.map((p, i) => { const m = new THREE.Mesh(starGeo, starMat); m.position.set(p[0], p[1], p[2]); m.castShadow = true; pk.group.add(m); return { i, x:p[0], y:p[1], z:p[2], m, on:!saved.includes(i) }; });
+  list.forEach(s => { s.m.visible = s.on; });
+  return list;
+}
 /* golden leaves: respawn every visit, scattered on lawns and paths */
 const LEAF_N = 30;
 const leafGeo = (() => { const s = new THREE.Shape(); s.moveTo(0, -.22); s.quadraticCurveTo(.2, -.05, 0, .22); s.quadraticCurveTo(-.2, -.05, 0, -.22); return new THREE.ShapeGeometry(s); })();
-const leafMesh = new THREE.InstancedMesh(leafGeo, new THREE.MeshLambertMaterial({ color:0xffffff, emissive:0x5a3a00, side:THREE.DoubleSide }), LEAF_N);
-scene.add(leafMesh);
-const leaves = [];
-{ let seed = 99; const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  for(let tries = 0; leaves.length < LEAF_N && tries < 3000; tries++){
-    const x = -42 + r() * 78, z = -28 + r() * 54;
-    if(!PK.inPark(x, z) || Math.hypot(x - C.x, z - C.z) < 10.5) continue;
-    const pp = { x, z, y:0 }; if(PK.collide(Object.assign({}, pp, { y:0 }), .5)) continue;
-    if(leaves.some(l => Math.hypot(l.x - x, l.z - z) < 3)) continue;
-    leaves.push({ x, z, y:.55, on:true, ph:r() * 6 });
-    leafMesh.setColorAt(leaves.length - 1, _c.set([0xf2b230, 0xe8862a, 0xf5cf4a][leaves.length % 3]));
-  } }
+const leafMat = new THREE.MeshLambertMaterial({ color:0xffffff, emissive:0x5a3a00, side:THREE.DoubleSide });
+function makeLeaves(pk, seed){
+  const mesh = new THREE.InstancedMesh(leafGeo, leafMat, LEAF_N); mesh.frustumCulled = false;
+  pk.group.add(mesh);
+  const list = [], B = pk.LEAF_BOX || [-42, 36, -28, 26], avoid = pk.LEAF_AVOID != null ? pk.LEAF_AVOID : 10.5;
+  const r = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  for(let tries = 0; list.length < LEAF_N && tries < 4000; tries++){
+    const x = B[0] + r() * (B[1] - B[0]), z = B[2] + r() * (B[3] - B[2]);
+    if(!pk.inPark(x, z) || Math.hypot(x - pk.C.x, z - pk.C.z) < avoid) continue;
+    const pp = { x, z, y:0 }; if(pk.collide(Object.assign({}, pp, { y:0 }), .5)) continue;
+    if(list.some(l => Math.hypot(l.x - x, l.z - z) < 3)) continue;
+    list.push({ x, z, y:pk.groundAt(x, z, 0) + .55, on:true, ph:r() * 6 });
+    mesh.setColorAt(list.length - 1, _c.set([0xf2b230, 0xe8862a, 0xf5cf4a][list.length % 3]));
+  }
+  for(let i = list.length; i < LEAF_N; i++) mesh.setMatrixAt(i, _m.makeScale(0, 0, 0));
+  return { mesh, list };
+}
+let stars = [], leaves = [], leafMesh = null, TOTAL_STARS = 14;
 function drawLeaves(t){
+  if(!leafMesh) return;
   leaves.forEach((l, i) => { if(!l.on){ leafMesh.setMatrixAt(i, _m.makeScale(0, 0, 0)); return; } _q.setFromEuler(_e.set(.4, t * 1.5 + l.ph, Math.sin(t * 2 + l.ph) * .4)); leafMesh.setMatrixAt(i, _m.compose(_v.set(l.x, l.y + Math.sin(t * 2 + l.ph) * .1, l.z), _q, _s.set(1.5, 1.5, 1.5))); });
   leafMesh.instanceMatrix.needsUpdate = true;
 }
 function collectAll(){
   for(const s of stars){ if(!s.on) continue; if(Math.hypot(s.x - P.x, s.z - P.z) < .9 && Math.abs(s.y - (P.y + .6)) < 1.0) gotStar(s); }
-  for(const l of leaves){ if(!l.on) continue; if(Math.hypot(l.x - P.x, l.z - P.z) < .9 && Math.abs(l.y - (P.y + .5)) < 1.1){ l.on = false; SAVE.leaves++; leafRun++; SFX.leaf(); burst(l.x, l.y, l.z, 10, LEAFC, 2, 1, 3, 1); if(leafRun % 10 === 0){ worldCoins(1, L('ورق الخريف', 'autumn leaves', 'sonbahar yaprakları')); popText('🍂 ×10 → 🪙'); } hudKey = ''; persist(); } }
+  for(const l of leaves){ if(!l.on) continue; if(Math.hypot(l.x - P.x, l.z - P.z) < .9 && Math.abs(l.y - (P.y + .5)) < 1.1){ l.on = false; SAVE[LK()]++; leafRun++; SFX.leaf(); burst(l.x, l.y, l.z, 10, LEAFC, 2, 1, 3, 1); if(leafRun % 10 === 0){ worldCoins(1, L('ورق الخريف', 'autumn leaves', 'sonbahar yaprakları')); popText('🍂 ×10 → 🪙'); } hudKey = ''; persist(); } }
 }
 let leafRun = 0;
 function gotStar(s){
-  s.on = false; s.m.visible = false; if(!SAVE.stars.includes(s.i)) SAVE.stars.push(s.i);
+  s.on = false; s.m.visible = false; const mine = myStars(); if(!mine.includes(s.i)) mine.push(s.i);
   SFX.star(); burst(s.x, s.y, s.z, 24, STARC, 4, 1.2, 5, 3, .9);
-  worldCoins(2, PLACE); popText('⭐ ' + N(SAVE.stars.length) + '/' + N(TOTAL_STARS));
-  if(SAVE.stars.length === TOTAL_STARS){ setTimeout(() => { SFX.win(); popText('🏆 ' + L('لقيت كل النجوم!', 'You found all the stars!', 'Bütün yıldızları buldun!')); worldCoins(5, PLACE); }, 1200); }
+  worldCoins(2, PLACE_NAME[PLACE_ID]); popText('⭐ ' + N(mine.length) + '/' + N(TOTAL_STARS));
+  if(mine.length === TOTAL_STARS){ setTimeout(() => { SFX.win(); popText('🏆 ' + L('لقيت كل النجوم!', 'You found all the stars!', 'Bütün yıldızları buldun!')); worldCoins(5, PLACE_NAME[PLACE_ID]); }, 1200); }
   hudKey = ''; persist();
 }
 
 /* ======================================================================
    Pigeons and cats
    ====================================================================== */
-const PIGEON_HOME = { x:C.x - 9.5, z:C.z + 11.2 };
+const PIGEON_HOME = { x:C.x - 9.5, z:C.z + 11.2 };   // moved when the place changes
 const pigeonGeo = (() => { const M = new K.Merge(); M.add(K.G.sph, 0, .16, 0, .11, .1, .17, 0, 0, 0, 0x8a93a8); M.add(K.G.sph, 0, .27, .12, .065, .065, .065, 0, 0, 0, 0x6f7890); M.add(K.G.sm, 0, .25, .17, .03, .03, .03, 0, 0, 0, 0x5aa070); M.add(K.G.cone, 0, .26, .2, .015, .05, .015, Math.PI / 2, 0, 0, 0xe0a060); M.add(K.G.box, 0, .15, -.17, .1, .03, .1, -.3, 0, 0, 0x5a6278); for(const s of [-1, 1]){ M.add(K.G.sph, s * .1, .17, -.01, .03, .07, .13, 0, 0, 0, 0x707a92); M.add(K.G.cyl8, s * .04, .03, 0, .01, .08, .01, 0, 0, 0, 0xe07a7a); } return M.geometry(); })();
 const pigeonMesh = new THREE.InstancedMesh(pigeonGeo, new THREE.MeshLambertMaterial({ vertexColors:true }), 9);
 pigeonMesh.castShadow = true; scene.add(pigeonMesh);
@@ -406,13 +439,77 @@ function feedPigeons(){
   if(SAVE.fed !== today()){ SAVE.fed = today(); persist(); setTimeout(() => { popText('🐦💕'); worldCoins(1, L('طعميت الحمام', 'fed the pigeons', 'güvercinleri besledin')); }, 1500); }
 }
 const catGeo = col => { const M = new K.Merge(); M.add(K.G.sph, 0, .2, 0, .15, .15, .26, 0, 0, 0, col[0]); M.add(K.G.sph, 0, .38, .2, .13, .12, .12, 0, 0, 0, col[0]); for(const s of [-1, 1]){ M.add(K.G.cone4, s * .07, .5, .2, .045, .08, .03, 0, 0, s * -.2, col[0]); M.add(K.G.sm, s * .05, .39, .31, .022, .026, .01, 0, 0, 0, 0x1a1a1a); M.add(K.G.cyl8, s * .07, .07, .15, .03, .14, .03, 0, 0, 0, col[1]); M.add(K.G.cyl8, s * .07, .07, -.15, .03, .14, .03, 0, 0, 0, col[1]); } M.add(K.G.sm, 0, .35, .33, .02, .015, .01, 0, 0, 0, 0xff8fa8); M.add(K.G.cyl8, 0, .32, -.32, .025, .32, .025, -.7, 0, 0, col[0]); M.add(K.G.sph, 0, .22, .1, .1, .1, .12, 0, 0, 0, col[1]); return M.geometry(); };
-const cats = [];
-{ const b = PK.BENCHES[1], c1 = new THREE.Mesh(catGeo([0xe8953a, 0xfbe6c8]), new THREE.MeshLambertMaterial({ vertexColors:true }));
-  c1.position.set(b.x + Math.cos(b.f) * .55, .45, b.z - Math.sin(b.f) * .55); c1.rotation.y = b.f + .6; c1.castShadow = true; scene.add(c1); cats.push({ id:0, m:c1, x:c1.position.x, z:c1.position.z, y:.45, hap:0 });
-  const c2 = new THREE.Mesh(catGeo([0x2a2a2e, 0xf4f4f4]), c1.material); c2.position.set(-22.5, 0, -.8); c2.rotation.y = 1.2; c2.castShadow = true; scene.add(c2); cats.push({ id:1, m:c2, x:-22.5, z:-.8, y:0, hap:0 }); }
+let cats = [];
+function makeCats1(pk){
+  const cats = [];
+  const b = pk.BENCHES[1], c1 = new THREE.Mesh(catGeo([0xe8953a, 0xfbe6c8]), new THREE.MeshLambertMaterial({ vertexColors:true }));
+  c1.position.set(b.x + Math.cos(b.f) * .55, .45, b.z - Math.sin(b.f) * .55); c1.rotation.y = b.f + .6; c1.castShadow = true; pk.group.add(c1); cats.push({ id:0, m:c1, x:c1.position.x, z:c1.position.z, y:.45, hap:0 });
+  const c2 = new THREE.Mesh(catGeo([0x2a2a2e, 0xf4f4f4]), c1.material); c2.position.set(-22.5, 0, -.8); c2.rotation.y = 1.2; c2.castShadow = true; pk.group.add(c2); cats.push({ id:1, m:c2, x:-22.5, z:-.8, y:0, hap:0 });
+  return cats;
+}
 function petCat(c){ c.hap = 2.2; SFX.meow(); setTimeout(() => SFX.purr(), 450); burst(c.x, c.y + .6, c.z, 10, HEART, 1.2, 1, -1, .6, 1.2); popText('🐱💕');
   if(!SAVE.pet.includes(c.id)){ SAVE.pet.push(c.id); persist(); worldCoins(1, L('دلّلت البسّة', 'petted the cat', 'kediyi sevdin')); } }
 function stepCats(t, dt){ for(const c of cats){ c.hap = Math.max(0, c.hap - dt); c.m.scale.y = 1 + Math.sin(t * (c.hap ? 14 : 2)) * (c.hap ? .04 : .015); c.m.rotation.z = c.hap ? Math.sin(t * 9) * .08 : 0; } }
+
+/* ======================================================================
+   Places: the neighbourhood park (1) and Big Tree Park (2), joined by a park gate in each
+   ====================================================================== */
+function setupPlace(id){
+  const pk = PARKS[id];
+  const S = PL[id] = { stars:makeStars(pk, id === 2 ? pk.STAR_SPOTS : starSpots1(pk), id === 2 ? SAVE.stars2 : SAVE.stars), cats:id === 1 ? makeCats1(pk) : [], pigeon:pk.PIGEON || { x:pk.C.x - 9.5, z:pk.C.z + 11.2 } };
+  S.total = S.stars.length;
+  const lv = makeLeaves(pk, id === 2 ? 77 : 99); S.leaves = lv.list; S.leafMesh = lv.mesh;
+  const other = id === 1 ? 2 : 1, g = pk.GATE;
+  S.gate = makeGate(THREE, K, { x:g.x, z:g.z, yaw:g.yaw, text:PLACE_NAME[other], icon:other === 2 ? 'tree' : 'slide', ring:other === 2 ? '#3f8a3a' : '#7d55e8', pillar:other === 2 ? 0xb5543a : 0x8a7f74 });
+  pk.group.add(S.gate.grp); for(const c of S.gate.pillars) pk.circles.push(c);
+  S.gateLbl = document.createElement('div'); S.gateLbl.className = 'dname gatelbl'; S.gateLbl.hidden = true; S.gateLbl.dir = 'auto'; S.gateLbl.textContent = PLACE_ICON[other] + ' ' + PLACE_NAME[other]; labelsEl.appendChild(S.gateLbl);
+  return S;
+}
+function activatePlace(id){
+  if(!PARKS[id]){ PARKS[id] = id === 2 ? makePark2(THREE, K, TX) : makePark(THREE, K, TX); setupPlace(id); }
+  if(PK !== PARKS[id]){ scene.remove(PK.group); PK = PARKS[id]; scene.add(PK.group); }
+  PLACE_ID = id; const S = PL[id];
+  C = PK.C; stars = S.stars; TOTAL_STARS = S.total; leaves = S.leaves; leafMesh = S.leafMesh; cats = S.cats;
+  for(const k in PL) PL[k].gateLbl.hidden = true;
+  PIGEON_HOME.x = S.pigeon.x; PIGEON_HOME.z = S.pigeon.z; feedAt = null; feedT = 0;
+  for(const p of pigeons){ const a = Math.random() * 6.28, r = Math.random() * 2.5; p.x = PIGEON_HOME.x + Math.cos(a) * r; p.z = PIGEON_HOME.z + Math.sin(a) * r; p.y = 0; p.fly = 0; p.t = Math.random() * 2; p.tx = p.x; p.tz = p.z; }
+  placeLights(); applyTod(); hudKey = '';
+}
+/* go to the other park: through the gate (arrive by its gate, with a soft fade), from the HUD / pause / title, or following
+   the host of a private room */
+let placeBusy = false, gateCd = 0;
+function switchPlace(id, how = {}){
+  if(id !== 1 && id !== 2) return false;
+  if(id === PLACE_ID){ return false; }
+  if(placeBusy) return false;
+  const go = () => {
+    if(P.act) leaveAct();
+    if(mode) endMode(false);
+    activatePlace(id);
+    const live = state === 'play' || state === 'pause' || state === 'games';
+    if(how.arrive){ const a = PK.ARRIVE; placeAt(a.x, a.z, a.f); started = true; gateCd = 2; }
+    else if(live){ placeAt(PK.spawn.x, PK.spawn.z, PK.spawn.f); started = true; gateCd = 1; }
+    else { started = false; menuView(); }
+    mpPlaceChanged();
+    if(state === 'play' && !how.quiet){ SFX.found(); toast(PLACE_ICON[id] + ' ' + PLACE_NAME[id] + (how.follow ? ' · 👫' : ''), 2600); }
+    if(state === 'menu') showTitle();
+  };
+  if(how.fade && state === 'play'){ placeBusy = true; clearInput(); const f = $('#fade'); f.classList.add('on'); SFX.whoosh(); setTimeout(() => { try{ go(); } finally { setTimeout(() => { f.classList.remove('on'); placeBusy = false; }, 80); } }, 320); }
+  else go();
+  return true;
+}
+function stepGate(dt){
+  gateCd = Math.max(0, gateCd - dt);
+  const g = PL[PLACE_ID] && PL[PLACE_ID].gate;
+  if(!g || gateCd > 0 || placeBusy || P.act || P.y > 1.2) return;
+  if(Math.hypot(P.x - g.x, P.z - g.z) < 1.25) switchPlace(PLACE_ID === 1 ? 2 : 1, { arrive:true, fade:true });
+}
+function placeGateLabel(t){
+  const S = PL[PLACE_ID]; if(!S) return;
+  S.gate.tick(t);
+  const d = Math.hypot(S.gate.x - P.x, S.gate.z - P.z), play = state === 'play' || state === 'pause' || state === 'games';
+  project(S.gateLbl, S.gate.x, S.gate.top + .5, S.gate.z, play && d < 34);
+}
 
 /* ======================================================================
    Input: joystick (left), camera drag (right), A, use, get off, keyboard
@@ -501,7 +598,7 @@ function updateCamera(dt){
   const tx = P.x, ty = P.y + 1.0, tz = P.z;
   const k = cam.snap ? 1 : 1 - Math.exp(-10 * dt);
   cam.tx = lerp(cam.tx, tx, k); cam.ty = lerp(cam.ty, ty, k); cam.tz = lerp(cam.tz, tz, k);
-  if(state === 'menu' || state === 'mp' || state === 'select'){ const a = cam.yaw; camera.position.set(C.x + Math.sin(a) * 24, 9.5, C.z + Math.cos(a) * 24); camera.lookAt(C.x, 1.2, C.z); cam.snap = true; return; }
+  if(state === 'menu' || state === 'mp' || state === 'select'){ const a = cam.yaw, mc = PK.MENU_CAM || [24, 9.5]; camera.position.set(C.x + Math.sin(a) * mc[0], mc[1], C.z + Math.cos(a) * mc[0]); camera.lookAt(C.x, 1.2, C.z); cam.snap = true; return; }
   // keep tree trunks from hiding the hero: pull the camera in front of them
   const sx = Math.sin(cam.yaw) * Math.cos(pitch), sz = Math.cos(cam.yaw) * Math.cos(pitch);
   for(const c of PK.circles){ if(c.top < 5) continue; const ox = c.x - cam.tx, oz = c.z - cam.tz, t = (ox * sx + oz * sz) / (sx * sx + sz * sz); if(t <= .6 || t > dist) continue; const d = Math.hypot(ox - sx * t, oz - sz * t); if(d < c.r + .35) dist = Math.max(1.6, t - c.r - .4); }
@@ -537,10 +634,10 @@ function stepHero(dt){
   else P.gr = false;
   P.y = ny;
   if(P.gr && inp.m > .3){ P.stepT -= dt * inp.m; if(P.stepT <= 0){ P.stepT = .32; SFX.step(); } }
-  // walking into a slide top while going forward starts it too
   collectAll();
+  stepGate(dt);
 }
-const ACT_ICON = { slide:'🛝', swing:'🎠', seesaw:'⚖️', spring:'🐎', bench:'🪑', hide:'🌳', feed:'🐦', pet:'🐱', panel:'🎲' };
+const ACT_ICON = { slide:'🛝', swing:'🎠', seesaw:'⚖️', spring:'🐎', bench:'🪑', hide:'🌳', feed:'🐦', pet:'🐱', panel:'🎲', fit:'💪' };
 function nearestUse(){
   if(P.act) return null;
   let best = null, bd = 9;
@@ -553,6 +650,7 @@ function nearestUse(){
     PK.BENCHES.forEach((b, i) => cand('bench', i, b.x, b.z, 1.4));
     PK.HIDES.forEach((h, i) => cand('hide', i, h.x, h.z, 1.0));
     PK.PANELS.forEach((p, i) => cand('panel', i, p.x + Math.sin(p.yaw) * .5, p.z + Math.cos(p.yaw) * .5, 1.2));
+    (PK.FITS || []).forEach((f, i) => { if(!busyFit(i)) cand('fit', i, f.ux, f.uz, 1.2); });
     cats.forEach((c, i) => cand('pet', i, c.x, c.z, 1.7));
     const pc = pigeons.reduce((a, p) => (p.fly > 0 ? a : (Math.hypot(p.x - P.x, p.z - P.z) < 3.2 ? a + 1 : a)), 0); if(pc >= 2 && bd > 1.0){ best = { k:'feed', i:0 }; bd = 1; }
   }
@@ -560,6 +658,7 @@ function nearestUse(){
 }
 const busySwing = i => bots.some(b => b.act && b.act.k === 'swing' && b.act.i === i) || [...RM.values()].some(a => a.k === 'swing' && a.i === i && a.vis);
 const busySpring = i => bots.some(b => b.act && b.act.k === 'spring' && b.act.i === i) || [...RM.values()].some(a => a.k === 'spring' && a.i === i && a.vis);
+const busyFit = i => [...RM.values()].some(a => a.k === 'fit' && a.i === i && a.vis);
 const busySeesaw = side => bots.some(b => b.act && b.act.k === 'seesaw' && b.act.i === side) || [...RM.values()].some(a => a.k === 'seesaw' && a.i === side && a.vis);
 function doUse(){
   const n = nearestUse(); if(!n){ SFX.nope(); return; }
@@ -575,6 +674,7 @@ function startAct(k, i){
   else if(k === 'seesaw'){ P.act = { k, i }; SFX.sit(); seesawPartnerNeeded(i); }
   else if(k === 'spring'){ P.act = { k, i }; SFX.boing(); PK.SPRINGS[i].vz += 1.5; }
   else if(k === 'bench'){ P.act = { k, i }; SFX.sit(); }
+  else if(k === 'fit'){ P.act = { k, i, fa:0 }; SFX.sit(); }
   else if(k === 'hide'){ P.act = { k, i }; SFX.rustle(); const h = PK.HIDES[i]; if(h.bush) burst(h.bush.x, h.bush.y, h.bush.z, 8, [0x3a6a2a, 0x5a8a3a], 1.5, 1, 4, 1); }
   hudKey = '';
 }
@@ -583,6 +683,7 @@ function leaveAct(){
   P.act = null;
   if(a.k === 'swing'){ const s = PK.SWINGS[a.i], c = Math.sin(s.ang); P.x += Math.sin(s.yaw) * (c * 1.85 + .6); P.z += Math.cos(s.yaw) * (c * 1.85 + .6); P.vy = 2.5; P.gr = false; }
   else if(a.k === 'seesaw' || a.k === 'spring' || a.k === 'bench'){ P.x += Math.sin(P.f) * .7; P.z += Math.cos(P.f) * .7; }
+  else if(a.k === 'fit'){ const f = PK.FITS[a.i]; P.x = f.ux; P.z = f.uz; P.y = Math.max(0, P.y); P.vy = 0; P.gr = false; }
   _o.x = P.x; _o.z = P.z; _o.y = 0; PK.collide(_o, .34); P.x = _o.x; P.z = _o.z;
   if(a.k !== 'slide') P.y = Math.max(PK.groundAt(P.x, P.z, P.y + .3), P.y);
   hudKey = '';
@@ -593,6 +694,7 @@ function actA(){
   if(a.k === 'swing'){ const s = PK.SWINGS[a.i]; const dir = s.vel === 0 ? 1 : Math.sign(s.vel); if(Math.abs(s.ang) < 1.15){ s.vel += dir * .75; SFX.pump(); } }
   else if(a.k === 'seesaw'){ seesawPush(a.i, true); }
   else if(a.k === 'spring'){ const s = PK.SPRINGS[a.i]; s.vz += 1.6 * (Math.random() < .5 ? 1 : -1); s.vx += (Math.random() - .5) * 1.2; s.bounce = .35; SFX.boing(); }
+  else if(a.k === 'fit'){ a.fa = 1; a.n = (a.n || 0) + 1; SFX.pump(); if(a.n % 5 === 0){ popText('💪 ' + N(a.n)); burst(P.x, P.y + 1.6, P.z, 8, STARC, 1.4, .8, 2, 1, .7); } stats.fit = (stats.fit | 0) + 1; }
   else if(a.k === 'bench' || a.k === 'hide') leaveAct();
 }
 function seesawPush(side, mine){
@@ -643,12 +745,16 @@ function stepSprings(dt){
   }
 }
 /* where a rider sits, by activity */
-function seatOf(k, i, out){
+function seatOf(k, i, out, fa0){
   if(k === 'swing'){ const s = PK.SWINGS[i]; s.piv.updateMatrixWorld(); out.set(0, -s.L + .02, 0).applyMatrix4(s.piv.matrixWorld); return { f:s.yaw, pitch:s.ang }; }
   if(k === 'seesaw'){ const S = PK.SEESAW; S.end(i, out); return { f:S.yaw + (i === 0 ? Math.PI / 2 : -Math.PI / 2), pitch:0, roll:0 }; }
   if(k === 'spring'){ const s = PK.SPRINGS[i]; s.body.updateWorldMatrix(true, false); out.set(0, .3, -.05).applyMatrix4(s.body.matrixWorld); return { f:0, pitch:s.az }; }
   if(k === 'bench'){ const b = PK.BENCHES[i]; out.set(b.x + Math.sin(b.f) * .02, .47, b.z + Math.cos(b.f) * .02); return { f:b.f, pitch:0 }; }
   if(k === 'hide'){ const h = PK.HIDES[i]; out.set(h.x, 0, h.z); return { f:h.bush ? Math.atan2(h.bush.x - h.x, h.bush.z - h.z) : 0, pitch:0 }; }
+  if(k === 'fit'){ const f = PK.FITS[i], fa = fa0 || 0;
+    if(f.kind === 'bar'){ out.set(f.x, f.h - 1.62 + fa * .32, f.z); return { f:f.yaw + Math.PI, pitch:0 }; }
+    if(f.kind === 'walker'){ out.set(f.x + Math.sin(f.yaw) * .15, f.h, f.z + Math.cos(f.yaw) * .15); return { f:f.yaw + Math.PI, pitch:0 }; }
+    out.set(f.x, f.h, f.z); return { f:f.yaw + Math.PI, pitch:0 }; }
   return { f:0, pitch:0 };
 }
 function stepAct(dt){
@@ -663,7 +769,8 @@ function stepAct(dt){
     if(a.d >= s.len){ P.act = null; P.vx = Math.sin(P.f) * a.v * .9; P.vz = Math.cos(P.f) * a.v * .9; P.vy = 2.2; P.gr = false; SFX.plop(); popText('🛝 ' + L('ويييي!', 'Wheee!', 'Vııı!')); hudKey = ''; stats.slides++; }
     return;
   }
-  const r = seatOf(a.k, a.i, _v);
+  if(a.k === 'fit') a.fa = Math.max(0, (a.fa || 0) - dt * 2.2);
+  const r = seatOf(a.k, a.i, _v, a.fa);
   P.x = _v.x; P.y = _v.y; P.z = _v.z; P.f = r.f; a.pitch = r.pitch || 0;
   if(a.k === 'swing') stats.swingMax = Math.max(stats.swingMax, Math.abs(PK.SWINGS[a.i].ang));
 }
@@ -818,16 +925,17 @@ function setPlayUI(on){
 function hudFrame(dt){
   coinBump = Math.max(0, coinBump - dt);
   const n = nearestUse(), ak = P.act ? P.act.k : '';
-  const tk = [SAVE.coins, SAVE.stars.length, SAVE.leaves, n ? n.k : '', ak, todT, BOTS_ON, modeText()].join('|');
+  const tk = [SAVE.coins, myStars().length, SAVE[LK()], n ? n.k : '', ak, todT, BOTS_ON, modeText(), PLACE_ID].join('|');
   if(tk !== hudKey){
     hudKey = tk;
     $('#btnGames').hidden = true; // tag / hide-and-seek need bots, which are off
     chipEl.textContent = modeText(); chipEl.hidden = false;
-    $('#hudCoins').textContent = N(SAVE.coins); $('#hudStars').textContent = '⭐ ' + N(SAVE.stars.length) + '/' + N(TOTAL_STARS); $('#hudLeaves').textContent = '🍂 ' + N(SAVE.leaves);
+    $('#hudCoins').textContent = N(SAVE.coins); $('#hudStars').textContent = '⭐ ' + N(myStars().length) + '/' + N(TOTAL_STARS); $('#hudLeaves').textContent = '🍂 ' + N(SAVE[LK()]);
+    placeBtn.textContent = PLACE_ICON[PLACE_ID === 1 ? 2 : 1]; placeBtn.setAttribute('aria-label', L('روح على', 'Go to', 'Şuraya git:') + ' ' + PLACE_NAME[PLACE_ID === 1 ? 2 : 1]);
     useBtn.hidden = !!P.act; useBtn.classList.toggle('ready', !!n); useBtn.textContent = n ? ACT_ICON[n.k] : '👋';
     exitBtn.hidden = !P.act || ak === 'slide';
-    aBtn.textContent = ak === 'swing' || ak === 'spring' || ak === 'seesaw' ? '💪' : 'A';
-    const h = $('#hint'); const ht = ak === 'swing' ? L('اضغط 💪 لتطير أعلى!', 'Tap 💪 to swing higher!', 'Daha yükseğe için 💪 bas!') : ak === 'seesaw' ? L('لما تنزل، اضغط 💪 لتطلع!', 'When you are down, tap 💪 to go up!', 'Aşağıdayken 💪 bas, yukarı çık!') : ak === 'spring' ? L('اضغط 💪 لتنطّ!', 'Tap 💪 to bounce!', 'Zıplamak için 💪 bas!') : ak === 'hide' ? L('إنت مخبّى ورا الشجيرة 🤫', 'You are hiding behind the bush 🤫', 'Çalının arkasında saklanıyorsun 🤫') : '';
+    aBtn.textContent = ak === 'swing' || ak === 'spring' || ak === 'seesaw' || ak === 'fit' ? '💪' : 'A';
+    const h = $('#hint'); const ht = ak === 'swing' ? L('اضغط 💪 لتطير أعلى!', 'Tap 💪 to swing higher!', 'Daha yükseğe için 💪 bas!') : ak === 'seesaw' ? L('لما تنزل، اضغط 💪 لتطلع!', 'When you are down, tap 💪 to go up!', 'Aşağıdayken 💪 bas, yukarı çık!') : ak === 'spring' ? L('اضغط 💪 لتنطّ!', 'Tap 💪 to bounce!', 'Zıplamak için 💪 bas!') : ak === 'hide' ? L('إنت مخبّى ورا الشجيرة 🤫', 'You are hiding behind the bush 🤫', 'Çalının arkasında saklanıyorsun 🤫') : ak === 'fit' ? L('اضغط 💪 لتتمرّن!', 'Tap 💪 to work out!', 'Egzersiz için 💪 bas!') : '';
     h.hidden = !ht; if(ht) h.textContent = ht;
     $('#btnTod').textContent = TOD_ICON[todT];
   }
@@ -835,11 +943,13 @@ function hudFrame(dt){
 }
 /* ---------- which park am I in: «🌍 حديقة الكل · 7 أولاد» or «👫 غرفة 1234» (tap it: who is here, names only) ---------- */
 const chipEl = $('#roomChip'), plistEl = $('#plist'), emoBtn = $('#btnEmo'), emosEl = $('#emos');
-function kidsHere(){ return 1 + [...RM.values()].filter(a => a.seen && !a.away).length; }
+function kidsHere(){ return 1 + [...RM.values()].filter(a => a.seen && !a.away && a.pl === PLACE_ID).length; }
+/* the public park's name on the chip: «🌍 حديقة الكل» in the neighbourhood park, «🌳 حديقة الشجر الكبيرة» in the big one */
+const pubName = () => PLACE_ID === 2 ? '🌳 ' + PLACE_NAME[2] : '🌍 ' + L('حديقة الكل', "Everyone's park", 'Herkesin parkı');
 function modeText(){
   if(MP.pub){
-    if(mpActive()) return '🌍 ' + L('حديقة الكل', "Everyone's park", 'Herkesin parkı') + ' · ' + N(kidsHere()) + ' ' + (kidsHere() === 1 ? L('ولد', 'kid', 'çocuk') : L('أولاد', 'kids', 'çocuk'));
-    return '🌍 ' + L('حديقة الكل', "Everyone's park", 'Herkesin parkı') + ' · ' + (MP.status === 'connecting' ? '⏳' : '📡');
+    if(mpActive()) return pubName() + ' · ' + N(kidsHere()) + ' ' + (kidsHere() === 1 ? L('ولد', 'kid', 'çocuk') : L('أولاد', 'kids', 'çocuk'));
+    return pubName() + ' · ' + (MP.status === 'connecting' ? '⏳' : '📡');
   }
   if(mpActive() && MP.code) return '👫 ' + L('غرفة', 'Room', 'Oda') + ' ' + MP.code;
   return '🌳 ' + L('لحالك', 'On your own', 'Tek başına') + ' · 📡';
@@ -849,7 +959,7 @@ function drawPlist(){
   const row = (img, name) => { const d = document.createElement('div'); const i = document.createElement('img'); i.src = img; i.alt = ''; const sp = document.createElement('span'); sp.dir = 'auto'; sp.textContent = name; d.append(i, sp); plistEl.appendChild(d); };
   const h = document.createElement('b'); h.textContent = modeText(); plistEl.appendChild(h);
   row(charImg(heroId), L('إنت', 'You', 'Sen') + ((ME && ME.name) ? ' · ' + ME.name : ''));
-  [...RM.values()].filter(a => a.seen && !a.away).sort((p, q) => (p.d || 0) - (q.d || 0)).slice(0, 15).forEach(a => row(heroPic(a.hero, a.av), nameOf(a)));
+  [...RM.values()].filter(a => a.seen && !a.away && a.pl === PLACE_ID).sort((p, q) => (p.d || 0) - (q.d || 0)).slice(0, 15).forEach(a => row(heroPic(a.hero, a.av), nameOf(a)));
 }
 chipEl.onclick = () => { if(state !== 'play') return; SFX.tap(); plistEl.hidden = !plistEl.hidden; if(!plistEl.hidden){ drawPlist(); clearTimeout(plistEl._t); plistEl._t = setTimeout(() => { plistEl.hidden = true; }, 7000); } };
 /* ---------- emote button 😊 → the fixed reactions ---------- */
@@ -903,7 +1013,8 @@ function showTitle(){
     <h1>${PLACE}</h1>
     <p class="sub">🌳 ${L('حديقتنا بالحارة! تزحلق، تمرجح، العب عالميزان، لمّ النجوم وورق الخريف.', 'Our neighbourhood park! Slide, swing, ride the seesaw, collect stars and autumn leaves.', 'Mahallemizin parkı! Kay, sallan, tahterevalliye bin, yıldız ve yaprak topla.')}</p>
     ${myHeroBtn()}
-    <div class="stars"><span>🪙 ${N(SAVE.coins)}</span><span>⭐ ${N(SAVE.stars.length)}/${N(TOTAL_STARS)}</span><span>🍂 ${N(SAVE.leaves)}</span></div>
+    <div class="row places">${[1, 2].map(n => `<button class="place${n === PLACE_ID ? ' on' : ''}" data-pl="${n}">${PLACE_ICON[n]} ${PLACE_NAME[n]}</button>`).join('')}</div>
+    <div class="stars"><span>🪙 ${N(SAVE.coins)}</span><span>⭐ ${N(myStars().length)}/${N(TOTAL_STARS)}</span><span>🍂 ${N(SAVE[LK()])}</span></div>
     <p class="sub publine" id="pubLine"></p>
     <div class="row"><button class="big-btn" id="bPlay">▶️ ${SAVE.total ? L('كمّل', 'Continue', 'Devam') : L('العب', 'Play', 'Oyna')}</button>
     <button class="big-btn pink" id="bMP">👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</button></div></div>`;
@@ -911,6 +1022,7 @@ function showTitle(){
   $('#bMP').onclick = () => { AU.ac(); SFX.tap(); mpMenu(); };
   $('#bMyHero').onclick = () => { SFX.tap(); showSelect('menu'); };
   $('#bPlay').onclick = () => { AU.ac(); SFX.tap(); beginGame(); };
+  card.querySelectorAll('.place').forEach(b => b.onclick = () => { SFX.tap(); const n = +b.dataset.pl; if(n !== PLACE_ID) switchPlace(n); });
   pubLine(); pubEnsure();
 }
 /* on the title: «🌍 حديقة الكل · 3 أولاد عم يلعبوا هلّق» */
@@ -918,8 +1030,8 @@ function pubLine(){
   const el = $('#pubLine'); if(!el) return;
   const n = kidsHere() - 1;
   const t = !MP.pub ? '' : !mpActive() ? '🌍 ' + L('عم نفتح حديقة الكل…', "Opening everyone's park…", 'Herkesin parkı açılıyor…') + (MP.status === 'connecting' ? ' ⏳' : ' 📡')
-    : n > 0 ? '🌍 ' + L('حديقة الكل', "Everyone's park", 'Herkesin parkı') + ': ' + N(n) + ' ' + L('أولاد عم يلعبوا هلّق', 'kids playing now', 'çocuk şu an oynuyor')
-    : '🌍 ' + L('حديقة الكل: إنت أول واحد هون!', "Everyone's park: you're the first one here!", 'Herkesin parkı: ilk gelen sensin!');
+    : n > 0 ? pubName() + ': ' + N(n) + ' ' + L('أولاد عم يلعبوا هلّق', 'kids playing now', 'çocuk şu an oynuyor')
+    : pubName() + ': ' + L('إنت أول واحد هون!', "you're the first one here!", 'ilk gelen sensin!');
   if(el.textContent !== t) el.textContent = t;
   el.hidden = !t;
 }
@@ -941,12 +1053,14 @@ function showPause(force){
   showOverlay('dim'); card.className = 'card wide';
   card.innerHTML = `${sndBtn()}<h2>⏸️ ${L('استراحة', 'Paused', 'Mola')}</h2>
     ${mpActive() && !MP.pub ? `<p>👫 ${L('أصحابك لسّا عم يلعبوا · غرفة', 'Your friends keep playing · room', 'Arkadaşların oynuyor · oda')} <bdi dir="ltr">${MP.code}</bdi></p>` : MP.pub ? `<p>${modeText()}</p>` : ''}
-    <div class="row"><span class="tag" style="--rc:#ffe27a">⭐ ${N(SAVE.stars.length)}/${N(TOTAL_STARS)}</span><span class="tag" style="--rc:#ffd2a0">🍂 ${N(SAVE.leaves)}</span><span class="tag" style="--rc:#c8f0d8">🏃 ${N(SAVE.wins.tag | 0)} · 🙈 ${N(SAVE.wins.seek | 0)}</span></div>
+    <div class="row"><span class="tag" style="--rc:#ffe27a">⭐ ${N(myStars().length)}/${N(TOTAL_STARS)}</span><span class="tag" style="--rc:#ffd2a0">🍂 ${N(SAVE[LK()])}</span><span class="tag" style="--rc:#c8f0d8">🏃 ${N(SAVE.wins.tag | 0)} · 🙈 ${N(SAVE.wins.seek | 0)}</span></div>
     <div class="row"><button class="big-btn mint" id="bResume">▶️ ${L('كمّل', 'Continue', 'Devam')}</button>${myHeroBtn()}</div>
+    <div class="row"><button class="ghost-btn" id="bPlace">${PLACE_ICON[PLACE_ID === 1 ? 2 : 1]} ${L('روح على', 'Go to', 'Git:')} ${PLACE_NAME[PLACE_ID === 1 ? 2 : 1]}</button></div>
     <div class="row"><button class="ghost-btn" id="bTod2">${TOD_ICON[todT]} ${L('نهار / مسا / ليل', 'Day / evening / night', 'Gündüz / akşam / gece')}</button><button class="ghost-btn" id="bMenu">🏠 ${L('القائمة', 'Menu', 'Menü')}</button></div>
     <button class="exit-btn" id="bExit">🚪 ${L('اطلع من اللعبة', 'Leave the game', 'Oyundan çık')}</button>`;
   wireSnd();
   $('#bResume').onclick = () => { SFX.tap(); resume(); };
+  $('#bPlace').onclick = () => { SFX.tap(); resume(); switchPlace(PLACE_ID === 1 ? 2 : 1, { fade:true }); };
   $('#bMyHero').onclick = () => { SFX.tap(); showSelect('pause'); };
   $('#bTod2').onclick = () => { cycleTod(); $('#bTod2').textContent = TOD_ICON[todT] + ' ' + L('نهار / مسا / ليل', 'Day / evening / night', 'Gündüz / akşam / gece'); };
   $('#bMenu').onclick = () => { SFX.tap(); persist(true); showTitle(); };
@@ -955,6 +1069,8 @@ function showPause(force){
 function resume(){ hideOverlay(); state = 'play'; setPlayUI(true); hudKey = ''; AU.music(true); ambWanted = true; applyTod(); last = performance.now(); }
 $('#btnPause').onclick = () => { SFX.tap(); showPause(); };
 $('#btnTod').onclick = () => { if(state === 'play') cycleTod(); };
+const placeBtn = $('#btnPlace');
+placeBtn.onclick = () => { if(state !== 'play') return; SFX.tap(); switchPlace(PLACE_ID === 1 ? 2 : 1, { fade:true }); };
 $('#btnGames').onclick = () => { if(state !== 'play') return; SFX.tap(); showGames(); };
 function showGames(){
   state = 'games'; clearInput();
@@ -1003,13 +1119,13 @@ function frame(now){
   if(state === 'play') stepHero(dt);
   setBotsOn(!(MP.pub && mpActive() && [...RM.values()].some(a => a.seen && !a.away)));
   if(live && BOTS_ON){ for(const b of bots) stepBot(b, dt); stepMode(state === 'play' ? rdt : 0); }
-  stepSwings(dt); stepSeesaw(dt); stepSprings(dt); stepPigeons(t, dt); stepCats(t, dt); PK.tick(t, dt);
+  stepSwings(dt); stepSeesaw(dt); stepSprings(dt); stepPigeons(t, dt); stepCats(t, dt); PK.tick(t, dt, camera.position, P);
   if(state === 'play') hudFrame(dt);
   mpFrame(dt); stepRemotes(dt);
   if(state === 'menu' || state === 'mp' || state === 'select' || state === 'name'){ cam.yaw += dt * .07; }
   // draw the hero and bots
   const a = P.act;
-  drawChar(hero, { t, dt, run:clamp(Math.hypot(P.vx, P.vz) / RUN, 0, 1), air:!P.gr && !a, vy:P.vy, sit:a && a.k !== 'hide' ? 1 : 0, slide:a && a.k === 'slide', climb:P.climb, crouch:a && a.k === 'hide', kick:a && a.k === 'swing', emo:emoOn(P) ? P.emo : null }, P.x, P.y, P.z, P.f, a ? (a.k === 'slide' ? a.pitch * .6 : a.pitch) : 0);
+  drawChar(hero, { t, dt, run:clamp(Math.hypot(P.vx, P.vz) / RUN, 0, 1), air:!P.gr && !a, vy:P.vy, sit:a && a.k !== 'hide' && a.k !== 'fit' ? 1 : 0, slide:a && a.k === 'slide', climb:P.climb, crouch:a && a.k === 'hide', kick:a && a.k === 'swing', fit:a && a.k === 'fit' ? PK.FITS[a.i].kind : null, fa:a && a.fa, emo:emoOn(P) ? P.emo : null }, P.x, P.y, P.z, P.f, a ? (a.k === 'slide' ? a.pitch * .6 : a.pitch) : 0);
   hero.grp.visible = state !== 'menu' || true;
   blob.position.set(P.x, PK.groundAt(P.x, P.z, P.y) + .02, P.z); const bs = clamp(1 - (P.y - PK.groundAt(P.x, P.z, P.y)) * .3, .4, 1); blob.scale.set(bs, 1, bs);
   for(const b of bots){ const ba = b.act; b.h.grp.visible = BOTS_ON && (live || state === 'menu'); if(!b.h.grp.visible) continue; drawChar(b.h, { t:b.t, dt, run:b.run, air:false, vy:0, sit:ba ? 1 : 0, slide:ba && ba.k === 'slide', crouch:b.mode === 'hidden', cheer:b.mode === 'caught' && b.t % 3 < 1.5, kick:ba && ba.k === 'swing', emo:emoOn(b) ? b.emo : null }, b.x, b.y, b.z, b.f, ba ? (ba.k === 'slide' ? (ba.pitch || 0) * .6 : (ba.pitch || 0)) : 0); }
@@ -1022,7 +1138,7 @@ function frame(now){
   sun.position.set(P.x + Math.cos(se) * 40 * .6, Math.sin(se) * 40 + 6, P.z + Math.cos(se) * 40 * .8); sun.target.position.set(P.x, 0, P.z);
   sky.position.copy(camera.position); starPts.position.copy(camera.position);
   if(state === 'play' || state === 'pause' || state === 'games') placeBotLabels();
-  placeRemoteLabels();
+  placeRemoteLabels(); placeGateLabel(t);
   renderer.render(scene, camera);
   fpsT += dt; fpsN++;
   if(fpsT > 2){ const fps = fpsN / fpsT; lastFps = fps; fpsT = 0; fpsN = 0; if(fps < 42 && state === 'play' && quality > 0 && QS.get('q') == null){ lowT++; if(lowT >= 2){ quality--; lowT = 0; applyQuality(); } } else lowT = 0; }
@@ -1038,6 +1154,8 @@ let lastFps = 0;
 const MP_URL = 'https://vgpwtrzplggvlsuvqsas.supabase.co', MP_KEY = 'sb_publishable_D9thEhZlZnfn0t06j8h1Rw_H-LVF786';
 const MP_EVENTS = ['pos', 'hi', 'ss', 'tag', 'emo'];
 const MP_MAX = 4;
+/* the channel: public shards are per park (`bobo-hara-pub-<n>` / `bobo-hara2-pub-<n>`); a private room is one channel for both parks */
+const topicOf = code => 'bobo-' + (/^pub-/.test(code) && PLACE_ID === 2 ? 'hara2-' : 'hara-') + code;
 function loadSupabase(){
   if(window.supabase && window.supabase.createClient) return Promise.resolve();
   if(loadSupabase.p) return loadSupabase.p;
@@ -1053,7 +1171,7 @@ class SupabaseTransport{
     if(navigator.onLine === false) throw new Error('offline');
     await loadSupabase();
     if(this.closed) throw new Error('cancelled');
-    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:'bobo-hara-' + code, id, events:MP_EVENTS, eps:30, h });
+    this.rt = window.BoboRT.open({ url:MP_URL, key:MP_KEY, topic:topicOf(code), id, events:MP_EVENTS, eps:30, h });
     await this.rt.ready;
   }
   track(meta){ if(this.rt) this.rt.track(meta); }
@@ -1064,7 +1182,7 @@ class SupabaseTransport{
 class LocalTransport{
   open(code, id, h){
     this.id = id; this.h = h; this.meta = null; this.peers = new Map(); this.ready = false;
-    const bc = this.bc = new BroadcastChannel('bobo-hara-' + code);
+    const bc = this.bc = new BroadcastChannel(topicOf(code));
     bc.onmessage = e => {
       const m = e.data || {};
       if(m.k === 'hb'){ const old = this.peers.get(m.from), js = JSON.stringify(m.meta); this.peers.set(m.from, { meta:m.meta, js, last:Date.now() }); if(!old || old.js !== js) this.sync(); }
@@ -1134,10 +1252,15 @@ addEventListener('pagehide', () => { try{ if(MP.t) mpClose(); }catch(e){} });
 function mpClose(){
   frRoom(null);
   if(MP.t){ try{ MP.t.close(); }catch(e){} }
-  MP.t = null; MP.meta = null; MP.list = []; MP.players = []; MP.hostId = null; MP.synced = false;
+  MP.t = null; MP.meta = null; MP.list = []; MP.players = []; MP.hostId = null; MP.hostKey = null; MP.synced = false;
   for(const id of [...RM.keys()]) dropRemote(id);
 }
-function myMeta(){ return { fc:BoboRT.fc(), hero:heroId, av:heroId === 'me' ? myAv() : null }; }
+function myMeta(){ return { fc:BoboRT.fc(), hero:heroId, av:heroId === 'me' ? myAv() : null, pl:PLACE_ID }; }
+/* the place changed: the public park moves to the other park's shards; in a private room the others just see my new place */
+function mpPlaceChanged(){
+  if(MP.pub){ MP.tok++; mpClose(); MP.joining = 0; clearTimeout(MP.reT); MP.reT = 0; MP.screen = 'off'; MP.shard = 0; MP.back = 0; MP.status = 'connecting'; hudKey = ''; if(BOOTED) pubJoin(1); }
+  else if(mpActive()){ mpTrack(); MP.sig = ''; MP.posT = 0; }
+}
 async function mpOpen(code, how){
   mpClose(); MP.pub = false; clearTimeout(MP.reT); MP.reT = 0;
   const t = MP_LOCAL ? new LocalTransport() : new SupabaseTransport(), tok = ++MP.tok;
@@ -1234,6 +1357,9 @@ function mpPresence(list){
   MP.players = all.slice(0, max);
   if(MP.hostId && !MP.players.some(p => p.id === MP.hostId)) MP.hostId = MP.players[0] && MP.players[0].id;
   remoteSync(MP.players);
+  // a private room follows the host's place (the host walks through the gate → everyone comes along)
+  if(!MP.pub && MP.hostId && MP.hostId !== MP.id){ const h = MP.players.find(p => p.id === MP.hostId), hp = h && (h.pl === 2 ? 2 : 1), key = MP.hostId + ':' + hp;
+    if(h && key !== MP.hostKey){ MP.hostKey = key; if(hp !== PLACE_ID) setTimeout(() => switchPlace(hp, { follow:true, fade:true, arrive:state === 'play' }), 0); } }
   const joined = MP.players.filter(p => p.id !== MP.id && !before.includes(p.id));
   const now = performance.now();
   if(joined.length && before.length && state === 'play' && now - MP.joinToastT > 4000){
@@ -1244,7 +1370,7 @@ function mpPresence(list){
   if(MP.screen === 'lobby') mpLobbyDraw();
   hudKey = '';
 }
-const ACT_CODE = ['', 'slide', 'swing', 'seesaw', 'spring', 'bench', 'hide'];
+const ACT_CODE = ['', 'slide', 'swing', 'seesaw', 'spring', 'bench', 'hide', 'fit'];
 function mpMsg(ev, p){
   if(ev === 'pos'){ onPos(p); return; }
   if(ev === 'hi'){ MP.posT = 0; MP.sig = ''; return; }
@@ -1280,15 +1406,15 @@ function mpFrame(dt){
   const a = P.act, k = a ? ACT_CODE.indexOf(a.k) : 0, now = performance.now();
   const moved = Math.abs(P.x - MP.lx) + Math.abs(P.z - MP.lz) + Math.abs(P.y - MP.ly) > .03;
   const moving = Math.hypot(P.vx, P.vz) > .05 || !P.gr || moved || (a && a.k !== 'bench' && a.k !== 'hide');
-  const sig = k + ':' + (a ? a.i : 0) + ':' + (MP.away ? 1 : 0), since = now - (MP.sentAt || 0);
+  const sig = k + ':' + (a ? a.i : 0) + ':' + (MP.away ? 1 : 0) + ':' + PLACE_ID, since = now - (MP.sentAt || 0);
   // real time (not the frame clock): a slow phone still sends ~7×/s while moving and a keep-alive every ~3 s
   const due = sig !== MP.sig || (moving ? since >= 1000 / POS_HZ : (MP.wasMoving || since > 3000));
   MP.wasMoving = moving;
   if(!due) return;
   MP.posT = 1 / POS_HZ; MP.sig = sig; MP.away = false; MP.sentAt = now; MP.lx = P.x; MP.lz = P.z; MP.ly = P.y;
   let av = 0, bv = 0;
-  if(a && a.k === 'swing') av = PK.SWINGS[a.i].ang; else if(a && a.k === 'seesaw') av = PK.SEESAW.ang; else if(a && a.k === 'spring'){ av = PK.SPRINGS[a.i].ax; bv = PK.SPRINGS[a.i].az; } else if(a && a.k === 'slide') av = a.pitch || 0;
-  mpSend('pos', { x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.f), m:r2(clamp(Math.hypot(P.vx, P.vz) / RUN, 0, 1)), air:P.gr ? 0 : 1, vy:r2(P.vy), k, i:a ? (a.i | 0) : 0, a:r2(av), b:r2(bv) });
+  if(a && a.k === 'swing') av = PK.SWINGS[a.i].ang; else if(a && a.k === 'seesaw') av = PK.SEESAW.ang; else if(a && a.k === 'spring'){ av = PK.SPRINGS[a.i].ax; bv = PK.SPRINGS[a.i].az; } else if(a && a.k === 'slide') av = a.pitch || 0; else if(a && a.k === 'fit') av = a.fa || 0;
+  mpSend('pos', { x:r2(P.x), y:r2(P.y), z:r2(P.z), f:r2(P.f), m:r2(clamp(Math.hypot(P.vx, P.vz) / RUN, 0, 1)), air:P.gr ? 0 : 1, vy:r2(P.vy), k, i:a ? (a.i | 0) : 0, a:r2(av), b:r2(bv), pl:PLACE_ID });
 }
 function coStop(){ MP.tok++; mpClose(); MP.pub = false; MP.joining = 0; clearTimeout(MP.reT); MP.reT = 0; MP.screen = 'off'; }
 
@@ -1310,7 +1436,8 @@ function remoteSync(list){
     if(p.id === MP.id) continue;
     here.add(p.id);
     let a = RM.get(p.id);
-    if(!a){ a = { id:p.id, key:'', h:null, lbl:labelEl(), bub:bubbleEl(), buf:[], seen:false, away:false, t:Math.random() * 5, x:0, y:0, z:0, f:0, m:0, air:0, vy:0, k:'', i:0, a:0, b:0, c:0, vis:false, emo:null }; RM.set(p.id, a); }
+    if(!a){ a = { id:p.id, key:'', h:null, lbl:labelEl(), bub:bubbleEl(), buf:[], seen:false, away:false, t:Math.random() * 5, x:0, y:0, z:0, f:0, m:0, air:0, vy:0, k:'', i:0, a:0, b:0, c:0, vis:false, emo:null, pl:p.pl === 2 ? 2 : 1, posAt:0 }; RM.set(p.id, a); }
+    else if(performance.now() - a.posAt > 3000){ const pl = p.pl === 2 ? 2 : 1; if(pl !== a.pl){ a.pl = pl; a.buf.length = 0; a.seen = false; } }   // positions say where a kid is; presence only when they are quiet
     a.c = numIn(p.c, 0, 99) | 0;
     const hero = okHero(p.hero), av = hero === 'me' ? okAv(p.av) : null;
     const key = hero + '|' + (av ? JSON.stringify(av) : '');
@@ -1321,14 +1448,16 @@ function remoteSync(list){
 function onPos(p){
   const a = RM.get(p.id); if(!a) return;
   if(p.away){ a.away = true; a.buf.length = 0; return; }
-  const now = performance.now();
+  const now = performance.now(), pl = p.pl === 2 ? 2 : 1;
+  if(pl !== a.pl){ a.pl = pl; a.buf.length = 0; a.seen = false; }
+  a.posAt = now;
   a.buf.push({ t:now, x:numIn(p.x, -200, 200), y:numIn(p.y, -10, 30), z:numIn(p.z, -200, 200), f:numIn(p.f, -1e3, 1e3), m:numIn(p.m, 0, 1) });
   if(a.buf.length > 12) a.buf.shift();
   if(!a.seen || a.away){ const b = a.buf[a.buf.length - 1]; a.x = b.x; a.y = b.y; a.z = b.z; a.f = b.f; }
   a.seen = true; a.away = false; a.air = p.air ? 1 : 0; a.vy = numIn(p.vy, -40, 40);
   const k = ACT_CODE[numIn(p.k, 0, ACT_CODE.length - 1) | 0] || '';
-  const maxI = k === 'swing' ? PK.SWINGS.length - 1 : k === 'spring' ? PK.SPRINGS.length - 1 : k === 'seesaw' ? 1 : k === 'bench' ? PK.BENCHES.length - 1 : k === 'hide' ? PK.HIDES.length - 1 : k === 'slide' ? PK.SLIDES.length - 1 : 0;
-  a.k = k; a.i = numIn(p.i, 0, maxI) | 0; a.a = numIn(p.a, -1.5, 1.5); a.b = numIn(p.b, -1, 1);
+  const maxI = k === 'fit' ? Math.max(0, (PK.FITS || []).length - 1) : k === 'swing' ? PK.SWINGS.length - 1 : k === 'spring' ? PK.SPRINGS.length - 1 : k === 'seesaw' ? 1 : k === 'bench' ? PK.BENCHES.length - 1 : k === 'hide' ? PK.HIDES.length - 1 : k === 'slide' ? PK.SLIDES.length - 1 : 0;
+  a.k = k === 'fit' && !(PK.FITS && PK.FITS.length) ? '' : k; a.i = numIn(p.i, 0, maxI) | 0; a.a = numIn(p.a, -1.5, 1.5); a.b = numIn(p.b, -1, 1);
 }
 /* drawing: positions are interpolated ~250 ms behind; only the nearest FULL_MAX kids are drawn (mid phones),
    names only for the nearest LABEL_MAX */
@@ -1346,7 +1475,7 @@ function stepRemotes(dt){
       const k = 1 - Math.exp(-16 * dt);
       a.x = lerp(a.x, s.x, k); a.y = lerp(a.y, s.y, k); a.z = lerp(a.z, s.z, k); a.f += angDiff(s.f, a.f) * k; a.m = lerp(a.m, s.m, k);
     }
-    a.vis = a.seen && !a.away && inPark;
+    a.vis = a.seen && !a.away && inPark && a.pl === PLACE_ID;
     a.d = Math.hypot(a.x - P.x, a.z - P.z);
   }
   const near = [...RM.values()].filter(a => a.vis && a.k !== 'hide').sort((p, q) => p.d - q.d);
@@ -1360,9 +1489,10 @@ function stepRemotes(dt){
     if(!a.h) continue;
     a.h.grp.visible = show; if(!show) continue;
     let x = a.x, y = a.y, z = a.z, f = a.f, pitch = 0;
-    if(a.k === 'swing' || a.k === 'seesaw' || a.k === 'spring' || a.k === 'bench'){ const r = seatOf(a.k, a.i, _v2); x = _v2.x; y = _v2.y; z = _v2.z; f = r.f; pitch = r.pitch || 0; }
+    const fitK = a.k === 'fit' && PK.FITS && PK.FITS[a.i] ? PK.FITS[a.i].kind : null;
+    if(a.k === 'swing' || a.k === 'seesaw' || a.k === 'spring' || a.k === 'bench' || fitK){ const r = seatOf(a.k, a.i, _v2, a.a); x = _v2.x; y = _v2.y; z = _v2.z; f = r.f; pitch = r.pitch || 0; }
     else if(a.k === 'slide') pitch = a.a * .6;
-    drawChar(a.h, { t:a.t, dt, run:a.m, air:!!a.air, vy:a.vy, sit:a.k && a.k !== 'hide' ? 1 : 0, slide:a.k === 'slide', kick:a.k === 'swing', emo:emoOn(a) ? a.emo : null }, x, y, z, f, pitch);
+    drawChar(a.h, { t:a.t, dt, run:a.m, air:!!a.air, vy:a.vy, sit:a.k && a.k !== 'hide' && a.k !== 'fit' ? 1 : 0, slide:a.k === 'slide', kick:a.k === 'swing', fit:fitK, fa:a.a, emo:emoOn(a) ? a.emo : null }, x, y, z, f, pitch);
     a.dx = x; a.dy = y; a.dz = z;
     if(nb < FULL_MAX){ const g = PK.groundAt(x, z, y), bs = clamp(1 - (y - g) * .3, .4, 1); rBlobs.setMatrixAt(nb++, _m.compose(_v.set(x, g + .02, z), _q.identity(), _s.set(bs, 1, bs))); }
   }
@@ -1505,17 +1635,20 @@ document.addEventListener('visibilitychange', () => { if(document.hidden){ persi
    ====================================================================== */
 window.__hara = {
   get state(){ return state; }, get P(){ return { x:r2(P.x), y:r2(P.y), z:r2(P.z), gr:P.gr, f:r2(P.f), act:P.act ? { k:P.act.k, i:P.act.i, d:P.act.d } : null, climb:P.climb }; },
-  get coins(){ return SAVE.coins; }, get stars(){ return SAVE.stars.slice(); }, get leaves(){ return SAVE.leaves; }, get total(){ return TOTAL_STARS; }, get save(){ return JSON.parse(JSON.stringify(SAVE)); }, get stats(){ return Object.assign({}, stats); },
+  get coins(){ return SAVE.coins; }, get stars(){ return myStars().slice(); }, get leaves(){ return SAVE[LK()]; }, get total(){ return TOTAL_STARS; }, get save(){ return JSON.parse(JSON.stringify(SAVE)); }, get stats(){ return Object.assign({}, stats); },
   get tod(){ return { tod, todT }; }, get mode(){ return mode ? { k:mode.k, t:mode.t, n:mode.n, count:mode.count } : null; }, get quality(){ return quality; }, get fps(){ return lastFps; },
-  get world(){ return { C, slides:PK.SLIDES.map(s => ({ top:s.top, len:s.len, end:s.pts[s.pts.length - 1] })), swings:PK.SWINGS.map(s => ({ x:s.x, z:s.z, ang:s.ang })), seesaw:{ x:PK.SEESAW.x, z:PK.SEESAW.z, ang:PK.SEESAW.ang }, springs:PK.SPRINGS.map(s => ({ x:s.x, z:s.z, ax:s.ax, az:s.az })), benches:PK.BENCHES, hides:PK.HIDES.map(h => ({ x:h.x, z:h.z })), stars:stars.map(s => ({ i:s.i, x:s.x, y:s.y, z:s.z, on:s.on })), leaves:leaves.filter(l => l.on).map(l => [l.x, l.z]), stair:STAIR_BOTTOM, climb:PK.climb, ent:PK.ENT, kiosk:PK.KIOSK, pigeons:PIGEON_HOME, cats:cats.map(c => ({ x:c.x, z:c.z })) }; },
+  get world(){ return { C, slides:PK.SLIDES.map(s => ({ top:s.top, len:s.len, end:s.pts[s.pts.length - 1] })), swings:PK.SWINGS.map(s => ({ x:s.x, z:s.z, ang:s.ang })), seesaw:{ x:PK.SEESAW.x, z:PK.SEESAW.z, ang:PK.SEESAW.ang }, springs:PK.SPRINGS.map(s => ({ x:s.x, z:s.z, ax:s.ax, az:s.az })), benches:PK.BENCHES, hides:PK.HIDES.map(h => ({ x:h.x, z:h.z })), stars:stars.map(s => ({ i:s.i, x:s.x, y:s.y, z:s.z, on:s.on })), leaves:leaves.filter(l => l.on).map(l => [l.x, l.z]), stair:STAIR_BOTTOM, climb:PK.climb, ent:PK.ENT, kiosk:PK.KIOSK, pigeons:PIGEON_HOME, cats:cats.map(c => ({ x:c.x, z:c.z })),
+    place:PLACE_ID, gate:(() => { const g = PL[PLACE_ID].gate; return { x:g.x, z:g.z, yaw:g.yaw }; })(), arrive:PK.ARRIVE, fits:(PK.FITS || []).map(f => ({ kind:f.kind, x:f.x, z:f.z, ux:f.ux, uz:f.uz, h:f.h })), island:PK.ISLAND || null, bridge:PK.BRIDGE || null, picnic:PK.PICNIC || null, spawn:PK.spawn }; },
+  get place(){ return PLACE_ID; }, get placeBusy(){ return placeBusy; }, goPlace(n, arrive){ return switchPlace(n, { arrive:!!arrive }); }, gnd(x, z, y){ return PK.groundAt(x, z, y == null ? 99 : y); }, inPark(x, z){ return PK.inPark(x, z); },
+  get critters(){ return PK.SQ ? { sq:PK.SQ.map(s => ({ x:r2(s.x), y:r2(s.y), z:r2(s.z), st:s.st })), birds:PK.BIRDS.map(b => ({ x:r2(b.x), y:r2(b.y), z:r2(b.z), fly:b.fly > 0 })), cars:PK.VEH.length } : null; },
   get bots(){ return bots.map(b => ({ id:b.id, x:r2(b.x), y:r2(b.y), z:r2(b.z), mode:b.mode, act:b.act ? b.act.k + ':' + b.act.i : null, task:b.task ? b.task.k : null })); },
   menu(){ showTitle(); }, play(){ beginGame(); }, pause(){ showPause(); }, resume(){ resume(); }, games(){ showGames(); }, select(){ showSelect('menu'); }, hero(id){ setHero(id); },
   tp(x, z, f){ placeAt(x, z, f != null ? f : P.f); }, tpy(x, y, z){ P.x = x; P.y = y; P.z = z; P.vy = 0; P.gr = false; P.act = null; }, go(x, z, r){ testGo = { x, z, r }; }, get going(){ return !!testGo; }, input(x, y){ testInput = x == null ? null : { x, y }; },
   A(){ pressA(); }, use(){ doUse(); }, start(k, i){ startAct(k, i); }, leave(){ leaveAct(); }, near(){ const n = nearestUse(); return n ? n.k + ':' + n.i : null; },
   yaw(a){ cam.yaw = a; cam.lookT = performance.now(); }, pitch(a){ cam.pAdj = a; cam.lookT = performance.now(); }, face(x, z){ P.f = Math.atan2(x - P.x, z - P.z); cam.yaw = P.f + Math.PI; cam.snap = true; cam.lookT = performance.now(); },
-  camFix(a){ camFix = a || null; }, setTod(k){ todT = tod = k; SAVE.tod = k; applyTod(); hudKey = ''; }, cycleTod(){ cycleTod(); },
+  camFix(a){ camFix = a || null; }, fog(near, far){ scene.fog.near = near; scene.fog.far = far; }, setTod(k){ todT = tod = k; SAVE.tod = k; applyTod(); hudKey = ''; }, cycleTod(){ cycleTod(); },
   tag(){ startTag(); }, seek(){ startSeek(); }, endMode(w){ endMode(w); }, setModeTime(t){ if(mode){ mode.t = t; if(mode.count) mode.count = Math.min(mode.count, t); } }, bot(i, x, z){ const b = bots[i]; if(b){ b.x = x; b.z = z; } },
-  feed(){ feedPigeons(); }, pet(i){ petCat(cats[i]); }, freeze(v){ frozen = !!v; }, reset(){ SAVE = freshSave(); persist(true); stars.forEach(s => { s.on = true; s.m.visible = true; }); },
+  feed(){ feedPigeons(); }, pet(i){ petCat(cats[i]); }, freeze(v){ frozen = !!v; }, reset(){ SAVE = freshSave(); persist(true); for(const k in PL) PL[k].stars.forEach(s => { s.on = true; s.m.visible = true; }); },
   setQuality(q){ quality = q; applyQuality(); }, info(){ const i = renderer.info.render; return { calls:i.calls, tris:i.triangles, geos:renderer.info.memory.geometries, tex:renderer.info.memory.textures }; },
   back(){ if(state === 'mp') mpBack(); else if(state === 'select') backFromSelect(); else showTitle(); },
   get mpScreen(){ return MP.screen; }, get mp(){ return { code:MP.code, active:mpActive(), hostId:MP.hostId, screen:MP.screen, id:MP.id, players:MP.players.map(p => ({ id:p.id, hero:p.hero })) }; }, get mpErr(){ return MP.err || ''; },
@@ -1528,6 +1661,7 @@ window.__hara = {
 };
 
 /* ---------- boot ---------- */
+setupPlace(1); activatePlace(QS.get('place') === '2' ? 2 : 1);     // the neighbourhood park is the default place (?place=2 for links / tests)
 setHero(heroId);
 const labelsInit = labelsEl; void labelsInit;
 makeBots();
