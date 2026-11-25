@@ -1,7 +1,7 @@
 /* «حديقة الحارة»: every sound is synthesised with WebAudio (no files): steps and hops, slide whoosh, swing creak,
    spring boing, seesaw thump, star and leaf chimes, pigeon coos and wing flaps, a cat's meow and purr, tag «got you!»,
    and the park ambience: a soft evening breeze, birds chirping at dusk (crickets at night), and far-away happy
-   playground «wee!» glides. A calm little tune plays softly. Mute is remembered on this phone. */
+   playground «wee!» glides, and the food sounds (fizz, pour, sizzle, popcorn, the café's door bell, sips and bites). A calm little tune plays softly. Mute is remembered on this phone. */
 export function makeAudio(){
   const get = k => { try{ return localStorage.getItem(k); }catch(e){ return null; } };
   const set = (k, v) => { try{ localStorage.setItem(k, v); }catch(e){} };
@@ -59,7 +59,18 @@ export function makeAudio(){
     rustle(){ noise(.35, .07, 2200, .8, 'bandpass', 0, 900); },
     spin(){ for(let i = 0; i < 6; i++) tone(500 + i * 80, .05, 'triangle', .04, i * .05); },
     bell(){ [1318, 1976].forEach((f, i) => tone(f, .9 - i * .3, 'sine', .06)); },
-    check(){ [659, 880, 1046].forEach((f, i) => tone(f, .2, 'triangle', .09, i * .1)); }
+    check(){ [659, 880, 1046].forEach((f, i) => tone(f, .2, 'triangle', .09, i * .1)); },
+    /* food: a light jingle at the counter, coins, fizz, pour, sizzle, popcorn, the door bell, sips and bites, «yum» */
+    jingle(){ [784, 988, 1175, 1568].forEach((f, i) => tone(f, .16, 'triangle', .06, i * .07)); tone(2349, .4, 'sine', .025, .3); },
+    coin(){ tone(1318, .08, 'square', .03); tone(1760, .2, 'triangle', .05, .07); },
+    fizz(){ noise(.9, .07, 5200, .8, 'highpass', 0, 7000); for(let i = 0; i < 9; i++) tone(1800 + Math.random() * 2200, .03, 'sine', .02, .05 + Math.random() * .7); },
+    pour(){ noise(.8, .08, 900, 2.5, 'bandpass', 0, 1800); tone(380, .7, 'sine', .025, 0, 760); },
+    sizzle(){ noise(1.2, .07, 4200, .6, 'highpass', 0, 3000); for(let i = 0; i < 6; i++) noise(.04, .04, 2500, 3, 'bandpass', .1 + Math.random() * .9); },
+    pop(){ for(let i = 0; i < 7; i++){ const d = Math.random() * .8; noise(.03, .07, 1400 + Math.random() * 800, 4, 'bandpass', d); tone(500 + Math.random() * 300, .03, 'sine', .03, d); } },
+    doorbell(){ [1568, 2093].forEach((f, i) => tone(f, .7, 'sine', .05, i * .12)); tone(3136, .3, 'sine', .015, .05); },
+    gulp(){ tone(220, .1, 'sine', .1, 0, 140); tone(260, .09, 'sine', .07, .14, 170); },
+    munch(){ for(let i = 0; i < 3; i++) noise(.06, .07, 1200 + i * 200, 1.4, 'bandpass', i * .1); },
+    yum(){ tone(392, .16, 'sine', .07, 0, 523); tone(523, .25, 'sine', .07, .15, 659); [1046, 1318].forEach((f, i) => tone(f, .12, 'triangle', .03, .3 + i * .06)); }
   };
   /* ambience: breeze + birds (day/dusk) or crickets (night) + far kids' «wee!» */
   let ambOn = false, ambT = null, night = .3;

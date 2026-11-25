@@ -6,7 +6,7 @@
 <script src="../rt.js"></script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
 <title data-en="Neighbourhood Park" data-tr="Mahalle Parkı">حديقة الحارة</title>
-<meta name="description" content="حديقة الحارة ثلاثية الأبعاد: تزحلق عالزحليطة البنفسجية المموّجة والصفرا، تمرجح، العب عالميزان والنطّاط، لمّ النجوم وورق الخريف، العب لقّيطة وغمّيضة، وطعمي الحمام، ومن بوابة الحديقة روح على حديقة الشجر الكبيرة، لحالك أو مع أصحابك." data-en="The Neighbourhood Park in 3D: slide down the wavy purple slide and the yellow one, swing, ride the seesaw and the spring rider, collect stars and autumn leaves, play tag and hide-and-seek and feed the pigeons, then walk through the park gate to the Big Tree Park, alone or with friends." data-tr="3D Mahalle Parkı: dalgalı mor kaydıraktan ve sarı kaydıraktan kay, salıncakta sallan, tahterevalliye ve yaylı ata bin, yıldız ve sonbahar yaprakları topla, kovalamaca ve saklambaç oyna, güvercinleri besle, park kapısından Büyük Ağaç Parkı'na geç; tek başına ya da arkadaşlarınla.">
+<meta name="description" content="حديقة الحارة ثلاثية الأبعاد: تزحلق عالزحليطة البنفسجية المموّجة والصفرا، تمرجح، العب عالميزان والنطّاط، لمّ النجوم وورق الخريف، العب لقّيطة وغمّيضة، وطعمي الحمام، اشتري كولا وعصير وشوكولا سخنة من العربيات وكول بمطعم الحديقة، ومن بوابة الحديقة روح على حديقة الشجر الكبيرة، لحالك أو مع أصحابك." data-en="The Neighbourhood Park in 3D: slide down the wavy purple slide and the yellow one, swing, ride the seesaw and the spring rider, collect stars and autumn leaves, play tag and hide-and-seek and feed the pigeons, buy cola, juice and hot chocolate from the carts and eat at the Park Café, then walk through the park gate to the Big Tree Park, alone or with friends." data-tr="3D Mahalle Parkı: dalgalı mor kaydıraktan ve sarı kaydıraktan kay, salıncakta sallan, tahterevalliye ve yaylı ata bin, yıldız ve sonbahar yaprakları topla, kovalamaca ve saklambaç oyna, güvercinleri besle, arabalardan kola, meyve suyu ve sıcak çikolata al, Park Kafe'de yemek ye, park kapısından Büyük Ağaç Parkı'na geç; tek başına ya da arkadaşlarınla.">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -256,6 +256,16 @@ button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
 #toast{position:absolute;z-index:9;left:50%;top:calc(var(--sh) * .24);transform:translateX(-50%);background:var(--cream);border-radius:18px;padding:8px 16px;font-family:var(--display);font-weight:800;font-size:18px;box-shadow:0 4px 0 rgba(74,47,29,.25);max-width:80%;text-align:center}
 @media (prefers-reduced-motion:reduce){*{animation:none!important}}
 .heroes.nine{grid-template-columns:repeat(9,minmax(0,1fr))!important}
+/* food menus (carts and the café): big icons, prices in park coins */
+.fcard{max-width:860px}
+.fmenu{grid-template-columns:repeat(var(--cols,4),minmax(0,1fr))}
+.fmenu .item{padding:8px 4px 6px}
+.fmenu .item i{font-size:42px;width:56px;height:52px}
+.fmenu .item b{font-size:15px}
+.fmenu .item small{font-size:16px;color:#a8700a}
+.fmenu .item.adult{opacity:.6}
+.fmenu .item:active{transform:translateY(3px)}
+#stage.short .fmenu .item i{font-size:34px;width:46px;height:42px} #stage.short .fmenu .item b{font-size:13px}
 </style>
 </head>
 <body>
