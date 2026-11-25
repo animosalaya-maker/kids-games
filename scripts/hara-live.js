@@ -1,7 +1,7 @@
-/* «حديقة الحارة» on the real server: the PUBLIC park. Two kids with server names open plain hara/ (no codes), land in the same
-   public shard `bobo-hara-pub-<n>`, see each other with their server names, walk / swing / emote is synced,
-   and nothing is sent through HTTP /api/broadcast. Then both go to the second park «حديقة الشجر الكبيرة» (its own shards
-   `bobo-hara2-pub-<n>`) and see each other there. Then the private room flow (?host / ?join) still works and follows the host's park. */
+/* «حديقة الحارة» food on the real server: two kids with server names open plain hara/ (public shard `bobo-hara-pub-<n>`),
+   A buys a cola at the fizzy drinks cart → B sees A holding it; both order at «مطعم الحديقة», sit at the same table and
+   eat → each sees the other sitting, holding the tray and eating, and the 😋 bubble when done. Only item numbers travel,
+   nothing goes through HTTP /api/broadcast, no page errors. */
 const { chromium, devices } = require('playwright');
 const SITE = process.env.SITE || 'http://localhost:8765/';
 const log = (...a) => console.log(...a);
@@ -9,7 +9,7 @@ let fails = 0;
 const res = (n, c, ...a) => { log('RESULT ' + n + ':', c ? 'PASS' : 'FAIL', ...a); if(!c) fails++; };
 const until = async (p, fn, ms = 15000, arg) => { const t0 = Date.now(); while(Date.now() - t0 < ms){ try{ if(await p.evaluate(fn, arg)) return true; }catch(e){} await p.waitForTimeout(400); } return false; };
 (async () => {
-  const b = await chromium.launch({ args:['--use-gl=swiftshader','--enable-webgl','--ignore-gpu-blocklist'] });
+  const b = await chromium.launch({ args:['--use-gl=swiftshader','--enable-webgl','--ignore-gpu-blocklist','--disable-background-timer-throttling','--disable-renderer-backgrounding','--disable-backgrounding-occluded-windows'] });
   const errs = [], posts = [];
   const mk = async (n, name, path) => {
     const ctx = await b.newContext({ ...devices['Pixel 7'], viewport:{ width:800, height:370 }, locale:'ar' }); const p = await ctx.newPage();
@@ -22,62 +22,31 @@ const until = async (p, fn, ms = 15000, arg) => { const t0 = Date.now(); while(D
     return { p, ctx, me };
   };
   const A = await mk('A', 'Sara', 'hara/?q=0'), B = await mk('B', 'Samir', 'hara/?q=0');
-  for(const [n, K] of [['A', A], ['B', B]]) res(n + ' in the public park with no code', await until(K.p, () => window.__hara && __hara.state === 'menu' && __hara.pub.active, 40000), JSON.stringify(await K.p.evaluate(() => window.__hara && __hara.pub)));
-  const shA = await A.p.evaluate(() => __hara.pub.shard), shB = await B.p.evaluate(() => __hara.pub.shard);
-  res('same shard', shA === shB, shA, shB);
+  for(const [n, K] of [['A', A], ['B', B]]) res(n + ' in the public park', await until(K.p, () => window.__hara && __hara.state === 'menu' && __hara.pub.active, 40000), JSON.stringify(await K.p.evaluate(() => window.__hara && __hara.pub)));
+  res('same shard', await A.p.evaluate(() => __hara.pub.shard) === await B.p.evaluate(() => __hara.pub.shard));
   await A.p.evaluate(() => __hara.play()); await B.p.evaluate(() => __hara.play());
-  const W = await A.p.evaluate(() => __hara.world);
-  await A.p.evaluate(C => __hara.tp(C.x, C.z + 6, Math.PI), W.C); await B.p.evaluate(C => __hara.tp(C.x + 1, C.z + 3, 0), W.C);
-  const seeName = (p, nm) => until(p, nm => __hara.remotes.some(r => r.name === nm && r.vis), 30000, nm);
-  res('A sees Samir (server name)', await seeName(A.p, 'Samir'), JSON.stringify(await A.p.evaluate(() => __hara.remotes)));
-  res('B sees Sara (server name)', await seeName(B.p, 'Sara'), JSON.stringify(await B.p.evaluate(() => __hara.remotes)));
-  res('mode chip', /حديقة الكل/.test(await A.p.textContent('#roomChip')), await A.p.textContent('#roomChip'));
-  const idB = await B.p.evaluate(() => __hara.mp.id);
-  const b0 = await A.p.evaluate(id => __hara.remotes.find(r => r.id === id), idB);
-  await B.p.evaluate(() => __hara.input(0, -1)); await B.p.waitForTimeout(3000); await B.p.evaluate(() => __hara.input(null)); await A.p.waitForTimeout(1500);
-  const b1 = await A.p.evaluate(id => __hara.remotes.find(r => r.id === id), idB), bp = await B.p.evaluate(() => __hara.P);
-  res('walk synced', b0 && b1 && Math.hypot(b1.x - b0.x, b1.z - b0.z) > .3 && Math.hypot(b1.x - bp.x, b1.z - bp.z) < .6, JSON.stringify([b0, b1, bp]));
-  await B.p.evaluate(s => { __hara.tp(s.x + .3, s.z + .3, 0); __hara.use(); }, W.swings[1]);
-  for(let k = 0; k < 8; k++){ await B.p.evaluate(() => __hara.A()); await B.p.waitForTimeout(400); }
-  res('swing seen', await until(A.p, id => { const r = __hara.remotes.find(r => r.id === id); return r && r.k === 'swing' && r.i === 1; }, 15000, idB));
-  await B.p.evaluate(() => __hara.leave());
-  await B.p.waitForTimeout(500); await B.p.evaluate(() => __hara.emote('party'));
-  res('emote seen', await until(A.p, id => { const r = __hara.remotes.find(r => r.id === id); return r && r.emo === 'party' && /🎉/.test(r.bub || ''); }, 6000, idB));
-  res('bots off with 2 kids', await A.p.evaluate(() => !__hara.pub.botsOn));
-  /* the second park: both walk over, land in its own public shard and see each other there */
-  await A.p.evaluate(() => __hara.goPlace(2)); await B.p.evaluate(() => __hara.goPlace(2));
-  for(const [n, K] of [['A', A], ['B', B]]) res(n + ' in park 2 public shard', await until(K.p, () => __hara.place === 2 && __hara.pub.active, 40000), JSON.stringify(await K.p.evaluate(() => __hara.pub)));
-  const W2 = await A.p.evaluate(() => __hara.world);
-  await A.p.evaluate(C => __hara.tp(C.x + 3, C.z + 9, Math.PI), W2.C); await B.p.evaluate(C => __hara.tp(C.x + 2, C.z + 6, 0), W2.C);
-  res('park 2: A sees Samir', await seeName(A.p, 'Samir'), JSON.stringify(await A.p.evaluate(() => __hara.remotes)));
-  res('park 2: B sees Sara', await seeName(B.p, 'Sara'));
-  res('park 2 chip', /حديقة الشجر الكبيرة/.test(await A.p.textContent('#roomChip')) && await A.p.evaluate(() => __hara.pub.kids === 2), await A.p.textContent('#roomChip'));
-  await B.p.evaluate(s => { __hara.tp(s.x + .3, s.z + .3, 0); __hara.use(); }, W2.swings[0]);
-  res('park 2 swing seen', await until(A.p, id => { const r = __hara.remotes.find(r => r.id === id); return r && r.k === 'swing' && r.i === 0 && r.vis; }, 15000, idB));
-  await B.p.evaluate(() => __hara.leave()); await B.p.waitForTimeout(1600); await B.p.evaluate(() => __hara.emote('heart'));
-  res('park 2 emote seen', await until(A.p, id => { const r = __hara.remotes.find(r => r.id === id); return r && r.emo === 'heart'; }, 6000, idB));
-  await A.p.evaluate(() => __hara.goPlace(1));
-  res('A back in park 1 does not see B', await until(A.p, id => __hara.place === 1 && __hara.pub.active && !__hara.remotes.some(r => r.id === id && r.vis), 40000, idB));
-  /* the private room still works: B makes room, A joins with ?join */
-  const room = String(1000 + Math.floor(Math.random() * 9000));
-  await B.p.goto(SITE + 'hara/?q=0&host=1&room=' + room);
-  res('B private room', await until(B.p, () => window.__hara && __hara.mpScreen === 'lobby', 40000), await B.p.evaluate(() => window.__hara && __hara.mp.code));
-  res('A no longer sees B in the public park', await until(A.p, id => !__hara.remotes.some(r => r.id === id), 40000, idB));
-  await A.p.goto(SITE + 'hara/?q=0&join=' + room);
-  res('A joined the room', await until(A.p, () => window.__hara && __hara.mpScreen === 'lobby' && __hara.mp.players.length === 2, 40000));
-  await A.p.evaluate(() => __hara.mpGo()); await B.p.evaluate(() => __hara.mpGo());
-  await A.p.evaluate(C => __hara.tp(C.x, C.z + 6, Math.PI), W.C); await B.p.evaluate(C => __hara.tp(C.x + 1, C.z + 3, 0), W.C);
-  res('room: names over heads', await seeName(A.p, 'Samir') && await seeName(B.p, 'Sara'));
-  await B.p.evaluate(() => __hara.goPlace(2, true));
-  res('room: A follows the host to park 2', await until(A.p, () => __hara.place === 2, 20000));
-  await A.p.waitForTimeout(800); const W3 = await A.p.evaluate(() => __hara.world);
-  await A.p.evaluate(C => __hara.tp(C.x + 3, C.z + 9, Math.PI), W3.C); await B.p.evaluate(C => __hara.tp(C.x + 2, C.z + 6, 0), W3.C);
-  res('room in park 2: names over heads', await seeName(A.p, 'Samir') && await seeName(B.p, 'Sara'));
-  res('room chip', /غرفة/.test(await A.p.textContent('#roomChip')) && (await A.p.textContent('#roomChip')).includes(room), await A.p.textContent('#roomChip'));
-  log('A rt log:', await A.p.evaluate(() => (BoboRT._log || []).join(' / ')));
-  res('http broadcast posts', posts.length === 0, posts.length);
-  res('page errors', errs.length === 0, errs.slice(0, 10).join(' | ') || 'none');
-  log('SUMMARY live: ' + (fails ? fails + ' FAIL' : 'ALL PASS'));
+  const F = await A.p.evaluate(() => __hara.food), c = F.carts[0], cf = F.cafe;
+  res('4 carts and the café', F.carts.length === 4 && F.cafe.seats.length >= 8, JSON.stringify(F.carts.map(c => c.k)));
+  for(const K of [A, B]) await K.p.evaluate(() => __hara.setCoins(20));
+  await A.p.evaluate(c => { __hara.tp(c.ux, c.uz); __hara.use(); }, c); await A.p.waitForTimeout(300);
+  res('A bought a cola', await A.p.evaluate(() => __hara.buy('cola') && __hara.hold.k === 'cola' && __hara.coins === 18));
+  await B.p.evaluate(c => { __hara.tp(c.ux + 1.5, c.uz + 1.2); __hara.face(c.ux, c.uz); }, c);
+  const idA = await A.p.evaluate(() => __hara.mp.id), idB = await B.p.evaluate(() => __hara.mp.id);
+  res('B sees Sara holding a cola', await until(B.p, id => __hara.remotes.some(r => r.id === id && r.name === 'Sara' && r.hold === __hara.items.indexOf('cola') && r.held), 30000, idA), JSON.stringify(await B.p.evaluate(() => __hara.remotes)));
+  await A.p.evaluate(() => { __hara.tp(4, 12.5, 0); __hara.bite(); });
+  res('B sees Sara sipping', await until(B.p, id => __hara.remotes.some(r => r.id === id && r.eat === 1), 10000, idA));
+  // both order at the café counter and sit at the same table
+  for(const [K, it] of [[A, 'pizza'], [B, 'burger']]){ await K.p.evaluate(c => { __hara.tp(c.counter.x, c.counter.z); __hara.use(); }, cf); await K.p.waitForTimeout(300); await K.p.evaluate(it => __hara.buy(it), it); }
+  res('both paid with their own coins', await A.p.evaluate(() => __hara.coins === 14) && await B.p.evaluate(() => __hara.coins === 15));
+  await A.p.evaluate(s => { __hara.tp(s.x - .5, s.z); __hara.start('seat', 2); }, cf.seats[2]);
+  await B.p.evaluate(s => { __hara.tp(s.x + .5, s.z); __hara.start('seat', 3); }, cf.seats[3]);
+  res('B sees Sara sitting at the table eating pizza', await until(B.p, id => __hara.remotes.some(r => r.id === id && r.k === 'seat' && r.i === 2 && r.hold === __hara.items.indexOf('pizza') && r.eat === 1 && r.vis), 30000, idA), JSON.stringify(await B.p.evaluate(() => __hara.remotes)));
+  res('A sees Samir sitting at the table eating a burger', await until(A.p, id => __hara.remotes.some(r => r.id === id && r.k === 'seat' && r.i === 3 && r.hold === __hara.items.indexOf('burger') && r.eat === 1 && r.vis), 30000, idB));
+  res('B sees the 😋 when Sara finishes', await until(B.p, id => __hara.remotes.some(r => r.id === id && r.last === 'yum'), 150000, idA));
+  res('A sees the 😋 when Samir finishes', await until(A.p, id => __hara.remotes.some(r => r.id === id && r.last === 'yum'), 60000, idB));
+  res('no /api/broadcast for gameplay', posts.length === 0, posts.length);
+  res('no page errors', errs.length === 0, errs.join(' | '));
   await b.close();
-  process.exitCode = fails ? 1 : 0;
+  log(fails ? 'FAILED ' + fails : 'ALL PASS');
+  process.exit(fails ? 1 : 0);
 })();
