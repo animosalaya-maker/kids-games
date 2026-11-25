@@ -10,6 +10,7 @@
    a red-posted structure under a blue fabric canopy with spring riders, two red A-frame swing sets, a purple seesaw,
    a yellow round spring toy and a row of activity panels.
    Coordinates: metres, x = east, z = south, y = up; park ground y = 0. */
+import { makeFood } from './food.js';
 export function makePark(THREE, K, TX){
   const { Merge, G } = K;
   let seed = 4242;
@@ -88,6 +89,17 @@ export function makePark(THREE, K, TX){
     const g = new THREE.ShapeGeometry(sh); g.rotateX(-Math.PI / 2); flatUV(g, 4);
     const m = new THREE.Mesh(g, lam({ map:TX.grass })); m.receiveShadow = true; root.add(m); }
 
+  /* ---------- food (./food.js): four carts along the paths near the entrances and «مطعم الحديقة» on the west lawn ---------- */
+  const CAFE = { x0:-26.2, x1:-15.2, z0:4, z1:10.4, door:-22.6 };
+  const OFF_DIAG = Math.atan2(-.334, -.943);    // facing the long diagonal path from its south side
+  const CARTS = [
+    { k:'cola', x:-1.6, z:19.3, yaw:-Math.PI / 2 },     // by the south entrance path
+    { k:'juice', x:31, z:2.6, yaw:Math.PI },            // by the east entrance path
+    { k:'coffee', x:14.2, z:-20.2, yaw:OFF_DIAG },      // along the diagonal path, before the gate
+    { k:'snack', x:-21, z:-8.0, yaw:OFF_DIAG }          // along the diagonal path, towards the west entrance
+  ];
+  const reserved = (x, z, m) => (x > CAFE.x0 - 1.2 - m && x < CAFE.x1 + 1.2 + m && z > CAFE.z0 - 2 - m && z < CAFE.z1 + 1 + m) || CARTS.some(c => Math.hypot(c.x - x, c.z - z) < 2.8 + m);
+
   /* ---------- paths: one straight diagonal path + curving links, interlocking pavers with curbs ---------- */
   const pavMat = lam({ map:TX.pavers, side:THREE.DoubleSide, polygonOffset:true, polygonOffsetFactor:-2, polygonOffsetUnits:-2 });
   const PATHS = [
@@ -95,7 +107,8 @@ export function makePark(THREE, K, TX){
     { w:2.4, pts:[[2.2, -14.6], [1.4, -16.6], [.8, -18.4]] },
     { w:2.4, pts:[[19.6, .4], [27, -.2], [36.4, -.7]] },
     { w:2.4, pts:[[-2.2, 14.6], [-4, 17.6], [-5.5, 20.8]] },
-    { w:2.2, pts:[[-11.6, 2.4], [-18, 1.6], [-26, -1.6], [-32.5, -6.3]] }
+    { w:2.2, pts:[[-11.6, 2.4], [-18, 1.6], [-26, -1.6], [-32.5, -6.3]] },
+    { w:1.8, pts:[[CAFE.door, CAFE.z0 - .4], [CAFE.door, 2.0], [CAFE.door + .05, .6]] }     // the café's front walk
   ];
   const pathSamples = [];
   { const gb = new GB(), M = new Merge();
@@ -435,7 +448,7 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
   }
   // trees: bare deciduous (most), a few leafy autumn ones, dark cypresses
   const TREES = [], BUSHES = [];
-  const okSpot = (x, z, m) => inPoly(x, z) && !nearEdge(x, z, m) && Math.hypot(x - C.x, z - C.z) > R_RING + m && distPath(x, z) > m && !TREES.some(t => Math.hypot(t.x - x, t.z - z) < 2.2) && !BUSHES.some(b => Math.hypot(b.x - x, b.z - z) < b.r + 1.1);
+  const okSpot = (x, z, m) => inPoly(x, z) && !nearEdge(x, z, m) && Math.hypot(x - C.x, z - C.z) > R_RING + m && distPath(x, z) > m && !reserved(x, z, m) && !TREES.some(t => Math.hypot(t.x - x, t.z - z) < 2.2) && !BUSHES.some(b => Math.hypot(b.x - x, b.z - z) < b.r + 1.1);
   function nearEdge(x, z, m){ for(const p of BP) if(Math.hypot(p[0] - x, p[1] - z) < m) return true; return false; }
   const trunkCol = 0x3b2f28;
   function bareTree(M, x, z, sc, yaw){
@@ -473,7 +486,7 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
     const want2 = 60; let k = 0; tries = 0;
     while(k < want2 && tries < 6000){ tries++;
       const x = -44 + rnd() * 82, z = -30 + rnd() * 58, r = .55 + rnd() * .45, lolly = rnd() < .45;
-      if(!inPoly(x, z) || nearEdge(x, z, 1.2) || Math.hypot(x - C.x, z - C.z) < R_RING + 1.2 || distPath(x, z) < 1.0 + r || TREES.some(t => Math.hypot(t.x - x, t.z - z) < 1.8) || BUSHES.some(b => Math.hypot(b.x - x, b.z - z) < b.r + r + .6)) continue;
+      if(!inPoly(x, z) || nearEdge(x, z, 1.2) || Math.hypot(x - C.x, z - C.z) < R_RING + 1.2 || distPath(x, z) < 1.0 + r || reserved(x, z, r) || TREES.some(t => Math.hypot(t.x - x, t.z - z) < 1.8) || BUSHES.some(b => Math.hypot(b.x - x, b.z - z) < b.r + r + .6)) continue;
       // prefer spots near a path (like the real park)
       if(distPath(x, z) > 6 && rnd() < .6) continue;
       k++; const cy = lolly ? .9 + r * .8 : r * .8;
@@ -525,6 +538,8 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
     const M = new Merge(); M.add(G.cone4, KIOSK.x, 2.42, KIOSK.z, 1.45, .65, 1.75, 0, Math.PI / 4 + .1, 0, 0xc9a596); M.add(G.box, KIOSK.x, 2.12, KIOSK.z, 1.66, .1, 2.36, 0, .1, 0, 0xd9bcae); vcMesh(M, 3);
     blocks.push({ x0:KIOSK.x - .8, x1:KIOSK.x + .8, z0:KIOSK.z - 1.15, z1:KIOSK.z + 1.15, top:2.2, bot:0 }); }
 
+  const FOOD = makeFood(THREE, K, { root, circles, blocks, glow:TX.glow, carts:CARTS, cafe:CAFE });
+
   /* ---------- hiding spots: behind shrubs (away from the playground) ---------- */
   const HIDES = [];
   { const list = BUSHES.filter(b => !b.lolly && b.r > .7).slice(0, 14);
@@ -560,8 +575,10 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
     headMat.color.setRGB(.85 + lampsOn * .15, .85 + lampsOn * .1, .8);
     const w = clamp(dusk * .18 + night, 0, 1);
     for(const m of nightMats) m.emissive.setRGB(w * .95, w * .82, w * .6);
+    FOOD.setNight(dusk, night);
   }
-  function tick(t, dt){
+  function tick(t, dt, cam, P){
+    if(P) FOOD.tick(t, dt, cam, P);
     for(const p of PANELS) if(p.spin > 0) p.spin = Math.max(0, p.spin - dt);
     void poolOn;
   }
@@ -570,5 +587,5 @@ else roofTop.add(G.box, x, y0 + h + .1, z, w + .2, .2, d + .2, 0, yaw, 0, 0x8d8a
   const GATE = (() => { const e = ENT[1], n = vN(e.i); return { x:e.x - n[0] * 1.5, z:e.z - n[1] * 1.5, yaw:Math.atan2(n[0], n[1]) }; })();
   const ARRIVE = (() => { const e = ENT[1], n = vN(e.i); return { x:e.x - n[0] * 5, z:e.z - n[1] * 5, f:Math.atan2(-n[0], -n[1]) }; })();
   return { group:root, C, R_RUB, R_RING, BP, ENT, groundAt, collide, inPark, SLIDES, SWINGS, SEESAW, SPRINGS, BENCHES, PANELS, PITS, TREES, BUSHES, HIDES, LAMPS, KIOSK, climb, circles,
-    setNight, tick, spawn, playMesh, hs, distPath, GATE, ARRIVE, id:1 };
+    setNight, tick, spawn, playMesh, hs, distPath, GATE, ARRIVE, FOOD, noLeaf:(x, z) => reserved(x, z, .3), id:1 };
 }
