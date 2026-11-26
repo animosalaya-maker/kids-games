@@ -156,9 +156,9 @@ const canvas = $('#cv');
 let renderer;
 try{ renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' }); }
 catch(e){ $('#nogl').hidden = false; $('#overlay').hidden = true; throw e; }
-let dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+let dpr = (window.BoboGfx ? BoboGfx.dpr(1.5, renderer) : Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.setPixelRatio(dpr);
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = window.BoboGfx && BoboGfx.weak(renderer) ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const FOG0 = new THREE.Color(0xcdeeff);
 scene.fog = new THREE.Fog(FOG0.getHex(), 60, 170);
@@ -174,7 +174,7 @@ addEventListener('orientationchange', () => setTimeout(resize, 120));
 const HEMI_SKY = new THREE.Color(0xfff4e2), HEMI_GND = new THREE.Color(0x7f9a6c);
 const hemi = new THREE.HemisphereLight(HEMI_SKY.getHex(), HEMI_GND.getHex(), 1.7); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0d4, 2.3);
-sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03;
+sun.castShadow = true; sun.shadow.mapSize.setScalar(window.BoboGfx ? BoboGfx.shadow(1024, renderer) : 1024); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03;
 Object.assign(sun.shadow.camera, { left:-24, right:24, top:24, bottom:-24, near:1, far:110 }); sun.shadow.camera.updateProjectionMatrix();
 scene.add(sun); scene.add(sun.target);
 const SUN_OFF = new THREE.Vector3(18, 38, 20);

@@ -97,9 +97,9 @@ let renderer;
 try{ renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' }); }
 catch(e){ $('#nogl').hidden = false; $('#overlay').hidden = true; throw e; }
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.08;
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-const MAXDPR = Math.min(window.devicePixelRatio || 1, 1.75);
-let quality = QS.get('q') != null ? clamp(+QS.get('q') | 0, 0, 2) : 2;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = window.BoboGfx && BoboGfx.weak(renderer) ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+const MAXDPR = (window.BoboGfx ? BoboGfx.dpr(1.5, renderer) : Math.min(window.devicePixelRatio || 1, 1.5));
+let quality = QS.get('q') != null ? clamp(+QS.get('q') | 0, 0, 2) : (window.BoboGfx && BoboGfx.weak(renderer) ? 1 : 2);
 function applyQuality(){
   const d = quality === 2 ? MAXDPR : quality === 1 ? Math.min(MAXDPR, 1.1) : .85;
   renderer.setPixelRatio(d);

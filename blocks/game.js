@@ -118,7 +118,7 @@ const canvas = $('#cv');
 let renderer;
 try{ renderer = new THREE.WebGLRenderer({ canvas, antialias:false, powerPreference:'high-performance' }); }
 catch(e){ $('#nogl').hidden = false; $('#overlay').hidden = true; $('#loading').hidden = true; throw e; }
-let dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+let dpr = (window.BoboGfx ? BoboGfx.dpr(1.5, renderer) : Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.setPixelRatio(dpr);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(66, 1, .1, 900);
