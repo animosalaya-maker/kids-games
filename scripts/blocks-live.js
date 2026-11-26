@@ -1,0 +1,56 @@
+/* «عالم مكعّبات بوبو» online on the real server: A opens a world and makes a room (?host=1&room=<code>), B joins (?join=<code>),
+   B gets A's world (same seed + A's blocks), names over heads, block edits both ways, a ready building seen by the friend */
+const { chromium, devices } = require('playwright');
+const SITE = process.env.SITE || 'http://localhost:8765/';
+const log = (...a) => console.log(...a);
+const res = (n, c, ...a) => log('RESULT ' + n + ':', c ? 'PASS' : 'FAIL', ...a);
+const until = async (p, fn, ms = 15000, arg) => { const t0 = Date.now(); while(Date.now() - t0 < ms){ if(await p.evaluate(fn, arg)) return true; await p.waitForTimeout(400); } return false; };
+(async () => {
+  const b = await chromium.launch({ args:['--use-gl=swiftshader','--enable-webgl','--ignore-gpu-blocklist'] });
+  const errs = [], posts = [];
+  const room = String(1000 + Math.floor(Math.random() * 9000));
+  const mk = async (n, name, path) => {
+    const ctx = await b.newContext({ ...devices['Pixel 7'], viewport:{ width:800, height:370 }, locale:'ar' }); const p = await ctx.newPage();
+    p.on('pageerror', e => errs.push(n + ' PAGEERR ' + e.message));
+    p.on('request', r => { if(/api\/broadcast/.test(r.url()) && !/bobo-inbox/.test(r.postData() || '')) posts.push(n); });
+    await p.goto(SITE + 'friends/'); await p.waitForTimeout(1500);
+    const me = await p.evaluate(async nm => { const m = await Friends.me(); const r = await Friends.setName(nm); return { code:m.code, name:r.name }; }, name);
+    log(n, JSON.stringify(me));
+    await p.goto(SITE + path);
+    return { p, ctx, me };
+  };
+  const A = await mk('A', 'Sara', 'blocks/?host=1&room=' + room);
+  const okA = await until(A.p, () => window.__blocks && __blocks.state === 'play' && __blocks.mp.active && __blocks.mpScreen === 'in', 60000);
+  res('A makes a world and hosts', okA, await A.p.evaluate(() => window.__blocks && JSON.stringify([__blocks.state, __blocks.mp, __blocks.mpErr])));
+  const codeA = await A.p.evaluate(() => __blocks.mp.code);
+  res('room code from ?room', codeA === room, room, codeA);
+  await A.p.evaluate(() => { __blocks.set(70, 20, 75, 46); __blocks.set(71, 20, 75, 46); });
+  const B = await mk('B', 'Samir', 'blocks/?join=' + codeA);
+  const okB = await until(B.p, () => window.__blocks && __blocks.state === 'play' && __blocks.mpScreen === 'in', 90000);
+  res('B joins and gets the world', okB, await B.p.evaluate(() => window.__blocks && JSON.stringify([__blocks.state, __blocks.mpScreen, __blocks.mpErr])));
+  const wa = await A.p.evaluate(() => __blocks.world), wb = await B.p.evaluate(() => __blocks.world);
+  res('same seed and village', wa.seed === wb.seed && wa.name === wb.name, JSON.stringify(wa), JSON.stringify(wb));
+  await until(B.p, () => __blocks.get(70, 20, 75) === 46, 10000);
+  res("B sees the host's blocks", await B.p.evaluate(() => __blocks.get(70, 20, 75) === 46 && __blocks.get(71, 20, 75) === 46));
+  await A.p.evaluate(() => { __blocks.tp(60.5, null, 72.5, Math.PI / 2); __blocks.look(-Math.PI / 2, .3); });
+  await B.p.evaluate(() => { __blocks.tp(66.5, null, 72.5, -Math.PI / 2); __blocks.look(Math.PI / 2, .3); });
+  await until(A.p, () => (__blocks.remotes[0] || {}).label === 'Samir', 20000);
+  await until(B.p, () => (__blocks.remotes[0] || {}).label === 'Sara', 20000);
+  const ra = await A.p.evaluate(() => __blocks.remotes), rb = await B.p.evaluate(() => __blocks.remotes);
+  res('names over heads', ra.length === 1 && rb.length === 1 && ra[0].label === 'Samir' && rb[0].label === 'Sara', JSON.stringify(ra), JSON.stringify(rb));
+  res('friend position', await until(A.p, () => Math.abs(__blocks.remotes[0].x - 66.5) < .5, 10000), JSON.stringify(await A.p.evaluate(() => __blocks.remotes)));
+  await A.p.evaluate(() => { for(let i = 0; i < 5; i++) __blocks.placeOn(63, 16 + i, 70, 0, 1, 0, 23); });
+  res("B sees A's tower", await until(B.p, () => __blocks.get(63, 21, 70) === 23, 10000));
+  await B.p.evaluate(() => { __blocks.placeOn(64, 16, 70, 0, 1, 0, 25); __blocks.breakAt(63, 21, 70); });
+  res("A sees B's block and break", await until(A.p, () => __blocks.get(64, 17, 70) === 25 && __blocks.get(63, 21, 70) === 0, 10000));
+  await B.p.evaluate(() => { __blocks.giveCoins(200); __blocks.place('house'); __blocks.aim(47 + 3 + 32 + 6.5, 55 + 3 + 6.5); __blocks.build(); });
+  const bj = await B.p.evaluate(() => __blocks.jobs[0]);
+  await until(B.p, () => __blocks.jobs.length === 0, 30000);
+  res("A sees B's ready house", !!bj && await until(A.p, o => __blocks.get(o.x + 5, o.y + 1, o.z + 1) === 35 && __blocks.world.edits > 300, 30000, bj), JSON.stringify(bj), JSON.stringify(await A.p.evaluate(() => __blocks.world)));
+  await A.p.evaluate(() => __blocks.pet(8));
+  res('hearts reach the friend', await until(B.p, () => __blocks.animals[8].happy, 6000));
+  log('B rt log:', await B.p.evaluate(() => (BoboRT._log || []).join(' / ')));
+  res('http broadcast posts', posts.length === 0, posts.length);
+  res('page errors', errs.length === 0, errs.slice(0, 10).join(' | ') || 'none');
+  await b.close();
+})();
