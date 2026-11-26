@@ -2,7 +2,7 @@
    Doorbell: Friends.onPing rings when a friend sent something → the poll below runs at once (at most once a second);
    the 8 s poll stays as the fallback. An online game page reports «playing» the moment it can take a friend in,
    and clears it when the page is hidden or left (keepalive request).
-   Every 8 s while the page is visible: heartbeat (on an online game page: bobo_fr_set_playing(<game>) every ~25 s instead,
+   Every 8 s while the page is visible (24 s on a page that cannot host while the doorbell is connected): heartbeat (on an online game page: bobo_fr_set_playing(<game>) every ~25 s instead,
    so friends see «انضم»). If a friend asks to join, show «👋 X بدّو يلعب معك …» with ✓ قبول / ✕ رفض; else show the newest invite.
    Accepting a join request answers with this page's room (window.__boboRoom()), or a room made in-page (window.__boboHost()),
    or opens <game>/?host=1&accept=<id>: the game makes a room (?host=1) and this script answers as soon as __boboRoom() has it.
@@ -168,7 +168,14 @@
       }
     }catch(e){} finally { busy = false; if(again){ again = false; ring(); } }
   }
-  setTimeout(tick, 1500); setInterval(tick, 8000);
+  setTimeout(tick, 1500);
+  /* every 8 s; while the doorbell is connected (a friend's invite rings it at once) a page that is not hosting a game
+     only needs the heartbeat every 24 s (friends see «online» for 60 s after each one) */
+  let lastPoll = 0;
+  setInterval(() => {
+    if(!canHost() && Friends.bellOn && Friends.bellOn() && Date.now() - lastPoll < 23500) return;
+    lastPoll = Date.now(); tick();
+  }, 8000);
   if(GAME){ // the game defines window.__boboRoom a moment after this script runs: watch for it, then announce at once
     const t0 = Date.now(), iv = setInterval(() => { if(playingSet || Date.now() - t0 > 60000 || announce()) clearInterval(iv); }, 200);
   }
