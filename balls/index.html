@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<script src="../i18n.js"></script>
+<script src="../rt.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title data-en="Bobo Balls" data-tr="Bobo Topları">طابات بوبو</title>
+<meta name="description" content="صوّب وأطلق سيل من الطابات اللامعة على المكعبات المرقّمة، فرقعها كلها، اجمع النجوم والمصاري!" data-en="Aim and fire a stream of shiny balls at the numbered blocks, pop them all and collect stars and coins!" data-tr="Nişan al, numaralı bloklara parlak top yağmuru gönder, hepsini patlat, yıldız ve altın topla!">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bobo Land">
+<meta name="theme-color" content="#0f0b2e">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap">
+<style>
+/* Bobo Balls («طابات بوبو»): portrait aim-and-shoot puzzle arcade. Drag to aim, let go to fire a stream of balls at the
+   numbered blocks; two modes: «مراحل» (64 shaped levels, 3 stars each) and «بلا نهاية» (rows move down every turn). */
+:root{
+  --night:#0f0b2e; --night-2:#1b1550; --night-3:#2b2373; --ink:#fff7ec; --muted:#c9c0f2; --gold:#ffcd4d; --gold-d:#c48f12;
+  --pink:#ff7fb6; --mint:#5ef0b4; --sky:#6fd3ff;
+  --sa-t:env(safe-area-inset-top,0px); --sa-r:env(safe-area-inset-right,0px); --sa-b:env(safe-area-inset-bottom,0px); --sa-l:env(safe-area-inset-left,0px);
+  --display:"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif;
+  --body:"Tajawal",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html{box-sizing:border-box;height:100%;background:var(--night)}
+*,*::before,*::after{box-sizing:inherit}
+body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:var(--body);overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block}
+#sa{position:fixed;visibility:hidden;pointer-events:none;padding:var(--sa-t) var(--sa-r) var(--sa-b) var(--sa-l)}
+
+.tbtn{position:fixed;z-index:15;top:calc(10px + var(--sa-t));width:48px;height:48px;border-radius:16px;border:3px solid rgba(255,255,255,.9);
+  background:rgba(43,35,115,.85);display:grid;place-items:center;padding:0;box-shadow:0 4px 0 rgba(0,0,0,.35);touch-action:manipulation}
+.tbtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.tbtn svg{width:26px;height:26px}
+#btnMute{right:calc(10px + var(--sa-r))}
+#btnPause{right:calc(66px + var(--sa-r))}
+.fbtn{position:fixed;z-index:15;bottom:calc(14px + var(--sa-b));height:56px;min-width:76px;padding:0 14px;border-radius:20px;border:3px solid rgba(255,255,255,.9);
+  background:rgba(43,35,115,.88);display:flex;align-items:center;justify-content:center;gap:4px;font-family:var(--display);font-weight:800;font-size:22px;line-height:1;
+  box-shadow:0 4px 0 rgba(0,0,0,.35),0 0 18px rgba(130,110,255,.35);touch-action:manipulation;animation:fIn .25s ease-out;direction:ltr}
+.fbtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.fbtn .ic{font-size:26px}
+@keyframes fIn{from{transform:scale(.5);opacity:0}to{transform:scale(1);opacity:1}}
+#btnFast{right:calc(14px + var(--sa-r))}
+#btnFast.on{background:linear-gradient(180deg,#ffe07a,#ffb92e);color:#4a2800;border-color:#fff}
+#btnRecall{left:calc(14px + var(--sa-l))}
+
+.overlay{position:fixed;inset:0;z-index:20;display:flex;overflow-y:auto;touch-action:auto;background:rgba(10,6,34,.25);
+  padding-left:max(16px,var(--sa-l));padding-right:max(16px,var(--sa-r));padding-block:calc(70px + var(--sa-t)) calc(16px + var(--sa-b))}
+.overlay.dim{background:rgba(10,6,34,.66)}
+.card{width:100%;max-width:420px;margin:auto;border-radius:30px;padding:20px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
+  background:linear-gradient(180deg,rgba(40,32,118,.9),rgba(22,16,70,.94));
+  box-shadow:0 0 0 3px rgba(255,255,255,.16),0 0 40px rgba(120,100,255,.35),0 24px 60px rgba(0,0,0,.5);animation:cardIn .3s ease-out}
+@keyframes cardIn{from{transform:scale(.86);opacity:0}to{transform:scale(1);opacity:1}}
+.card h1{font-family:var(--display);font-weight:800;font-size:50px;line-height:1;margin:0;
+  background:linear-gradient(180deg,#fff6c4,#ffd45e 50%,#ff8fb8);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 4px 0 #4b2a9e) drop-shadow(0 0 18px rgba(255,170,200,.4))}
+.card h2{font-family:var(--display);font-weight:800;font-size:34px;line-height:1.1;margin:0;color:var(--gold);text-shadow:0 4px 0 #4a2a90}
+.card p{margin:0;color:var(--muted);line-height:1.5;font-size:16px;font-weight:700;text-wrap:balance}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.mode{border:0;border-radius:24px;padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:#fff;
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.75),0 6px 0 var(--sh),0 10px 24px rgba(0,0,0,.3)}
+.mode:active{transform:translateY(4px);box-shadow:inset 0 0 0 3px rgba(255,255,255,.75),0 2px 0 var(--sh)}
+.mode .em{font-size:40px;line-height:1}
+.mode b{font-family:var(--display);font-weight:800;font-size:25px;line-height:1.1;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.mode small{font-weight:800;font-size:14px;opacity:.95;direction:ltr}
+.mode.lv{--sh:#2f6fd0;background:linear-gradient(160deg,#6fd3ff,#6a6bff)}
+.mode.en{--sh:#b23f7c;background:linear-gradient(160deg,#ff9ac8,#ff7b6b)}
+.big-btn{border:0;border-radius:22px;background:linear-gradient(180deg,#ffe07a,#ffbf2e);color:#4a2800;font-family:var(--display);font-weight:800;font-size:26px;
+  padding:10px 30px;min-width:200px;box-shadow:0 6px 0 var(--gold-d),0 10px 24px rgba(255,190,60,.3)}
+.big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--gold-d)}
+.ghost-btn{border:0;background:rgba(255,255,255,.12);border-radius:18px;padding:10px 20px;font-weight:700;font-size:17px;color:var(--ink);box-shadow:0 4px 0 rgba(0,0,0,.3)}
+.ghost-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.how{list-style:none;margin:0;padding:10px 14px;background:rgba(0,0,0,.22);border-radius:18px;display:grid;gap:6px;text-align:start;width:100%}
+.how li{display:flex;gap:10px;align-items:center;font-size:15px;font-weight:700;line-height:1.35}
+.how li span:first-child{font-size:22px;width:30px;text-align:center;flex:none}
+.stars{display:flex;gap:6px;font-size:58px;line-height:1;direction:ltr}
+.stars span{color:rgba(255,255,255,.16);text-shadow:none}
+.stars span.on{color:var(--gold);text-shadow:0 0 18px rgba(255,205,77,.7),0 4px 0 #b8781a;animation:starPop .45s cubic-bezier(.3,1.6,.5,1) both}
+.stars span.on:nth-child(2){animation-delay:.18s}.stars span.on:nth-child(3){animation-delay:.36s}
+@keyframes starPop{from{transform:scale(0) rotate(-40deg)}to{transform:scale(1)}}
+.res{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.res div{background:rgba(0,0,0,.22);border-radius:16px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.res b{font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1;direction:ltr}
+.res small{font-size:13px;font-weight:700;color:var(--muted)}
+.newbest{background:var(--pink);color:#fff;border-radius:12px;padding:2px 12px;font-weight:800;font-size:15px;animation:starPop .5s .5s both}
+/* level map */
+#map{padding:0;flex-direction:column;background:rgba(10,6,34,.78)}
+.map-head{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:center;gap:10px;padding:calc(68px + var(--sa-t)) 16px 12px;
+  background:linear-gradient(180deg,rgba(15,11,46,.97) 78%,rgba(15,11,46,0))}
+.map-head h2{font-family:var(--display);font-weight:800;font-size:30px;margin:0;color:var(--gold);text-shadow:0 3px 0 #4a2a90}
+.map-head .tot{font-family:var(--display);font-weight:800;font-size:18px;background:rgba(255,255,255,.12);border-radius:14px;padding:2px 12px;direction:ltr;white-space:nowrap}
+.path{position:relative;width:100%;max-width:440px;margin:0 auto;flex:none}
+.path svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.node{position:absolute;width:64px;height:64px;margin:-32px 0 0 -32px;border-radius:50%;border:4px solid #fff;padding:0;
+  font-family:var(--display);font-weight:800;font-size:26px;line-height:1;color:#fff;direction:ltr;
+  background:radial-gradient(circle at 35% 30%,var(--c1),var(--c2));box-shadow:0 5px 0 rgba(0,0,0,.35),0 0 18px var(--gl);text-shadow:0 2px 0 rgba(0,0,0,.3)}
+.node:active{transform:translateY(3px)}
+.node .st{position:absolute;left:50%;bottom:-17px;transform:translateX(-50%);font-size:15px;letter-spacing:-1px;white-space:nowrap;color:rgba(255,255,255,.22);text-shadow:0 1px 0 rgba(0,0,0,.5)}
+.node .st i{font-style:normal;color:var(--gold)}
+.node.lock{--c1:#4a4378;--c2:#2c2659;--gl:transparent;border-color:rgba(255,255,255,.3);color:rgba(255,255,255,.5);font-size:22px}
+.node.cur{animation:nodePulse 1.2s ease-in-out infinite}
+@keyframes nodePulse{50%{box-shadow:0 5px 0 rgba(0,0,0,.35),0 0 0 10px rgba(255,205,77,.35),0 0 30px var(--gl)}}
+.node .em{position:absolute;top:-14px;right:-12px;font-size:22px}
+#toast{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:calc(90px + var(--sa-b));max-width:calc(100% - 32px);background:rgba(30,20,80,.94);color:#fff;
+  font-weight:800;font-size:16px;line-height:1.35;padding:10px 18px;border-radius:18px;box-shadow:0 0 0 2px rgba(255,255,255,.2),0 8px 24px rgba(0,0,0,.4);text-align:center;pointer-events:none}
+@media (max-height:640px){.card{gap:8px;padding:14px}.card h1{font-size:40px}.how{display:none}.stars{font-size:46px}.mode .em{font-size:32px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="cv" aria-label="ساحة اللعب" data-en-aria="Play area" data-tr-aria="Oyun alanı"></canvas>
+<div id="sa"></div>
+<button class="tbtn" id="btnPause" hidden aria-label="استراحة" data-en-aria="Pause" data-tr-aria="Duraklat"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="2" fill="#fff"/><rect x="14" y="4" width="5" height="16" rx="2" fill="#fff"/></svg></button>
+<button class="tbtn" id="btnMute" aria-label="الصوت" data-en-aria="Sound" data-tr-aria="Ses"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff"/><path id="muteWave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path id="muteX" d="M16 9l6 6M22 9l-6 6" stroke="#ff6f8f" stroke-width="2.6" stroke-linecap="round" hidden/></svg></button>
+<button class="fbtn" id="btnFast" hidden aria-label="أسرع" data-en-aria="Faster" data-tr-aria="Hızlandır"><span class="ic">⏩</span><span id="fastX">×1</span></button>
+<button class="fbtn" id="btnRecall" hidden aria-label="رجّع الطابات" data-en-aria="Call the balls back" data-tr-aria="Topları geri çağır"><span class="ic">⤵️</span></button>
+
+<div class="overlay" id="menu">
+  <div class="card">
+    <h1 data-en="Bobo Balls" data-tr="Bobo Topları">طابات بوبو</h1>
+    <p data-en="Aim, fire a stream of balls and pop every block!" data-tr="Nişan al, top yağmurunu gönder, tüm blokları patlat!">صوّب، أطلق سيل طابات وفرقع كل المكعبات!</p>
+    <div class="modes">
+      <button class="mode lv" id="btnLevels"><span class="em">🗺️</span><b data-en="Levels" data-tr="Bölümler">مراحل</b><small id="lvInfo"></small></button>
+      <button class="mode en" id="btnEndless"><span class="em">♾️</span><b data-en="Endless" data-tr="Sonsuz">بلا نهاية</b><small id="enInfo"></small></button>
+    </div>
+    <ul class="how">
+      <li><span>👆</span><span data-en="Drag to aim, let go to fire" data-tr="Nişan için sürükle, bırakınca ateşle">اسحب لتصوّب، واترك لتطلق</span></li>
+      <li><span>🔢</span><span data-en="The number is how many hits a block needs" data-tr="Sayı, bloğun kaç vuruşa ihtiyacı olduğunu gösterir">الرقم = كم ضربة بدّو المكعّب</span></li>
+      <li><span>🟢</span><span data-en="Green rings give you one more ball" data-tr="Yeşil halkalar sana bir top daha verir">الحلقات الخضرا بتعطيك طابة زيادة</span></li>
+    </ul>
+  </div>
+</div>
+
+<div class="overlay dim" id="map" hidden>
+  <div class="map-head"><h2 data-en="Levels" data-tr="Bölümler">المراحل</h2><span class="tot" id="mapStars"></span></div>
+  <div class="path" id="mapPath"></div>
+</div>
+
+<div class="overlay dim" id="pause" hidden>
+  <div class="card">
+    <h2 data-en="Paused" data-tr="Mola">استراحة</h2>
+    <p id="pauseInfo"></p>
+    <button class="big-btn" id="btnResume"><span data-en="Resume" data-tr="Devam">كمّل</span> ▶</button>
+    <div class="row">
+      <button class="ghost-btn" id="btnRestart" data-en="Start over" data-tr="Baştan başla">ابدأ من جديد</button>
+      <button class="ghost-btn" id="btnPauseMap" data-en="Levels" data-tr="Bölümler">المراحل</button>
+    </div>
+    <button class="exit-btn" id="btnExit" data-en="Exit" data-tr="Çıkış">خروج</button>
+  </div>
+</div>
+
+<div class="overlay dim" id="end" hidden>
+  <div class="card">
+    <h2 id="endTitle"></h2>
+    <div class="stars" id="endStars"><span>★</span><span>★</span><span>★</span></div>
+    <span class="newbest" id="newBest" hidden data-en="New best!" data-tr="Yeni rekor!">رقم قياسي جديد!</span>
+    <div class="res">
+      <div><b id="rA">0</b><small id="rAl"></small></div>
+      <div><b id="rB">0</b><small id="rBl"></small></div>
+      <div><b id="rC">0</b><small data-en="Balls" data-tr="Toplar">الطابات</small></div>
+      <div><b id="rCoins">0</b><small data-en="Coins" data-tr="Altın">مصاري</small></div>
+    </div>
+    <button class="big-btn" id="btnNext"></button>
+    <div class="row">
+      <button class="ghost-btn" id="btnAgain"><span data-en="Again" data-tr="Tekrar">مرة كمان</span> 🔁</button>
+      <button class="ghost-btn" id="btnEndMap" data-en="Levels" data-tr="Bölümler">المراحل</button>
+      <button class="ghost-btn" id="btnMenu" data-en="Menu" data-tr="Menü">القائمة</button>
+    </div>
+  </div>
+</div>
+<div id="toast" role="status" hidden></div>
+
+<script src="../world.js"></script>
+<script src="./levels.js"></script>
+<script src="./game.js"></script>
+<script src="../back.js"></script>
+<script>BoboBack.init({
+  visible: () => { const h = window.__balls, s = h && h.state; return s === 'menu' || s === 'map' || s === 'pause'; },
+  onBack: () => { const h = window.__balls; if(!h) location.href = '../'; else h.back(); }
+});</script>
+<script src="../friends.js"></script>
+<script src="../invitepop.js"></script>
+</body>
+</html>
