@@ -686,6 +686,8 @@ function frame(now){
 requestAnimationFrame(frame);
 if('serviceWorker' in navigator && location.protocol === 'https:'){
   const hadSW = !!navigator.serviceWorker.controller; let reloaded = false;
+  // a few seconds after the page is up, the worker downloads the other games in the background (for offline play)
+  navigator.serviceWorker.ready.then(r => setTimeout(() => { try{ r.active && r.active.postMessage('warm'); }catch(e){} }, 4000)).catch(() => {});
   navigator.serviceWorker.register('sw.js').then(r => { try{ r.update().catch(() => {}); }catch(e){} document.addEventListener('visibilitychange', () => { if(document.visibilityState === 'visible') try{ r.update().catch(() => {}); }catch(e){} }); }).catch(() => {});
   // a newer version took over: refresh once so the new games show right away
   navigator.serviceWorker.addEventListener('controllerchange', () => { if(hadSW && !reloaded){ reloaded = true; location.reload(); } });
