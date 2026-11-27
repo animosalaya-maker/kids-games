@@ -91,3 +91,37 @@ const World = {
 };
 window.World = World;
 })();
+
+/* Graphics level for the 3D games (window.BoboGfx). Weak phones (2 GB of memory or less, an entry-level GPU, or software
+   WebGL) start with fewer pixels and cheaper shadows; every game's own auto-quality step-down still runs on top of this.
+   BoboGfx.dpr(max) → starting pixel ratio (never above 1.5; 1 on weak phones); BoboGfx.shadow(size) → shadow map size
+   (512 on weak phones); BoboGfx.weak() → true on weak phones. Pass the game's THREE.WebGLRenderer as the last argument:
+   the GPU name is read once from its context (a throw-away context is made only when none is given). */
+(function(){
+'use strict';
+const WEAK_GPU = /SwiftShader|llvmpipe|softpipe|Mali-(4\d\d|T[678]\d\d|G31|G51|G52)\b|Adreno \(TM\) (3\d\d|4\d\d|50\d|51\d|60\d|61[023])\b|PowerVR (SGX|Rogue GE)|IMG BXE/i;
+let weak = null, gpu = '';
+function isWeak(renderer){
+  if(weak !== null) return weak;
+  let q = '';
+  try{ q = new URLSearchParams(location.search).get('gfx') || ''; }catch(e){}
+  if(q === 'hi' || q === 'lo'){ weak = q === 'lo'; return weak; }
+  try{
+    const own = !(renderer && renderer.getContext);
+    const gl = own ? document.createElement('canvas').getContext('webgl') : renderer.getContext();
+    if(gl){
+      const ext = gl.getExtension('WEBGL_debug_renderer_info');
+      gpu = String(gl.getParameter(ext ? ext.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || '');
+      const lose = own && gl.getExtension('WEBGL_lose_context'); if(lose) lose.loseContext();
+    }
+  }catch(e){}
+  weak = (navigator.deviceMemory || 4) <= 2 || WEAK_GPU.test(gpu);
+  return weak;
+}
+window.BoboGfx = {
+  weak: isWeak,
+  dpr(max, renderer){ const d = Math.min(window.devicePixelRatio || 1, Math.min(max || 1.5, 1.5)); return isWeak(renderer) ? Math.min(d, 1) : d; },
+  shadow(size, renderer){ return isWeak(renderer) ? Math.min(size, 512) : size; },
+  get gpu(){ isWeak(); return gpu; }
+};
+})();

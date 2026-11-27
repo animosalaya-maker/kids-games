@@ -156,9 +156,9 @@ const canvas = $('#cv');
 let renderer;
 try{ renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' }); }
 catch(e){ $('#nogl').hidden = false; $('#overlay').hidden = true; throw e; }
-let dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+let dpr = (window.BoboGfx ? BoboGfx.dpr(1.5, renderer) : Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.setPixelRatio(dpr);
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = window.BoboGfx && BoboGfx.weak(renderer) ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 const scene = new THREE.Scene();
 const FOG0 = new THREE.Color(0xcdeeff);
 scene.fog = new THREE.Fog(FOG0.getHex(), 60, 170);
@@ -174,7 +174,7 @@ addEventListener('orientationchange', () => setTimeout(resize, 120));
 const HEMI_SKY = new THREE.Color(0xfff4e2), HEMI_GND = new THREE.Color(0x7f9a6c);
 const hemi = new THREE.HemisphereLight(HEMI_SKY.getHex(), HEMI_GND.getHex(), 1.7); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xfff0d4, 2.3);
-sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03;
+sun.castShadow = true; sun.shadow.mapSize.setScalar(window.BoboGfx ? BoboGfx.shadow(1024, renderer) : 1024); sun.shadow.bias = -.0006; sun.shadow.normalBias = .03;
 Object.assign(sun.shadow.camera, { left:-24, right:24, top:24, bottom:-24, near:1, far:110 }); sun.shadow.camera.updateProjectionMatrix();
 scene.add(sun); scene.add(sun.target);
 const SUN_OFF = new THREE.Vector3(18, 38, 20);
@@ -1510,7 +1510,7 @@ function mpCard(wide){ state = 'mp'; setPlayUI(false); overlay.hidden = false; o
 function mpMenu(){
   MP.tok++; mpClose(); MP.screen = 'menu'; mpCard(false);
   card.innerHTML = `<h2>👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</h2>
-    <p>🏝️ ${L('لحد ٤ أصحاب على نفس الجزيرة، ومين بيضل لآخر الجولة بياخد نجوم!', 'Up to 4 friends on the same island — whoever lasts the round gets stars!', '4 arkadaşa kadar aynı adada — turu atlatan yıldız kazanır!').replace('٤', N(4))}</p>
+    <p>🏝️ ${L('لحد 4 أصحاب على نفس الجزيرة، ومين بيضل لآخر الجولة بياخد نجوم!', 'Up to 4 friends on the same island — whoever lasts the round gets stars!', '4 arkadaşa kadar aynı adada — turu atlatan yıldız kazanır!').replace('4', N(4))}</p>
     <button class="hero-btn" id="bMyHero" style="--c:${HERO_COLOR[heroId]}"><img src="${charImg(heroId)}" alt=""><span>${HERO_NAME[heroId]} 🔄</span></button>
     <div class="row"><button class="big-btn" id="bCreate">🏝️ ${L('اعمل غرفة', 'Create room', 'Oda kur')}</button>
     <button class="big-btn mint" id="bJoin">🔢 ${L('فوت على غرفة', 'Join room', 'Odaya katıl')}</button></div>

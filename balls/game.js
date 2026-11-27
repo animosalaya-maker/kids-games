@@ -552,7 +552,7 @@ function showEnd(){
   if(lv) for(let i = 0; i < R.stars; i++) setTimeout(() => sfx('star', i), 200 + i * 180);
   $('#newBest').hidden = !(R.best && !lv);
   $('#rA').textContent = lv ? R.turns : R.score; $('#rAl').textContent = lv ? T('الدورات', 'Turns', 'Tur') : T('النتيجة', 'Score', 'Puan');
-  $('#rB').textContent = lv ? LEVELS[G.lv].par : PROG.best; $('#rBl').textContent = lv ? T('هدف ٣ نجوم', '3-star goal', '3 yıldız hedefi').replace('٣', '3') : T('الأحسن', 'Best', 'En iyi');
+  $('#rB').textContent = lv ? LEVELS[G.lv].par : PROG.best; $('#rBl').textContent = lv ? T('هدف 3 نجوم', '3-star goal', '3 yıldız hedefi').replace('3', '3') : T('الأحسن', 'Best', 'En iyi');
   $('#rC').textContent = R.balls; $('#rCoins').textContent = '+' + R.coins;
   const nx = $('#btnNext');
   if(lv && G.lv < LEVELS.length - 1){ nx.hidden = false; nx.textContent = T('المرحلة الجاية', 'Next level', 'Sonraki bölüm') + ' ▶'; }

@@ -520,7 +520,7 @@ export function makeDesert(THREE, K){
   sign(CAMP.x + 2, CAMP.z + 9, 0, (cx, w, h) => signFace(cx, w, h, '🏜️', LL('صحرا بوبو', 'Bobo Desert', 'Bobo Çölü')));
   sign(PB.x + 5, PB.z + PB.half + 5, 0, (cx, w, h) => signFace(cx, w, h, '🔦', LL('النفق السرّي', 'Secret tunnel', 'Gizli tünel')));
   const redrawSigns = () => signs.forEach(s => { const c = s.tex.image, x = c.getContext('2d'); x.clearRect(0, 0, c.width, c.height); s.draw(x, c.width, c.height); s.tex.needsUpdate = true; });
-  try{ if(document.fonts && document.fonts.ready) document.fonts.ready.then(redrawSigns); }catch(e){}
+  try{ if(document.fonts && document.fonts.ready) document.fonts.ready.then(redrawSigns); document.fonts.addEventListener('loadingdone', redrawSigns); }catch(e){}
 
   for(const M of chunks.values()) root.add(M.mesh());
 

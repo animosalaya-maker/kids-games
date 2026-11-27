@@ -50,7 +50,7 @@ export function makeGate(THREE, K, o){
     tex.needsUpdate = true;
   }
   paint();
-  try{ if(document.fonts && document.fonts.ready) document.fonts.ready.then(paint, () => {}); }catch(e){}
+  try{ if(document.fonts && document.fonts.ready) document.fonts.ready.then(paint, () => {}); document.fonts.addEventListener('loadingdone', () => paint()); }catch(e){}
   const smat = new THREE.MeshBasicMaterial({ map:tex });
   for(const s of [1, -1]){ const p = new THREE.Mesh(new THREE.PlaneGeometry(2.86, .78), smat); p.position.set(0, H + .35, s * .056); if(s < 0) p.rotation.y = Math.PI; grp.add(p); }
   // the soft portal shimmer in the opening (additive)

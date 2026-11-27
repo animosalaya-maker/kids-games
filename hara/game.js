@@ -112,9 +112,9 @@ let renderer;
 try{ renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' }); }
 catch(e){ $('#nogl').hidden = false; $('#overlay').hidden = true; throw e; }
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-const MAXDPR = Math.min(window.devicePixelRatio || 1, 1.6);
-let quality = QS.get('q') != null ? clamp(+QS.get('q') | 0, 0, 2) : 2;
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = window.BoboGfx && BoboGfx.weak(renderer) ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
+const MAXDPR = (window.BoboGfx ? BoboGfx.dpr(1.5, renderer) : Math.min(window.devicePixelRatio || 1, 1.5));
+let quality = QS.get('q') != null ? clamp(+QS.get('q') | 0, 0, 2) : (window.BoboGfx && BoboGfx.weak(renderer) ? 1 : 2);
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(60, 1, .2, 600);
 const hemi = new THREE.HemisphereLight(0xffffff, 0x6a6050, 1.1); scene.add(hemi);
@@ -1274,7 +1274,7 @@ function frame(now){
   if(state === 'play' || state === 'pause' || state === 'games') placeBotLabels();
   placeRemoteLabels(); placeGateLabel(t);
   renderer.render(scene, camera);
-  fpsT += dt; fpsN++;
+  fpsT += rdt; fpsN++;   // real frame time (dt is capped at 50 ms), so a very slow phone steps down in seconds
   if(fpsT > 2){ const fps = fpsN / fpsT; lastFps = fps; fpsT = 0; fpsN = 0; if(fps < 42 && state === 'play' && quality > 0 && QS.get('q') == null){ lowT++; if(lowT >= 2){ quality--; lowT = 0; applyQuality(); } } else lowT = 0; }
 }
 let lastFps = 0;

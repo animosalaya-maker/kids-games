@@ -66,7 +66,7 @@ const canvas = $('#cv');
 let renderer;
 try{ renderer = new THREE.WebGLRenderer({ canvas, antialias:true, powerPreference:'high-performance' }); }
 catch(e){ $('#nogl').hidden = false; $('#overlay').hidden = true; throw e; }
-let dpr = Math.min(window.devicePixelRatio || 1, 1.5), quality = 2;
+let dpr = (window.BoboGfx ? BoboGfx.dpr(1.5, renderer) : Math.min(window.devicePixelRatio || 1, 1.5)), quality = 2;
 renderer.setPixelRatio(dpr);
 renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFShadowMap;
 const scene = new THREE.Scene();
@@ -74,7 +74,7 @@ scene.fog = new THREE.Fog(0x4a3f7a, 45, 160);
 const camera = new THREE.PerspectiveCamera(62, 1, .05, 700);
 const hemi = new THREE.HemisphereLight(0xfff0dc, 0x9a7f86, 1.6); scene.add(hemi);
 const sun = new THREE.DirectionalLight(0xffe2b8, 1.25);
-sun.castShadow = true; sun.shadow.mapSize.set(1024, 1024);
+sun.castShadow = true; sun.shadow.mapSize.setScalar(window.BoboGfx ? BoboGfx.shadow(1024, renderer) : 1024);
 Object.assign(sun.shadow.camera, { left:-7.5, right:7.5, top:7.5, bottom:-7.5, near:.45, far:5.5 }); sun.shadow.camera.updateProjectionMatrix();
 sun.shadow.bias = -.0008; sun.shadow.normalBias = .03; sun.shadow.radius = 2;
 scene.add(sun, sun.target);
@@ -991,7 +991,7 @@ function showLose(){
   if(R.co){ showLoseCo(); return; }
   state = 'lost'; setPlayUI(false); showOverlay('dim'); card.className = 'card'; A.music(false);
   card.innerHTML = `<div class="bigstar">🌙</div><h2>${L('بكرا منجرّب!', "We'll try again tomorrow!", 'Yarın yine deneriz!')}</h2>
-    <p>${L('الجدّة نونا مسكتك ٥ مرات وصار وقت النوم 😴 بس إنت قرّبت كتير!', 'Grandma Nona booped you 5 times — bedtime 😴 but you got so close!', 'Nona Nine seni 5 kez yakaladı — uyku vakti 😴 ama çok yaklaştın!').replace('٥', N(5))}</p>
+    <p>${L('الجدّة نونا مسكتك 5 مرات وصار وقت النوم 😴 بس إنت قرّبت كتير!', 'Grandma Nona booped you 5 times — bedtime 😴 but you got so close!', 'Nona Nine seni 5 kez yakaladı — uyku vakti 😴 ama çok yaklaştın!').replace('5', N(5))}</p>
     <div class="row"><button class="big-btn" id="bRetry">🔁 ${L('من الأول', 'Start over', 'Baştan')}</button><button class="ghost-btn" id="bMenuL">🏠 ${L('القائمة', 'Menu', 'Menü')}</button></div>`;
   $('#bRetry').onclick = () => { SFX.tap(); startGame(); };
   $('#bMenuL').onclick = () => { SFX.tap(); GS = null; showTitle(); };
@@ -1534,7 +1534,7 @@ function redrawEnd(){
       ${endButtons()}`;
   } else if(state === 'lost'){
     card.innerHTML = `<div class="bigstar">🌙</div><h2>${L('بكرا منجرّب!', "We'll try again tomorrow!", 'Yarın yine deneriz!')}</h2>
-      <p>${L('الجدّة نونا مسكت الفريق ٥ مرات وصار وقت النوم 😴 بس قرّبتوا كتير!', 'Grandma Nona booped the team 5 times — bedtime 😴 but you got so close!', 'Nona Nine takımı 5 kez yakaladı — uyku vakti 😴 ama çok yaklaştınız!').replace('٥', N(5))}</p>
+      <p>${L('الجدّة نونا مسكت الفريق 5 مرات وصار وقت النوم 😴 بس قرّبتوا كتير!', 'Grandma Nona booped the team 5 times — bedtime 😴 but you got so close!', 'Nona Nine takımı 5 kez yakaladı — uyku vakti 😴 ama çok yaklaştınız!').replace('5', N(5))}</p>
       ${teamSlots(null)}
       ${endButtons()}`;
   } else return;

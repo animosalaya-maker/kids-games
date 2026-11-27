@@ -133,7 +133,7 @@ export function buildIsland(THREE, K, scene, deps){
   const FONT = '"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif';
   const redraws = [];
   function liveTex(w, h, draw){ const t = canvasTex(w, h, draw); redraws.push(() => { const x = t.image.getContext('2d'); x.clearRect(0, 0, w, h); draw(x, w, h); t.needsUpdate = true; }); return t; }
-  if(document.fonts && document.fonts.ready) document.fonts.ready.then(() => redraws.forEach(f => f())).catch(() => {});
+  if(document.fonts && document.fonts.ready) { document.fonts.ready.then(() => redraws.forEach(f => f())).catch(() => {}); document.fonts.addEventListener('loadingdone', () => redraws.forEach(f => f())); }
   function signTex(text, bg, sub){
     return liveTex(512, 168, (x, w, h) => {
       x.fillStyle = bg; x.beginPath(); x.roundRect(6, 6, w - 12, h - 12, 44); x.fill();
