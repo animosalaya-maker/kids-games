@@ -63,6 +63,7 @@ const GAMES = {
   survive:{ path:'survive/', emoji:'🪓', color:'#2fb7c9', dark:'#1b7f8f', name:['الجزيرة المهجورة 🪓', 'Deserted Island 🪓', 'Issız Ada 🪓'], game:['البقاء بالجزيرة المهجورة', 'Deserted Island Survival', "Issız Ada'da Hayatta Kalma"] },
   tiny:   { path:'tiny/', emoji:'🧸', color:'#f0a640', dark:'#b8741a', name:['بوبو الصغير 🧸', 'Tiny Bobo 🧸', 'Minik Bobo 🧸'], game:['بوبو الصغير', 'Tiny Bobo', 'Minik Bobo'] },
   hara:   { path:'hara/', emoji:'🛝', color:'#8a63e8', dark:'#4b37b8', name:['حديقة الحارة 🛝', 'Neighbourhood Park 🛝', 'Mahalle Parkı 🛝'], game:['حديقة الحارة', 'Neighbourhood Park', 'Mahalle Parkı'] },
+  booths: { path:'booths/', emoji:'🏪', color:'#ff8a4a', dark:'#b8481a', name:['بسطات بوبو 🏪', 'Bobo Booths 🏪', 'Bobo Tezgahları 🏪'], game:['بسطات بوبو', 'Bobo Booths', 'Bobo Tezgahları'] },
   blocks: { path:'blocks/', emoji:'🧱', color:'#5cbc43', dark:'#3a8a2a', name:['مكعّبات بوبو 🧱', 'Bobo Blocks 🧱', 'Bobo Blokları 🧱'], game:['عالم مكعّبات بوبو', 'Bobo Blocks', 'Bobo Blokları'] }
 };
 const gameOf = g => GAMES[g] ? g : '3d';
