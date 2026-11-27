@@ -1274,7 +1274,7 @@ function frame(now){
   if(state === 'play' || state === 'pause' || state === 'games') placeBotLabels();
   placeRemoteLabels(); placeGateLabel(t);
   renderer.render(scene, camera);
-  fpsT += dt; fpsN++;
+  fpsT += rdt; fpsN++;   // real frame time (dt is capped at 50 ms), so a very slow phone steps down in seconds
   if(fpsT > 2){ const fps = fpsN / fpsT; lastFps = fps; fpsT = 0; fpsN = 0; if(fps < 42 && state === 'play' && quality > 0 && QS.get('q') == null){ lowT++; if(lowT >= 2){ quality--; lowT = 0; applyQuality(); } } else lowT = 0; }
 }
 let lastFps = 0;
