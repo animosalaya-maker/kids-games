@@ -8,27 +8,124 @@
 <meta name="theme-color" content="#1c1838">
 <link rel="manifest" href="../manifest.webmanifest">
 <link rel="icon" href="../icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Tajawal:wght@500;800&display=swap" media="print" onload="this.media='all'">
 <style>
-:root{--bg:#1c1838;--card:#2a2452;--ink:#fff7e8;--muted:#cfc6f2;--gold:#ffcd4d;color-scheme:dark}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal",system-ui,sans-serif;line-height:1.7}
+:root{--bg:#1c1838;--card:#2a2452;--ink:#fff7e8;--muted:#cfc6f2;--gold:#ffcd4d;--ok:#2ec27e;--bad:#e8475f;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Tajawal",system-ui,sans-serif;line-height:1.6;min-height:100vh}
 main{max-width:680px;margin:0 auto;padding:78px 16px 40px}
-h1{color:var(--gold);font-size:28px;margin:0 0 14px;text-align:center}
-.item{background:var(--card);border-radius:18px;padding:14px 18px;margin-bottom:12px}
-.item b{display:block;font-size:18px;margin-bottom:4px}.item p{margin:0;color:var(--muted)}
-.empty{text-align:center;color:var(--muted);background:var(--card);border-radius:18px;padding:30px 18px;font-size:18px}
-.empty .big{font-size:52px;display:block;margin-bottom:6px}
+h1{color:var(--gold);font-size:28px;margin:0 0 6px;text-align:center}
+.sub{text-align:center;color:var(--muted);margin:0 0 18px}
+.cats{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.cat{border:0;border-radius:22px;padding:18px 12px;color:#fff;font:inherit;text-align:center;cursor:pointer;box-shadow:0 6px 0 rgba(0,0,0,.25);transition:transform .1s}
+.cat:active{transform:translateY(4px);box-shadow:0 2px 0 rgba(0,0,0,.25)}
+.cat .em{font-size:46px;display:block}.cat b{display:block;font-size:20px;font-weight:800}.cat small{display:block;opacity:.9;font-size:13px}
+.cat .best{display:inline-block;margin-top:6px;background:rgba(0,0,0,.22);border-radius:99px;padding:1px 10px;font-size:13px}
+.top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.top .home{border:0;background:var(--card);color:var(--ink);border-radius:14px;padding:8px 14px;font:inherit;font-size:16px;cursor:pointer}
+.top h2{margin:0;font-size:22px;flex:1}
+.bar{height:10px;background:var(--card);border-radius:99px;overflow:hidden;margin-bottom:14px}.bar i{display:block;height:100%;background:var(--gold);transition:width .3s}
+.qcard{background:var(--card);border-radius:22px;padding:20px 16px}
+.qn{color:var(--muted);font-size:14px}.q{font-size:22px;font-weight:800;margin:6px 0 16px}
+.ans{display:block;width:100%;border:0;margin:0 0 10px;padding:14px;border-radius:16px;background:#3a3270;color:var(--ink);font:inherit;font-size:19px;cursor:pointer;text-align:start}
+.ans.ok{background:var(--ok)}.ans.bad{background:var(--bad)}.ans:disabled{cursor:default}
+.note{margin-top:6px;color:var(--muted);font-size:16px}
+.next{display:block;width:100%;border:0;margin-top:14px;padding:14px;border-radius:16px;background:var(--gold);color:#3a2a00;font:inherit;font-size:20px;font-weight:800;cursor:pointer}
+.end{text-align:center}.end .stars{font-size:44px;letter-spacing:4px}.end .big{font-size:30px;font-weight:800;color:var(--gold);margin:8px 0}
+.tip{display:flex;gap:12px;align-items:flex-start;background:var(--card);border-radius:18px;padding:14px 16px;margin-bottom:10px;border-inline-start:6px solid var(--bad)}
+.tip .e{font-size:30px;line-height:1}.tip p{margin:0;font-size:18px}
+[hidden]{display:none!important}
 </style>
 </head>
 <body>
 <main>
-  <h1 data-en="❓ Questions" data-tr="❓ Sorular">❓ أسئلة</h1>
-  <section id="list">
-    <!-- add <div class="item"><b>question</b><p>answer</p></div> entries here -->
-    <div class="empty"><span class="big">❓</span><span data-en="Coming soon…" data-tr="Yakında…">قريباً…</span></div>
+  <section id="hub">
+    <h1 data-en="❓ Questions" data-tr="❓ Sorular">❓ أسئلة</h1>
+    <p class="sub" data-en="Pick a section" data-tr="Bir bölüm seç">اختار قسم</p>
+    <div class="cats" id="cats"></div>
+  </section>
+  <section id="play" hidden>
+    <div class="top"><button class="home" id="toHub">↩</button><h2 id="ptitle"></h2></div>
+    <div id="pbody"></div>
   </section>
 </main>
+<script src="data.js"></script>
 <script src="../back.js"></script>
-<script>BoboBack.init({}); if(document.querySelector('#list .item')) document.querySelector('#list .empty').remove();</script>
+<script>
+(function(){
+'use strict';
+BoboBack.init({});
+const LI = {ar:0, en:1, tr:2}[(window.I18N && I18N.lang) || 'ar'] || 0;
+const T = a => a[LI] || a[0];
+const L3 = (ar, en, tr) => [ar, en, tr][LI];
+const $ = s => document.querySelector(s);
+const ROUND = 8;
+function best(id){ try{ return +localStorage.getItem('bobo_faq_' + id) || 0; }catch(e){ return 0; } }
+function setBest(id, v){ try{ if(v > best(id)) localStorage.setItem('bobo_faq_' + id, v); }catch(e){} }
+function shuffle(a){ a = a.slice(); for(let i = a.length - 1; i > 0; i--){ const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; }
+function el(tag, cls, txt){ const e = document.createElement(tag); if(cls) e.className = cls; if(txt != null) e.textContent = txt; return e; }
+
+function hub(){
+  $('#play').hidden = true; $('#hub').hidden = false;
+  const box = $('#cats'); box.innerHTML = '';
+  FAQ_DATA.forEach(c => {
+    const b = el('button', 'cat'); b.style.background = c.color;
+    b.append(el('span', 'em', c.em), el('b', '', T(c.t)), el('small', '', T(c.s)));
+    if(!c.tips){ const n = best(c.id); if(n) b.append(el('span', 'best', '⭐ ' + n + '/' + ROUND)); }
+    b.onclick = () => open(c);
+    box.append(b);
+  });
+  scrollTo(0, 0);
+}
+function open(c){
+  $('#hub').hidden = true; $('#play').hidden = false;
+  $('#ptitle').textContent = c.em + ' ' + T(c.t);
+  c.tips ? tips(c) : quiz(c);
+  scrollTo(0, 0);
+}
+function tips(c){
+  const body = $('#pbody'); body.innerHTML = '';
+  c.items.forEach(t => { const d = el('div', 'tip'); d.append(el('span', 'e', t.e), el('p', '', T(t.q))); body.append(d); });
+}
+function quiz(c){
+  const qs = shuffle(c.items).slice(0, ROUND);
+  let i = 0, score = 0;
+  const body = $('#pbody');
+  function show(){
+    body.innerHTML = '';
+    const bar = el('div', 'bar'), fill = el('i'); fill.style.width = (i / qs.length * 100) + '%'; bar.append(fill); body.append(bar);
+    const it = qs[i], card = el('div', 'qcard');
+    card.append(el('div', 'qn', L3('سؤال ', 'Question ', 'Soru ') + (i + 1) + ' / ' + qs.length), el('div', 'q', T(it.q)));
+    const btns = shuffle(it.a.map((a, k) => ({a, ok: k === 0}))).map(o => {
+      const b = el('button', 'ans', T(o.a)); b._ok = o.ok;
+      b.onclick = () => {
+        btns.forEach(x => { x.disabled = true; if(x._ok) x.classList.add('ok'); });
+        if(o.ok){ score++; b.textContent = '✅ ' + b.textContent; } else { b.classList.add('bad'); b.textContent = '❌ ' + b.textContent; }
+        if(it.n) card.append(el('div', 'note', '💡 ' + T(it.n)));
+        const nx = el('button', 'next', i + 1 < qs.length ? L3('التالي ⬅', 'Next ➡', 'Sonraki ➡') : L3('النتيجة 🏆', 'Result 🏆', 'Sonuç 🏆'));
+        nx.onclick = () => { i++; i < qs.length ? show() : end(); };
+        card.append(nx); nx.scrollIntoView({behavior:'smooth', block:'nearest'});
+      };
+      card.append(b); return b;
+    });
+    body.append(card);
+  }
+  function end(){
+    setBest(c.id, score);
+    body.innerHTML = '';
+    const card = el('div', 'qcard end'), st = score >= qs.length ? 3 : score >= qs.length * .6 ? 2 : score > 0 ? 1 : 0;
+    card.append(el('div', 'stars', '⭐'.repeat(st) + '☆'.repeat(3 - st)),
+      el('div', 'big', score + ' / ' + qs.length),
+      el('div', 'note', st === 3 ? L3('برافو! كلّهن صح 🎉', 'Amazing! All correct 🎉', 'Harika! Hepsi doğru 🎉') : st === 2 ? L3('شاطر كتير! 👏', 'Great job! 👏', 'Aferin! 👏') : L3('جرّب كمان مرّة، بتقدر! 💪', 'Try again, you can do it! 💪', 'Tekrar dene, yapabilirsin! 💪')));
+    const again = el('button', 'next', L3('العب كمان مرّة 🔁', 'Play again 🔁', 'Tekrar oyna 🔁')); again.onclick = () => quiz(c);
+    const back = el('button', 'next', L3('الأقسام ↩', 'Sections ↩', 'Bölümler ↩')); back.style.background = '#3a3270'; back.style.color = '#fff7e8'; back.onclick = hub;
+    card.append(again, back); body.append(card);
+  }
+  show();
+}
+$('#toHub').onclick = hub;
+hub();
+})();
+</script>
 </body>
 </html>
