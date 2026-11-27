@@ -239,7 +239,7 @@ async function setWorld(info, edits, progress){
   if(edits && edits.size) W.applyEdits(edits);
   worldInfo = info;
   scanLights();
-  spawnAnimals();
+  spawnAnimals(); updateBarn(true);
   jobs.length = 0; grows.length = 0; clearLabels();
   const all = [...Array(NCX * NCZ).keys()].sort((a, b) => cdist(a) - cdist(b));
   W.dirty.clear();
@@ -709,8 +709,64 @@ function standY(x, z, y){
   for(let yy = Math.floor(y) + 1; yy >= Math.floor(y) - 3; yy--){ if(SOLID[W.get(X, yy - 1, Z)] && !SOLID[W.get(X, yy, Z)] && !SOLID[W.get(X, yy + 1, Z)]) return yy - 1 + (SHAPE[W.get(X, yy - 1, Z)] === SH.slab ? .5 : 1); }
   return W.surface(x, z) + 1;
 }
+/* Horses live in a built barn 🐴: find barns in the world (from the changed blocks) and give the horses a home inside */
+let BARN = null, barnScanT = 0;
+function barnAt(ox, oy, oz, rot){
+  const b0 = bpCells('barn', 0);
+  const pt = (fx, fz) => { let x = fx + 1, z = fz + 1, w = b0.w, d = b0.d; for(let r = 0; r < (rot & 3); r++){ const t = x; x = d - z; z = t; const tw = w; w = d; d = tw; } return [ox + x, oz + z]; };
+  const [cx, cz] = pt(5.5, 4), out = pt(5.5, -1.6), inn = pt(5.5, 1.8);
+  const a = pt(2.6, 2.6), b = pt(8.4, 5.4);
+  return { x:ox, y:oy, z:oz, rot, cx, cz, out, inn, x0:Math.min(a[0], b[0]), x1:Math.max(a[0], b[0]), z0:Math.min(a[1], b[1]), z1:Math.max(a[1], b[1]) };
+}
+function findBarn(){
+  if(!W || !W.edits) return null;
+  let best = null, bd = 1e9;
+  const tried = new Set();
+  for(let rot = 0; rot < 4; rot++){
+    const c = bpCells('barn', rot), solid = c.cells.filter(q => q[3] && q[1] >= 0);
+    const anchors = c.cells.filter(q => q[1] === 2 && q[3] && c.cells.some(r => r[0] === q[0] && r[2] === q[2] && r[1] === 1 && r[3] === q[3]));
+    if(!anchors.length) continue;
+    const hay = anchors[0][3];
+    for(const [i, id] of W.edits){
+      if(id !== hay) continue;
+      const x = i % WX, z = Math.floor(i / WX) % WZ, y = Math.floor(i / (WX * WZ));
+      for(const an of anchors){
+        const ox = x - an[0], oy = y - an[1], oz = z - an[2], key = ox + ',' + oy + ',' + oz + ',' + rot;
+        if(tried.has(key)) continue; tried.add(key);
+        let ok = 0; for(const q of solid) if(W.get(ox + q[0], oy + q[1], oz + q[2]) === q[3]) ok++;
+        if(ok < solid.length * .8) continue;
+        const B = barnAt(ox, oy, oz, rot), d = Math.hypot(B.cx - (VX0 + VW / 2), B.cz - (VZ0 + VD / 2));
+        if(d < bd){ bd = d; best = B; }
+      }
+    }
+  }
+  return best;
+}
+const inBarn = (a, B) => a.x > B.x0 - .6 && a.x < B.x1 + .6 && a.z > B.z0 - .6 && a.z < B.z1 + .6;
+function updateBarn(teleport){
+  const B = findBarn(), had = BARN; BARN = B;
+  for(const a of AN){
+    if(a.kind !== 'horse') continue;
+    if(B){
+      a.hx = B.cx; a.hz = B.cz;
+      if(teleport && !riddenBy(a.i) && !inBarn(a, B)){ a.x = a.tx = lerp(B.x0, B.x1, .3 + .4 * (a.i % 2)); a.z = a.tz = lerp(B.z0, B.z1, .35 + .3 * (a.i % 2)); a.y = a.sy = standY(a.x, a.z, B.y + 2); a.sx = a.x; a.sz = a.z; }
+      else if(!riddenBy(a.i) && !inBarn(a, B)){
+        // a new barn, or a horse left outside for a while: it trots home (a little puff, then it is in its stall)
+        a.out = had ? (a.out || 0) + 4 : 99;
+        if(a.out >= 40){ a.out = 0; puff(a.x, a.y + 1, a.z, ID.hay || 1, 10); a.x = a.tx = lerp(B.x0, B.x1, .3 + .4 * (a.i % 2)); a.z = a.tz = lerp(B.z0, B.z1, .35 + .3 * (a.i % 2)); a.y = a.sy = standY(a.x, a.z, B.y + 2); a.sx = a.x; a.sz = a.z; hearts(a.x, a.y + 2, a.z, 3); }
+      } else a.out = 0;
+    } else if(had){ a.hx = VX0 + VW + 10; a.hz = VZ0 + 10; }
+  }
+}
+function horseTarget(a){
+  const B = BARN;
+  if(inBarn(a, B)) return [lerp(B.x0, B.x1, Math.random()), lerp(B.z0, B.z1, Math.random())];
+  if(Math.hypot(a.x - B.out[0], a.z - B.out[1]) > 1.2) return B.out;   // walk to the barn door first
+  return B.inn;                                                        // then in through the door
+}
 const riddenBy = i => { if(P.ride === i) return MP.id || 'me'; for(const r of RM.values()) if(r.rd === i) return r.id; return null; };
 function simAnimals(dt){
+  barnScanT -= dt; if(barnScanT <= 0){ barnScanT = 4; updateBarn(false); }
   for(const a of AN){
     a.t += dt; a.happy = Math.max(0, a.happy - dt);
     if(riddenBy(a.i)) continue;
@@ -725,11 +781,11 @@ function simAnimals(dt){
     else {
       if(a.kind === 'dog' && Math.hypot(P.x - a.x, P.z - a.z) < 14 && Math.hypot(P.x - a.x, P.z - a.z) > 3){ a.tx = P.x + Math.sin(a.t) * 1.5; a.tz = P.z + Math.cos(a.t) * 1.5; }
       const dx = a.tx - a.x, dz = a.tz - a.z, d = Math.hypot(dx, dz);
-      if(d < .3){ a.wait = 1 + Math.random() * 4; const R = Math.random() * Math.PI * 2, rr = 2 + Math.random() * 8; a.tx = clamp(a.hx + Math.cos(R) * rr, 2, WX - 3); a.tz = clamp(a.hz + Math.sin(R) * rr, 2, WZ - 3); }
+      if(d < .3){ a.wait = 1 + Math.random() * 4; if(a.kind === 'horse' && BARN){ const t = horseTarget(a); a.tx = t[0]; a.tz = t[1]; if(!inBarn(a, BARN)) a.wait = .2; } else { const R = Math.random() * Math.PI * 2, rr = 2 + Math.random() * 8; a.tx = clamp(a.hx + Math.cos(R) * rr, 2, WX - 3); a.tz = clamp(a.hz + Math.sin(R) * rr, 2, WZ - 3); } }
       else {
         const nx = a.x + dx / d * sp * dt, nz = a.z + dz / d * sp * dt, ny = standY(nx, nz, a.y);
         const blocked = Math.abs(ny - a.y) > 1.05 || W.get(Math.floor(nx), Math.floor(ny), Math.floor(nz)) === ID.water || W.get(Math.floor(nx), Math.floor(ny - .5), Math.floor(nz)) === ID.water;
-        if(blocked){ a.tx = a.x - dx; a.tz = a.z - dz; a.wait = .5; }
+        if(blocked){ if(a.kind === 'horse' && BARN){ const R = Math.random() * 6.28; a.tx = a.x + Math.cos(R) * 1.5; a.tz = a.z + Math.sin(R) * 1.5; } else { a.tx = a.x - dx; a.tz = a.z - dz; } a.wait = .5; }
         else { a.x = nx; a.z = nz; a.y = ny > a.y ? Math.min(ny, a.y + dt * 6) : Math.max(ny, a.y - dt * 8); a.f += angDiff(Math.atan2(dx, dz), a.f) * Math.min(1, dt * 6); a.m = Math.min(1, a.m + dt * 4); }
       }
     }
@@ -891,6 +947,7 @@ function runJobs(dt){
       jobs.splice(k, 1); j.lbl.remove();
       const b = BP[j.id];
       hearts(j.x + j.w / 2, j.y + j.h + 1, j.z + j.d / 2, 6);
+      if(j.id === 'barn'){ barnScanT = 0; if(j.mine) setTimeout(() => toast && toast('🐴 ' + L('الحصان رايح عالاسطبل!', 'The horses are going to the barn!', 'Atlar ahıra gidiyor!')), 1500); }
       if(j.mine){ SFX.built(); banner('🎉 ' + b.e + ' ' + L(...b.n) + '!'); addXp(Math.round(b.cost / 2)); track('bp'); bobo(4); }
     }
   }
