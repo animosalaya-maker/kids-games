@@ -556,9 +556,9 @@ function updateCamera(dt){
   const sx = Math.sin(cam.yaw) * Math.cos(pitch), sz = Math.cos(cam.yaw) * Math.cos(pitch);
   // keep the camera out of the booths (and the fountain): pull it in front of the first one in the way
   for(const B of PZ.BOOTHS){
-    const ox = B.x - cam.tx, oz = B.z - cam.tz; if(ox * ox + oz * oz < 6.25 || Math.abs(ox) > dist + 2.5 || Math.abs(oz) > dist + 2.5) continue;
+    const ox = B.x - cam.tx, oz = B.z - cam.tz; if(ox * ox + oz * oz < 9 || Math.abs(ox) > dist + 2.5 || Math.abs(oz) > dist + 2.5) continue;
     const t = (ox * sx + oz * sz) / (sx * sx + sz * sz); if(t <= .5 || t > dist + 2) continue;
-    const d = Math.hypot(ox - sx * t, oz - sz * t); if(d < 2.5) dist = Math.max(1.8, Math.min(dist, t - Math.sqrt(Math.max(0, 6.25 - d * d)) - .2));
+    const d = Math.hypot(ox - sx * t, oz - sz * t); if(d < 3) dist = Math.max(1.8, Math.min(dist, t - Math.sqrt(Math.max(0, 9 - d * d)) - .2));
   }
   let cx = cam.tx + sx * dist, cy = cam.ty + Math.sin(pitch) * dist, cz = cam.tz + sz * dist;
   cy = Math.max(cy, .5);
