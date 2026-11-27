@@ -1510,7 +1510,7 @@ function mpCard(wide){ state = 'mp'; setPlayUI(false); overlay.hidden = false; o
 function mpMenu(){
   MP.tok++; mpClose(); MP.screen = 'menu'; mpCard(false);
   card.innerHTML = `<h2>👫 ${L('العب مع أصحابك', 'Play with friends', 'Arkadaşlarla oyna')}</h2>
-    <p>🏝️ ${L('لحد ٤ أصحاب على نفس الجزيرة، ومين بيضل لآخر الجولة بياخد نجوم!', 'Up to 4 friends on the same island — whoever lasts the round gets stars!', '4 arkadaşa kadar aynı adada — turu atlatan yıldız kazanır!').replace('٤', N(4))}</p>
+    <p>🏝️ ${L('لحد 4 أصحاب على نفس الجزيرة، ومين بيضل لآخر الجولة بياخد نجوم!', 'Up to 4 friends on the same island — whoever lasts the round gets stars!', '4 arkadaşa kadar aynı adada — turu atlatan yıldız kazanır!').replace('4', N(4))}</p>
     <button class="hero-btn" id="bMyHero" style="--c:${HERO_COLOR[heroId]}"><img src="${charImg(heroId)}" alt=""><span>${HERO_NAME[heroId]} 🔄</span></button>
     <div class="row"><button class="big-btn" id="bCreate">🏝️ ${L('اعمل غرفة', 'Create room', 'Oda kur')}</button>
     <button class="big-btn mint" id="bJoin">🔢 ${L('فوت على غرفة', 'Join room', 'Odaya katıl')}</button></div>

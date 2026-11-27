@@ -991,7 +991,7 @@ function showLose(){
   if(R.co){ showLoseCo(); return; }
   state = 'lost'; setPlayUI(false); showOverlay('dim'); card.className = 'card'; A.music(false);
   card.innerHTML = `<div class="bigstar">🌙</div><h2>${L('بكرا منجرّب!', "We'll try again tomorrow!", 'Yarın yine deneriz!')}</h2>
-    <p>${L('الجدّة نونا مسكتك ٥ مرات وصار وقت النوم 😴 بس إنت قرّبت كتير!', 'Grandma Nona booped you 5 times — bedtime 😴 but you got so close!', 'Nona Nine seni 5 kez yakaladı — uyku vakti 😴 ama çok yaklaştın!').replace('٥', N(5))}</p>
+    <p>${L('الجدّة نونا مسكتك 5 مرات وصار وقت النوم 😴 بس إنت قرّبت كتير!', 'Grandma Nona booped you 5 times — bedtime 😴 but you got so close!', 'Nona Nine seni 5 kez yakaladı — uyku vakti 😴 ama çok yaklaştın!').replace('5', N(5))}</p>
     <div class="row"><button class="big-btn" id="bRetry">🔁 ${L('من الأول', 'Start over', 'Baştan')}</button><button class="ghost-btn" id="bMenuL">🏠 ${L('القائمة', 'Menu', 'Menü')}</button></div>`;
   $('#bRetry').onclick = () => { SFX.tap(); startGame(); };
   $('#bMenuL').onclick = () => { SFX.tap(); GS = null; showTitle(); };
@@ -1534,7 +1534,7 @@ function redrawEnd(){
       ${endButtons()}`;
   } else if(state === 'lost'){
     card.innerHTML = `<div class="bigstar">🌙</div><h2>${L('بكرا منجرّب!', "We'll try again tomorrow!", 'Yarın yine deneriz!')}</h2>
-      <p>${L('الجدّة نونا مسكت الفريق ٥ مرات وصار وقت النوم 😴 بس قرّبتوا كتير!', 'Grandma Nona booped the team 5 times — bedtime 😴 but you got so close!', 'Nona Nine takımı 5 kez yakaladı — uyku vakti 😴 ama çok yaklaştınız!').replace('٥', N(5))}</p>
+      <p>${L('الجدّة نونا مسكت الفريق 5 مرات وصار وقت النوم 😴 بس قرّبتوا كتير!', 'Grandma Nona booped the team 5 times — bedtime 😴 but you got so close!', 'Nona Nine takımı 5 kez yakaladı — uyku vakti 😴 ama çok yaklaştınız!').replace('5', N(5))}</p>
       ${teamSlots(null)}
       ${endButtons()}`;
   } else return;
