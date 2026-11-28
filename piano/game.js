@@ -959,6 +959,7 @@ async function mpCreate(want){
 }
 async function mpJoin(code, until){
   mpConnecting();
+  until = until || performance.now() + 10000;   // the room's member list can come a moment late: keep asking for a while
   try{
     let r = await mpOpen(code, 'join');
     if(MP.screen !== 'connecting') return;
