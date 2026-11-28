@@ -64,7 +64,8 @@ const GAMES = {
   tiny:   { path:'tiny/', emoji:'🧸', color:'#f0a640', dark:'#b8741a', name:['بوبو الصغير 🧸', 'Tiny Bobo 🧸', 'Minik Bobo 🧸'], game:['بوبو الصغير', 'Tiny Bobo', 'Minik Bobo'] },
   hara:   { path:'hara/', emoji:'🛝', color:'#8a63e8', dark:'#4b37b8', name:['حديقة الحارة 🛝', 'Neighbourhood Park 🛝', 'Mahalle Parkı 🛝'], game:['حديقة الحارة', 'Neighbourhood Park', 'Mahalle Parkı'] },
   booths: { path:'booths/', emoji:'🏪', color:'#ff8a4a', dark:'#b8481a', name:['بسطات بوبو 🏪', 'Bobo Booths 🏪', 'Bobo Tezgahları 🏪'], game:['بسطات بوبو', 'Bobo Booths', 'Bobo Tezgahları'] },
-  blocks: { path:'blocks/', emoji:'🧱', color:'#5cbc43', dark:'#3a8a2a', name:['مكعّبات بوبو 🧱', 'Bobo Blocks 🧱', 'Bobo Blokları 🧱'], game:['عالم مكعّبات بوبو', 'Bobo Blocks', 'Bobo Blokları'] }
+  blocks: { path:'blocks/', emoji:'🧱', color:'#5cbc43', dark:'#3a8a2a', name:['مكعّبات بوبو 🧱', 'Bobo Blocks 🧱', 'Bobo Blokları 🧱'], game:['عالم مكعّبات بوبو', 'Bobo Blocks', 'Bobo Blokları'] },
+  piano:  { path:'piano/', emoji:'🎹', color:'#ff6fae', dark:'#b8407f', name:['تحدّي البيانو 🎹', 'Piano Challenge 🎹', 'Piyano Düellosu 🎹'], game:['بيانو بوبو', 'Bobo Piano', 'Bobo Piyano'] }
 };
 const gameOf = g => GAMES[g] ? g : '3d';
 const gameName = (g, inGame) => { const x = GAMES[gameOf(g)][inGame ? 'game' : 'name']; return T(x[0], x[1], x[2]); };

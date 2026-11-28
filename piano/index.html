@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<script src="../i18n.js"></script>
+<script src="../rt.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title data-en="Bobo Piano" data-tr="Bobo Piyano">بيانو بوبو</title>
+<meta name="description" content="اضغط البلاطات وهي نازلة واعزف أحلى الأغاني على بيانو بوبو، اجمع النجوم والتيجان وتحدّى أصحابك!" data-en="Tap the falling tiles to play lovely songs on Bobo Piano, collect stars and crowns and challenge your friends!" data-tr="Düşen karolara dokun, Bobo Piyano'da güzel şarkılar çal, yıldız ve taç topla, arkadaşlarına meydan oku!">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Bobo Land">
+<meta name="theme-color" content="#2a1452">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="icon" href="../icon-192.png">
+<link rel="apple-touch-icon" href="../icon-512.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+Bhaijaan+2:wght@500;700;800&family=Tajawal:wght@400;500;700&display=swap" media="print" onload="this.media='all'">
+<style>
+/* Bobo Piano («بيانو بوبو»): portrait «tap the falling tiles» music game. 4 lanes, hold tiles, 3 hearts, stars and crowns,
+   21 songs (public-domain classics, traditional tunes, original Bobo tunes), 8 themes, a live 1-v-1 challenge and «تحدّى بوبو». */
+:root{
+  --night:#1c0f3d; --ink:#fff7ec; --muted:#d8ccff; --gold:#ffcd4d; --gold-d:#c48f12; --pink:#ff7fb6; --mint:#5ef0b4; --sky:#6fd3ff;
+  --sa-t:env(safe-area-inset-top,0px); --sa-r:env(safe-area-inset-right,0px); --sa-b:env(safe-area-inset-bottom,0px); --sa-l:env(safe-area-inset-left,0px);
+  --display:"Baloo Bhaijaan 2","Tajawal",system-ui,sans-serif; --body:"Tajawal",system-ui,sans-serif;
+  color-scheme:dark;
+}
+html{box-sizing:border-box;height:100%;background:var(--night)}
+*,*::before,*::after{box-sizing:inherit}
+body{height:100%;margin:0;background:var(--night);color:var(--ink);font-family:var(--body);overflow:hidden;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;touch-action:none}
+[hidden]{display:none!important}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block}
+
+/* ---- in-game HUD ---- */
+#hud{position:fixed;left:0;right:0;top:0;z-index:12;pointer-events:none;padding:calc(8px + var(--sa-t)) calc(10px + var(--sa-r)) 0 calc(10px + var(--sa-l));direction:ltr}
+.hrow{display:flex;align-items:center;gap:8px}
+#prog{position:relative;flex:1;height:18px;border-radius:9px;background:rgba(20,10,50,.55);box-shadow:inset 0 0 0 2px rgba(255,255,255,.55)}
+#progFill{position:absolute;left:3px;top:3px;bottom:3px;width:calc(100% - 6px);border-radius:6px;background:linear-gradient(90deg,#ffe07a,#ff8fc0);transform-origin:0 50%;transform:scaleX(0)}
+#prog .mk{position:absolute;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;display:grid;place-items:center;font-size:22px;line-height:1;filter:grayscale(1) brightness(.75);opacity:.75;transition:transform .3s}
+#prog .mk.on{filter:none;opacity:1;transform:scale(1.25);animation:mkPop .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes mkPop{from{transform:scale(2.4)}to{transform:scale(1.25)}}
+#btnPause{pointer-events:auto;flex:none;width:44px;height:44px;border-radius:14px;border:3px solid rgba(255,255,255,.9);background:rgba(40,24,96,.8);display:grid;place-items:center;padding:0;box-shadow:0 3px 0 rgba(0,0,0,.35)}
+#btnPause:active{transform:translateY(2px)}
+#btnPause svg{width:22px;height:22px}
+#hearts{flex:none;font-size:22px;letter-spacing:1px;line-height:1;filter:drop-shadow(0 2px 0 rgba(0,0,0,.35))}
+#hearts span{display:inline-block}
+#hearts span.lost{filter:grayscale(1) opacity(.45);animation:hLost .5s}
+@keyframes hLost{30%{transform:scale(1.6) rotate(-15deg)}}
+#scoreBox{text-align:center;margin-top:4px}
+#score{font-family:var(--display);font-weight:800;font-size:54px;line-height:1;color:#fff;text-shadow:0 3px 0 rgba(60,20,120,.85),0 0 16px rgba(0,0,0,.35)}
+#combo{display:block;font-family:var(--display);font-weight:800;font-size:26px;line-height:1;color:var(--gold);text-shadow:0 2px 0 #8a3f00;min-height:26px}
+#combo.pop{animation:cPop .25s}
+@keyframes cPop{from{transform:scale(1.5)}}
+/* the opponent in a challenge */
+#opp{display:flex;align-items:center;gap:8px;margin:6px auto 0;width:max-content;max-width:100%;padding:4px 12px 4px 4px;border-radius:999px;background:rgba(20,10,50,.7);box-shadow:inset 0 0 0 2px rgba(255,255,255,.35)}
+#opp .face,.face{display:inline-block;flex:none;width:36px;height:36px;border-radius:50%;background-color:#fff;background-repeat:no-repeat;box-shadow:0 0 0 2px #fff}
+#opp b{font-family:var(--display);font-weight:800;font-size:20px;line-height:1}
+#opp .nm{font-weight:800;font-size:14px;max-width:7em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#opp .ob{width:64px;height:8px;border-radius:4px;background:rgba(255,255,255,.2);overflow:hidden}
+#opp .ob i{display:block;height:100%;background:var(--mint);transform-origin:0 50%;transform:scaleX(0)}
+#opp .oc{font-weight:800;color:var(--gold);font-size:14px}
+#count{position:fixed;inset:0;z-index:14;display:grid;place-items:center;pointer-events:none;font-family:var(--display);font-weight:800;font-size:120px;color:#fff;text-shadow:0 6px 0 #5a2a9e,0 0 40px rgba(0,0,0,.4)}
+#count.go{animation:cPop .4s}
+
+.tbtn{position:fixed;z-index:15;top:calc(10px + var(--sa-t));width:48px;height:48px;border-radius:16px;border:3px solid rgba(255,255,255,.9);
+  background:rgba(43,25,105,.85);display:grid;place-items:center;padding:0;box-shadow:0 4px 0 rgba(0,0,0,.35);touch-action:manipulation}
+.tbtn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.35)}
+.tbtn svg{width:26px;height:26px}
+#btnMute{right:calc(10px + var(--sa-r))}
+
+/* ---- cards ---- */
+.overlay{position:fixed;inset:0;z-index:20;display:flex;overflow-y:auto;touch-action:auto;background:rgba(16,6,40,.2);
+  padding-left:max(16px,var(--sa-l));padding-right:max(16px,var(--sa-r));padding-block:calc(70px + var(--sa-t)) calc(16px + var(--sa-b))}
+.overlay.dim{background:rgba(16,6,40,.68)}
+.card{width:100%;max-width:420px;margin:auto;border-radius:30px;padding:20px 18px;display:flex;flex-direction:column;align-items:center;gap:12px;text-align:center;
+  background:linear-gradient(180deg,rgba(64,32,140,.92),rgba(32,14,80,.95));
+  box-shadow:0 0 0 3px rgba(255,255,255,.18),0 0 40px rgba(255,120,200,.3),0 24px 60px rgba(0,0,0,.5);animation:cardIn .3s ease-out}
+@keyframes cardIn{from{transform:scale(.86);opacity:0}to{transform:scale(1);opacity:1}}
+.card h1{font-family:var(--display);font-weight:800;font-size:52px;line-height:1.05;margin:0;
+  background:linear-gradient(180deg,#fff6c4,#ffd45e 50%,#ff8fb8);-webkit-background-clip:text;background-clip:text;color:transparent;
+  filter:drop-shadow(0 4px 0 #4b2a9e) drop-shadow(0 0 18px rgba(255,170,200,.4))}
+.card h1 .ic{-webkit-text-fill-color:initial;color:initial}
+.card h2{font-family:var(--display);font-weight:800;font-size:32px;line-height:1.15;margin:0;color:var(--gold);text-shadow:0 4px 0 #4a2a90}
+.card p{margin:0;color:var(--muted);line-height:1.5;font-size:16px;font-weight:700;text-wrap:balance}
+.modes{display:grid;grid-template-columns:1fr 1fr;gap:10px;width:100%}
+.mode{border:0;border-radius:24px;padding:14px 8px 12px;display:flex;flex-direction:column;align-items:center;gap:4px;color:#fff;
+  box-shadow:inset 0 0 0 3px rgba(255,255,255,.75),0 6px 0 var(--sh),0 10px 24px rgba(0,0,0,.3)}
+.mode:active{transform:translateY(4px);box-shadow:inset 0 0 0 3px rgba(255,255,255,.75),0 2px 0 var(--sh)}
+.mode .em{font-size:40px;line-height:1}
+.mode b{font-family:var(--display);font-weight:800;font-size:24px;line-height:1.1;text-shadow:0 2px 0 rgba(0,0,0,.25)}
+.mode small{font-weight:800;font-size:14px;opacity:.95}
+.mode.wide{grid-column:1/-1;flex-direction:row;justify-content:center;gap:12px;padding:16px 8px}
+.mode.wide b{font-size:30px}
+.mode.songs{--sh:#b23f7c;background:linear-gradient(160deg,#ff9ac8,#ff6b8a)}
+.mode.vs{--sh:#2f6fd0;background:linear-gradient(160deg,#6fd3ff,#6a6bff)}
+.mode.th{--sh:#2f9a5a;background:linear-gradient(160deg,#8be36a,#2fbf8a)}
+.big-btn{border:0;border-radius:22px;background:linear-gradient(180deg,#ffe07a,#ffbf2e);color:#4a2800;font-family:var(--display);font-weight:800;font-size:26px;
+  padding:10px 30px;min-width:200px;box-shadow:0 6px 0 var(--gold-d),0 10px 24px rgba(255,190,60,.3)}
+.big-btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--gold-d)}
+.big-btn:disabled{filter:grayscale(.8);opacity:.6}
+.big-btn.sm{font-size:21px;min-width:0;padding:10px 18px}
+.big-btn.mint{background:linear-gradient(180deg,#9ff7cf,#3fd89a);color:#063b26;box-shadow:0 6px 0 #22936a}
+.ghost-btn{border:0;background:rgba(255,255,255,.14);border-radius:18px;padding:10px 20px;font-weight:700;font-size:17px;color:var(--ink);box-shadow:0 4px 0 rgba(0,0,0,.3)}
+.ghost-btn:active{transform:translateY(3px);box-shadow:0 1px 0 rgba(0,0,0,.3)}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.pill{display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.25);border-radius:999px;padding:4px 14px;font-family:var(--display);font-weight:800;font-size:18px;direction:ltr}
+.stars{display:flex;gap:6px;font-size:58px;line-height:1;direction:ltr}
+.stars span{color:rgba(255,255,255,.16)}
+.stars span.on{color:var(--gold);text-shadow:0 0 18px rgba(255,205,77,.7),0 4px 0 #b8781a;animation:starPop .45s cubic-bezier(.3,1.6,.5,1) both}
+.stars span.on:nth-child(2){animation-delay:.18s}.stars span.on:nth-child(3){animation-delay:.36s}
+@keyframes starPop{from{transform:scale(0) rotate(-40deg)}to{transform:scale(1)}}
+.crowns{font-size:34px;line-height:1;letter-spacing:4px}
+.res{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+.res div{background:rgba(0,0,0,.22);border-radius:16px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:2px}
+.res b{font-family:var(--display);font-weight:800;font-size:26px;line-height:1.1;direction:ltr}
+.res small{font-size:13px;font-weight:700;color:var(--muted)}
+.newbest{background:var(--pink);color:#fff;border-radius:12px;padding:2px 12px;font-weight:800;font-size:15px;animation:starPop .5s .5s both}
+.ring{--p:1;width:40px;height:40px;border-radius:50%;display:inline-grid;place-items:center;background:conic-gradient(#fff calc(var(--p)*360deg),rgba(255,255,255,.2) 0);font-size:18px;color:#4a2800}
+.ring b{display:grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#ffcd4d}
+
+/* ---- song list / themes ---- */
+.list{padding:0;flex-direction:column;background:rgba(16,6,40,.8)}
+.lhead{position:sticky;top:0;z-index:2;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:8px 10px;padding:calc(68px + var(--sa-t)) 16px 12px;
+  background:linear-gradient(180deg,rgba(28,15,61,.98) 80%,rgba(28,15,61,0))}
+.lhead h2{font-family:var(--display);font-weight:800;font-size:30px;margin:0;color:var(--gold);text-shadow:0 3px 0 #4a2a90}
+.toggle{border:0;border-radius:999px;padding:6px 14px;font-weight:800;font-size:15px;background:rgba(255,255,255,.14);box-shadow:0 3px 0 rgba(0,0,0,.3)}
+.toggle.on{background:linear-gradient(180deg,#9ff7cf,#3fd89a);color:#063b26}
+.songs{display:flex;flex-direction:column;gap:10px;width:100%;max-width:460px;margin:0 auto;padding:0 14px calc(20px + var(--sa-b))}
+.song{display:flex;align-items:center;gap:10px;width:100%;border:0;border-radius:22px;padding:10px 12px;text-align:start;color:#fff;
+  background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.06));box-shadow:inset 0 0 0 2px rgba(255,255,255,.22),0 4px 0 rgba(0,0,0,.3)}
+.song:active{transform:translateY(3px)}
+.song .em{font-size:36px;line-height:1;width:52px;height:52px;flex:none;display:grid;place-items:center;border-radius:16px;background:rgba(0,0,0,.22)}
+.song .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}
+.song .tx b{font-family:var(--display);font-weight:800;font-size:20px;line-height:1.15}
+.song .tx small{font-size:13px;font-weight:700;color:var(--muted)}
+.song .lv{display:inline-block;width:max-content;border-radius:999px;padding:1px 10px;font-weight:800;font-size:13px;color:#fff}
+.lv0{background:#2fbf6a}.lv1{background:#ff9a2e}.lv2{background:#ff4f6a}
+.song .sc{flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;direction:ltr}
+.song .sc .st{font-size:17px;letter-spacing:-1px;color:rgba(255,255,255,.25)}
+.song .sc .st i{font-style:normal;color:var(--gold)}
+.song .sc small{font-size:12px;font-weight:800;color:var(--muted)}
+.song.lock{filter:grayscale(.85);opacity:.6}
+.song.lock .sc{font-weight:800;font-size:15px}
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:12px;width:100%;max-width:460px;margin:0 auto;padding:0 14px calc(20px + var(--sa-b))}
+.theme{position:relative;border:0;border-radius:22px;padding:6px 6px 8px;display:flex;flex-direction:column;align-items:center;gap:6px;background:rgba(255,255,255,.12);box-shadow:inset 0 0 0 2px rgba(255,255,255,.25),0 4px 0 rgba(0,0,0,.3)}
+.theme canvas{width:100%;aspect-ratio:3/4;border-radius:16px;display:block;background:#000}
+.theme b{font-family:var(--display);font-weight:800;font-size:17px;line-height:1.1}
+.theme.on{box-shadow:inset 0 0 0 4px var(--gold),0 4px 0 rgba(0,0,0,.3)}
+.theme .lk{position:absolute;inset:6px 6px auto;aspect-ratio:3/4;border-radius:16px;display:grid;place-items:center;background:rgba(10,5,30,.6);font-family:var(--display);font-weight:800;font-size:22px;direction:ltr}
+.theme .ok{position:absolute;top:2px;inset-inline-end:2px;font-size:26px}
+
+/* ---- online ---- */
+.slots{display:flex;justify-content:center;gap:16px;width:100%}
+.slot{display:flex;flex-direction:column;align-items:center;gap:6px;min-width:110px;padding:10px;border-radius:20px;background:rgba(0,0,0,.22)}
+.slot .face{width:64px;height:64px}
+.slot.empty .face{background:rgba(255,255,255,.15);box-shadow:0 0 0 2px rgba(255,255,255,.35)}
+.slot .nm{font-weight:800;font-size:15px;max-width:9em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.slot b{font-family:var(--display);font-weight:800;font-size:30px;line-height:1;direction:ltr}
+.slot.win{box-shadow:0 0 0 3px var(--gold),0 0 24px rgba(255,205,77,.5)}
+.vsx{align-self:center;font-family:var(--display);font-weight:800;font-size:30px;color:var(--gold)}
+.heroes{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.heroes button{border:0;padding:0;border-radius:50%;width:48px;height:48px;background:none}
+.heroes .face{width:44px;height:44px;opacity:.6}
+.heroes button.on .face{opacity:1;box-shadow:0 0 0 3px var(--gold)}
+.chips{display:flex;gap:8px;overflow-x:auto;width:100%;padding:4px 2px 8px;scroll-snap-type:x mandatory;touch-action:pan-x}
+.chip{flex:none;scroll-snap-align:center;border:0;border-radius:16px;padding:8px 12px;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.14);font-weight:800;font-size:15px;white-space:nowrap;box-shadow:0 3px 0 rgba(0,0,0,.3)}
+.chip.on{background:linear-gradient(180deg,#ffe07a,#ffbf2e);color:#4a2800}
+.chip .lv{width:10px;height:10px;border-radius:50%;padding:0}
+.mp-code{display:flex;gap:8px;justify-content:center;direction:ltr}
+.mp-code b{width:52px;height:62px;border-radius:14px;background:rgba(0,0,0,.3);display:grid;place-items:center;font-family:var(--display);font-weight:800;font-size:38px;box-shadow:inset 0 0 0 2px rgba(255,255,255,.25)}
+.mp-code b.cur{box-shadow:inset 0 0 0 3px var(--gold)}
+.keypad{display:grid;grid-template-columns:repeat(3,72px);gap:8px;direction:ltr}
+.keypad button{height:58px;border:0;border-radius:16px;background:rgba(255,255,255,.16);font-family:var(--display);font-weight:800;font-size:28px;box-shadow:0 4px 0 rgba(0,0,0,.3)}
+.keypad button.ok{background:var(--mint)}
+.keypad button:active{transform:translateY(3px)}
+.mp-msg{color:var(--gold)!important}
+.bigicon{font-size:56px;line-height:1}
+.spin{animation:spin 1.2s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#toast{position:fixed;z-index:30;left:50%;transform:translateX(-50%);bottom:calc(30px + var(--sa-b));max-width:calc(100% - 32px);background:rgba(40,20,90,.94);color:#fff;
+  font-weight:800;font-size:16px;line-height:1.35;padding:10px 18px;border-radius:18px;box-shadow:0 0 0 2px rgba(255,255,255,.2),0 8px 24px rgba(0,0,0,.4);text-align:center;pointer-events:none}
+@media (max-height:640px){.card{gap:8px;padding:14px}.card h1{font-size:42px}.stars{font-size:46px}.mode .em{font-size:32px}#score{font-size:44px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<canvas id="cv" aria-label="ساحة اللعب" data-en-aria="Play area" data-tr-aria="Oyun alanı"></canvas>
+
+<div id="hud" hidden>
+  <div class="hrow">
+    <span id="hearts"><span>❤️</span><span>❤️</span><span>❤️</span></span>
+    <div id="prog"><div id="progFill"></div><span class="mk" id="mk0">⭐</span><span class="mk" id="mk1">⭐</span><span class="mk" id="mk2">⭐</span></div>
+    <button id="btnPause" aria-label="استراحة" data-en-aria="Pause" data-tr-aria="Duraklat"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="5" height="16" rx="2" fill="#fff"/><rect x="14" y="4" width="5" height="16" rx="2" fill="#fff"/></svg></button>
+  </div>
+  <div id="scoreBox"><div id="score">0</div><span id="combo"></span></div>
+  <div id="opp" hidden><span class="face" id="oppFace"></span><span class="nm" id="oppName"></span><b id="oppScore">0</b><span class="oc" id="oppCombo"></span><span class="ob"><i id="oppBar"></i></span></div>
+</div>
+<div id="count" hidden></div>
+<button class="tbtn" id="btnMute" aria-label="الصوت" data-en-aria="Sound" data-tr-aria="Ses"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h4l5-4v14l-5-4H4z" fill="#fff"/><path id="muteWave" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"/><path id="muteX" d="M16 9l6 6M22 9l-6 6" stroke="#ff6f8f" stroke-width="2.6" stroke-linecap="round" hidden/></svg></button>
+
+<div class="overlay" id="menu">
+  <div class="card">
+    <h1><span data-en="Bobo Piano" data-tr="Bobo Piyano">بيانو بوبو</span> <span class="ic">🎹</span></h1>
+    <p data-en="Tap the tiles as they fall and play lovely songs!" data-tr="Karolar düşerken dokun, güzel şarkılar çal!">اضغط البلاطات وهي نازلة واعزف أحلى الأغاني!</p>
+    <div class="modes">
+      <button class="mode songs wide" id="btnSongs"><span class="em">🎵</span><b data-en="Songs" data-tr="Şarkılar">الأغاني</b></button>
+      <button class="mode vs" id="btnVs"><span class="em">⚔️</span><b data-en="Live Challenge" data-tr="Canlı Düello">تحدّي مباشر</b><small data-en="vs a friend or Bobo" data-tr="arkadaşına ya da Bobo'ya karşı">ضد صاحبك أو بوبو</small></button>
+      <button class="mode th" id="btnThemes"><span class="em">🎨</span><b data-en="Themes" data-tr="Temalar">السمات</b><small id="thName"></small></button>
+    </div>
+    <div class="row"><span class="pill" id="menuStars">⭐ 0</span><span class="pill" id="menuCoins">🪙 0</span></div>
+  </div>
+</div>
+
+<div class="overlay list" id="songs" hidden>
+  <div class="lhead"><h2 data-en="Songs" data-tr="Şarkılar">الأغاني</h2><span class="pill" id="songStars">⭐ 0</span>
+    <button class="toggle" id="btnEndless">♾️ <span data-en="Endless" data-tr="Sonsuz">بلا نهاية</span></button></div>
+  <div class="songs" id="songList"></div>
+</div>
+
+<div class="overlay list" id="themes" hidden>
+  <div class="lhead"><h2 data-en="Themes" data-tr="Temalar">السمات</h2><span class="pill" id="themeStars">⭐ 0</span></div>
+  <div class="themes" id="themeList"></div>
+</div>
+
+<div class="overlay dim" id="pause" hidden>
+  <div class="card">
+    <h2 data-en="Paused" data-tr="Mola">استراحة</h2>
+    <p id="pauseInfo"></p>
+    <button class="big-btn" id="btnResume"><span data-en="Resume" data-tr="Devam">كمّل</span> ▶</button>
+    <div class="row">
+      <button class="ghost-btn" id="btnRestart" data-en="Start over" data-tr="Baştan başla">من الأول</button>
+      <button class="ghost-btn" id="btnPauseSongs" data-en="Songs" data-tr="Şarkılar">الأغاني</button>
+      <button class="ghost-btn" id="btnPauseMute"></button>
+    </div>
+    <button class="exit-btn" id="btnExit" data-en="Exit" data-tr="Çıkış">خروج</button>
+  </div>
+</div>
+
+<div class="overlay dim" id="revive" hidden>
+  <div class="card">
+    <div class="bigicon">💔</div>
+    <h2 data-en="Out of hearts!" data-tr="Kalpler bitti!">خلصوا القلوب!</h2>
+    <p data-en="Want to keep playing?" data-tr="Devam etmek ister misin?">بدّك تكمّل؟</p>
+    <button class="big-btn" id="btnRevive"><span data-en="Keep going" data-tr="Devam et">كمّل</span> ❤️ <span class="ring" id="revRing"><b id="revN">5</b></span></button>
+    <button class="ghost-btn" id="btnNoRevive" data-en="No, finish" data-tr="Hayır, bitir">لا، خلص</button>
+  </div>
+</div>
+
+<div class="overlay dim" id="result" hidden>
+  <div class="card">
+    <h2 id="resTitle"></h2>
+    <p id="resSong"></p>
+    <div class="stars" id="resStars"><span>★</span><span>★</span><span>★</span></div>
+    <div class="crowns" id="resCrowns" hidden></div>
+    <span class="newbest" id="newBest" hidden data-en="New best!" data-tr="Yeni rekor!">رقم قياسي جديد!</span>
+    <div class="res">
+      <div><b id="rScore">0</b><small data-en="Score" data-tr="Puan">النقاط</small></div>
+      <div><b id="rBest">0</b><small data-en="Best" data-tr="En iyi">أحسن نتيجة</small></div>
+      <div><b id="rPerfect">0</b><small>PERFECT</small></div>
+      <div><b id="rCombo">0</b><small data-en="Best combo" data-tr="En iyi kombo">أطول سلسلة</small></div>
+      <div style="grid-column:1/-1"><b id="rCoins">0</b><small data-en="Coins" data-tr="Altın">مصاري 🪙</small></div>
+    </div>
+    <button class="big-btn" id="btnNext"></button>
+    <div class="row">
+      <button class="ghost-btn" id="btnAgain"><span data-en="Again" data-tr="Tekrar">مرة كمان</span> 🔁</button>
+      <button class="ghost-btn" id="btnResSongs" data-en="Songs" data-tr="Şarkılar">الأغاني</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay dim" id="mp" hidden><div class="card" id="mpCard"></div></div>
+<div id="toast" role="status" hidden></div>
+
+<script src="../world.js"></script>
+<script src="./songs.js"></script>
+<script src="./audio.js"></script>
+<script src="./themes.js"></script>
+<script src="./game.js"></script>
+<script src="../back.js"></script>
+<script>BoboBack.init({
+  visible: () => { const h = window.__piano; return !!h && h.backVisible(); },
+  onBack: () => { const h = window.__piano; if(!h) location.href = '../'; else h.back(); }
+});</script>
+<script src="../friends.js"></script>
+<script src="../invitepop.js"></script>
+</body>
+</html>
